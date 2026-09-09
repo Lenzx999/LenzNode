@@ -2092,7 +2092,7 @@
             </button>
           </div>
         </div>
-        <div class="log-terminal-box" id="website-log-view">Memuat log server...</div>
+        <div class="log-terminal-box" id="website-log-view"></div>
       </div>
 
       <!-- 2. Manajer Proses PM2 -->
@@ -3357,7 +3357,7 @@
     async function fetchWebsiteLogs() {
       try {
         const res = await api('/api/logs/website');
-        document.getElementById('website-log-view').textContent = res.logs || '(log kosong)';
+        document.getElementById('website-log-view').textContent = res.logs || '';
       } catch (e) {}
     }
 

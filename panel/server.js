@@ -60,6 +60,39 @@ loadAuthConfig();
 
 if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
 
+function formatLogTimestamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function appendServerLog(message, level = 'INFO') {
+  try {
+    const logPath = path.join(LOG_DIR, 'panel.log');
+    const line = `[${formatLogTimestamp()}] [${level}] ${message}\n`;
+    fs.appendFileSync(logPath, line, 'utf8');
+  } catch (e) {}
+}
+
+function initServerLog() {
+  try {
+    const logPath = path.join(LOG_DIR, 'panel.log');
+    const banner = `================================================================================
+  LENZ MINI SERVER — SERVER LOGS (LIVE OUTPUT)
+================================================================================
+[${formatLogTimestamp()}] [SYSTEM] Server panel diinisialisasi (Node.js ${process.version}, ${os.platform()} ${os.arch()})
+[${formatLogTimestamp()}] [NETWORK] Web Dashboard aktif di Port ${PANEL_PORT} (http://127.0.0.1:${PANEL_PORT})
+[${formatLogTimestamp()}] [STATUS] Layanan Panel berjalan normal (Online 24/7)
+`;
+    if (!fs.existsSync(logPath) || fs.statSync(logPath).size === 0) {
+      fs.writeFileSync(logPath, banner, 'utf8');
+    } else {
+      fs.appendFileSync(logPath, `\n[${formatLogTimestamp()}] [SYSTEM] Server panel dimulai ulang (Node.js ${process.version})\n`, 'utf8');
+    }
+  } catch (e) {}
+}
+initServerLog();
+
 // ------------------------------------------------------------------
 // SESI & AUTENTIKASI PERSISTEN
 // ------------------------------------------------------------------
@@ -1431,7 +1464,6 @@ function getPm2Logs(name, lines = 100) {
 }
 
 function getWebsiteLogs(lines = 150) {
-  checkAndRotateLogs();
   const candidates = [
     path.join(LOG_DIR, 'panel.log'),
     path.join(LOG_DIR, 'vps.log'),
@@ -1449,7 +1481,7 @@ function getWebsiteLogs(lines = 150) {
       } catch (e) {}
     }
   }
-  return logs.trim() || '(belum ada log server)';
+  return logs.trim();
 }
 
 function restartPanel() {
@@ -1617,7 +1649,7 @@ const server = http.createServer(async (req, res) => {
         const files = fs.readdirSync(LOG_DIR);
         for (let i = 0; i < files.length; i++) {
           if (files[i].endsWith('.log')) {
-            fs.writeFileSync(path.join(LOG_DIR, files[i]), `[${new Date().toISOString()}] Log dibersihkan oleh pengguna.\n`);
+            fs.writeFileSync(path.join(LOG_DIR, files[i]), `[${formatLogTimestamp()}] [SYSTEM] Log dibersihkan oleh pengguna.\n`);
           }
         }
       }
