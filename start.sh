@@ -220,16 +220,11 @@ start_all() {
     echo ""
     echo -e "${BLUE}💡 Panduan Penggunaan:${NC}"
     echo -e "   • Buka alamat Web Dashboard di atas untuk kelola file, terminal, & bot."
-    echo -e "   • Server berjalan di latar belakang (background) dan aman ditinggal."
-    echo -e "   • Tekan ${YELLOW}Ctrl + C${NC} kapan saja untuk keluar ke layar terminal biasa."
+    echo -e "   • Server berjalan senyap di background (Termux bebas digunakan)."
+    echo -e "   • Cek status server : ${YELLOW}./start.sh status${NC}"
+    echo -e "   • Pantau log live   : ${YELLOW}./start.sh logs${NC}"
+    echo -e "   • Hentikan server   : ${YELLOW}./start.sh stop${NC}"
     echo ""
-
-    if [ -t 1 ]; then
-        echo -e "${CYAN}───────────────────────────────────────────────────────────────${NC}"
-        echo -e "${CYAN}📋 Log Server (Live Output):                                   ${NC}"
-        echo -e "${CYAN}───────────────────────────────────────────────────────────────${NC}"
-        tail -f "$PANEL_LOG"
-    fi
 }
 
 stop_all() {
@@ -261,6 +256,15 @@ status_all() {
     echo ""
 }
 
+show_logs() {
+    if [ -f "$PANEL_LOG" ]; then
+        echo -e "${CYAN}📋 Menampilkan Log Server Live (Tekan Ctrl+C untuk keluar):${NC}"
+        tail -f "$PANEL_LOG"
+    else
+        echo -e "${YELLOW}Berkas log belum tersedia.${NC}"
+    fi
+}
+
 case "$1" in
     stop)
         stop_all
@@ -272,6 +276,9 @@ case "$1" in
         ;;
     status)
         status_all
+        ;;
+    logs|log)
+        show_logs
         ;;
     panel)
         start_panel
