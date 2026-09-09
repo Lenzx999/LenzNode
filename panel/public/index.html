@@ -346,9 +346,12 @@
 
     .grid-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 18px;
+    }
+    .card-span-2 {
+      grid-column: span 2;
     }
     .card {
       background: var(--bg-card);
@@ -1377,6 +1380,9 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
       }
+      .card-span-2 {
+        grid-column: span 1;
+      }
       .spec-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
@@ -1684,7 +1690,7 @@
         </div>
 
         <!-- Card Baterai -->
-        <div class="card">
+        <div class="card card-span-2">
           <div class="card-header">
             <span class="card-title">
               <svg viewBox="0 0 24 24"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
@@ -1696,7 +1702,7 @@
         </div>
 
         <!-- Card Suhu Server -->
-        <div class="card" id="card-thermal">
+        <div class="card card-span-2" id="card-thermal">
           <div class="card-header">
             <span class="card-title">
               <svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
