@@ -1263,6 +1263,144 @@
       50% { background: rgba(239, 68, 68, 0.22); }
     }
 
+    /* Terminal Quick Action Toolbar & Virtual Keys */
+    .term-quick-bar {
+      padding: 8px 12px;
+      background: #090E1B;
+      border-top: 1px solid #161F30;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .term-quick-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .term-quick-row::-webkit-scrollbar {
+      display: none;
+    }
+    .term-quick-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748B;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+      padding-right: 2px;
+      user-select: none;
+    }
+    .term-cmd-chip {
+      background: #111827;
+      border: 1px solid #1F2937;
+      color: #E2E8F0;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 500;
+      font-family: var(--font-sans);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .term-cmd-chip:hover {
+      background: #1F2937;
+      border-color: #3B82F6;
+      color: #FFFFFF;
+      transform: translateY(-1px);
+    }
+    .term-cmd-chip:active {
+      transform: translateY(0);
+    }
+    .term-cmd-chip.primary {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #93C5FD;
+    }
+    .term-cmd-chip.primary:hover {
+      background: #2563EB;
+      color: #FFFFFF;
+      border-color: #3B82F6;
+    }
+    .term-cmd-chip.info {
+      background: rgba(14, 165, 233, 0.15);
+      border-color: rgba(14, 165, 233, 0.35);
+      color: #7DD3FC;
+    }
+    .term-cmd-chip.info:hover {
+      background: #0284C7;
+      color: #FFFFFF;
+    }
+    .term-cmd-chip.success {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #6EE7B7;
+    }
+    .term-cmd-chip.success:hover {
+      background: #059669;
+      color: #FFFFFF;
+    }
+    .term-cmd-chip.warning {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #FCD34D;
+    }
+    .term-cmd-chip.warning:hover {
+      background: #D97706;
+      color: #FFFFFF;
+    }
+    .term-key-chip {
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #CBD5E1;
+      border-radius: 5px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.4);
+      transition: all 0.12s ease;
+      user-select: none;
+    }
+    .term-key-chip:hover {
+      background: #334155;
+      color: #FFFFFF;
+      border-color: #64748B;
+    }
+    .term-key-chip:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+    .term-key-chip.danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #FCA5A5;
+    }
+    .term-key-chip.danger:hover {
+      background: #DC2626;
+      color: #FFFFFF;
+      border-color: #EF4444;
+    }
+    .term-key-chip.key-char {
+      min-width: 26px;
+      padding: 3px 6px;
+    }
+
     /* Logs & Process Manager */
     .log-card {
       background: var(--bg-card);
@@ -2055,6 +2193,66 @@
           </div>
 
           <div class="remote-controls-grid">
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('screen-off')" title="Matikan layar HP (mode hemat daya baterai 24/7)">
+              <div class="remote-ctrl-icon" style="background: rgba(99, 102, 241, 0.15); color: #818CF8;">
+                <svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Matikan Layar</span>
+                <span class="remote-ctrl-desc">Mode hemat daya HP</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('screen-on')" title="Nyalakan kembali layar HP">
+              <div class="remote-ctrl-icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Nyalakan Layar</span>
+                <span class="remote-ctrl-desc">Bangunkan layar HP</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('wakelock')" title="Kunci CPU HP agar proses server tidak sleep di background">
+              <div class="remote-ctrl-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
+                <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Wake-Lock HP</span>
+                <span class="remote-ctrl-desc">Cegah Android sleep</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('torch')" title="Nyalakan / matikan senter kamera HP">
+              <div class="remote-ctrl-icon" style="background: rgba(6, 182, 212, 0.15); color: #22D3EE;">
+                <svg viewBox="0 0 24 24"><path d="M18 6l-3-3H9L6 6v3h12V6z"/><path d="M7 9v11a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Senter HP</span>
+                <span class="remote-ctrl-desc">Toggle senter kamera</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('vibrate')" title="Kirim sinyal getaran ke HP untuk tes respons fisik">
+              <div class="remote-ctrl-icon" style="background: rgba(56, 189, 248, 0.15); color: #38BDF8;">
+                <svg viewBox="0 0 24 24"><path d="M2 8v8"/><path d="M22 8v8"/><path d="M6 5v14"/><path d="M18 5v14"/><rect width="8" height="16" x="8" y="4" rx="1"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Getarkan HP</span>
+                <span class="remote-ctrl-desc">Tes getar perangkat</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="confirmReboot()" title="Mulai ulang (reboot) fisik smartphone Android">
+              <div class="remote-ctrl-icon" style="background: rgba(239, 68, 68, 0.15); color: #F87171;">
+                <svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Reboot HP</span>
+                <span class="remote-ctrl-desc">Restart perangkat</span>
+              </div>
+            </button>
+
             <button class="remote-ctrl-btn" onclick="doRestartPanel()" title="Mulai ulang service web dashboard">
               <div class="remote-ctrl-icon" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;">
                 <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
@@ -2065,16 +2263,6 @@
               </div>
             </button>
 
-            <button class="remote-ctrl-btn" onclick="updateStats(); showToast('Data monitoring berhasil diperbarui', 'info')" title="Perbarui metrik server">
-              <div class="remote-ctrl-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
-                <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Segarkan Data</span>
-                <span class="remote-ctrl-desc">Sinkronkan status</span>
-              </div>
-            </button>
-
             <button class="remote-ctrl-btn" onclick="switchTab('tab-terminal')" title="Buka terminal command line">
               <div class="remote-ctrl-icon" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA;">
                 <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
@@ -2082,16 +2270,6 @@
               <div class="remote-ctrl-text">
                 <span class="remote-ctrl-name">Konsol Terminal</span>
                 <span class="remote-ctrl-desc">Buka perintah bash</span>
-              </div>
-            </button>
-
-            <button class="remote-ctrl-btn" onclick="openAccountSettings()" title="Buka pengaturan akun admin">
-              <div class="remote-ctrl-icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">
-                <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Akun Admin</span>
-                <span class="remote-ctrl-desc">Ubah password</span>
               </div>
             </button>
           </div>
@@ -2200,6 +2378,38 @@
             <span>Hentikan Proses (Ctrl + C)</span>
           </button>
         </div>
+
+        <!-- Terminal Quick Action & Virtual Keys Bar -->
+        <div class="term-quick-bar">
+          <div class="term-quick-row">
+            <span class="term-quick-label">PINTASAN:</span>
+            <button class="term-cmd-chip primary" onclick="executeQuickCommand('proot-distro login ubuntu', true)" title="Buka CLI Linux Ubuntu VPS">🐧 Masuk Ubuntu</button>
+            <button class="term-cmd-chip info" onclick="executeQuickCommand('pm2 status', true)" title="Lihat status bot / service PM2">⚡ PM2 Status</button>
+            <button class="term-cmd-chip success" onclick="executeQuickCommand('pkg update -y', true)" title="Update semua paket Termux">📦 Pkg Update</button>
+            <button class="term-cmd-chip warning" onclick="executeQuickCommand('termux-battery-status', true)" title="Cek status baterai HP">🔋 Baterai HP</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('ls -la', true)" title="Lihat isi direktori saat ini">📋 ls -la</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('cd ~', true)" title="Pindah ke Home direktori">🏠 cd ~</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('cd ~/panel', true)" title="Pindah ke direktori Panel">⚙️ cd ~/panel</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('cd /sdcard', true)" title="Pindah ke Memori Internal HP">📱 cd /sdcard</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('top -n 1', true)" title="Monitor proses CPU">📊 top</button>
+            <button class="term-cmd-chip" onclick="executeQuickCommand('ifconfig', true)" title="Lihat IP jaringan">🌐 ifconfig</button>
+          </div>
+          <div class="term-quick-row term-keys-row">
+            <span class="term-quick-label">TOMBOL:</span>
+            <button class="term-key-chip danger" onclick="insertTerminalKey('ctrl-c')" title="Kirim Sinyal Stop (Ctrl + C)">Ctrl + C</button>
+            <button class="term-key-chip" onclick="insertTerminalKey('tab')" title="Auto-complete (Tab)">Tab</button>
+            <button class="term-key-chip" onclick="insertTerminalKey('up')" title="Riwayat Sebelumnya (↑)">↑ Up</button>
+            <button class="term-key-chip" onclick="insertTerminalKey('down')" title="Riwayat Berikutnya (↓)">↓ Down</button>
+            <button class="term-key-chip" onclick="insertTerminalKey('clear')" title="Bersihkan Layar">Clear</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('|')">|</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('/')">/</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('~')">~</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('-')">-</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('&')">&amp;</button>
+            <button class="term-key-chip key-char" onclick="insertTerminalKey('$')">$</button>
+          </div>
+        </div>
+
         <div class="terminal-input-bar">
           <div class="terminal-prompt-prefix" id="term-prompt-sym">
             <span class="prompt-tilde">~</span>
@@ -3499,6 +3709,108 @@
       } catch (e) {
         setTerminalRunning(false);
       }
+    }
+
+    function executeQuickCommand(cmd, autoRun = true) {
+      const input = document.getElementById('term-input');
+      if (!input) return;
+      input.value = cmd;
+      input.focus();
+      if (autoRun) {
+        if (currentTerminalJobId) {
+          sendTerminalInput();
+        } else {
+          submitTerminalCommand();
+        }
+      }
+    }
+
+    function insertTerminalKey(key) {
+      const input = document.getElementById('term-input');
+      if (!input) return;
+
+      if (key === 'ctrl-c') {
+        killTerminalJob();
+        return;
+      }
+      if (key === 'clear') {
+        clearTerminalOutput();
+        return;
+      }
+      if (key === 'up') {
+        if (cmdHistory.length > 0 && cmdHistoryIdx < cmdHistory.length - 1) {
+          cmdHistoryIdx++;
+          input.value = cmdHistory[cmdHistory.length - 1 - cmdHistoryIdx];
+        }
+        input.focus();
+        return;
+      }
+      if (key === 'down') {
+        if (cmdHistoryIdx > 0) {
+          cmdHistoryIdx--;
+          input.value = cmdHistory[cmdHistory.length - 1 - cmdHistoryIdx];
+        } else if (cmdHistoryIdx === 0) {
+          cmdHistoryIdx = -1;
+          input.value = '';
+        }
+        input.focus();
+        return;
+      }
+      if (key === 'tab') {
+        input.value += ' ';
+        input.focus();
+        return;
+      }
+
+      const start = input.selectionStart !== null ? input.selectionStart : input.value.length;
+      const end = input.selectionEnd !== null ? input.selectionEnd : input.value.length;
+      const val = input.value;
+      input.value = val.substring(0, start) + key + val.substring(end);
+      input.selectionStart = input.selectionEnd = start + key.length;
+      input.focus();
+    }
+
+    async function doDeviceAction(action) {
+      let endpoint = '';
+      let body = {};
+      if (action === 'screen-off') endpoint = '/api/device/screen-off';
+      else if (action === 'screen-on') endpoint = '/api/device/screen-on';
+      else if (action === 'torch') endpoint = '/api/device/torch';
+      else if (action === 'vibrate') endpoint = '/api/device/vibrate';
+      else if (action === 'wakelock') endpoint = '/api/device/wakelock';
+
+      if (!endpoint) return;
+      try {
+        showToast('Mengirim perintah perangkat...', 'info');
+        const res = await api(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (res.ok) {
+          showToast(res.message || 'Perintah berhasil dijalankan', 'success');
+        } else {
+          showToast(res.message || 'Gagal menjalankan perintah', 'error');
+        }
+      } catch (e) {
+        showToast('Gagal: ' + e.message, 'error');
+      }
+    }
+
+    function confirmReboot() {
+      showConceptConfirm({
+        title: 'Reboot Perangkat HP',
+        messageHtml: 'Apakah Anda yakin ingin memuat ulang (reboot) smartphone fisik? Panel dan koneksi server akan terputus sementara waktu sampai HP booting kembali.',
+        actionText: 'Reboot HP',
+        onConfirm: async () => {
+          try {
+            const res = await api('/api/device/reboot', { method: 'POST' });
+            showToast(res.message || 'Perintah reboot telah dikirim ke perangkat HP', 'info');
+          } catch (e) {
+            showToast('Gagal: ' + e.message, 'error');
+          }
+        }
+      });
     }
 
     // Logs & PM2

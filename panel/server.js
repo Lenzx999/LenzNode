@@ -897,6 +897,42 @@ function controlScreen(action) {
   }
 }
 
+let torchState = false;
+function controlTorch(state) {
+  try {
+    const newState = state !== undefined ? (state === 'on' || state === true) : !torchState;
+    torchState = newState;
+    if (os.platform() !== 'win32') {
+      execSync(`termux-torch ${torchState ? 'on' : 'off'} 2>/dev/null || true`, { timeout: 2000 });
+    }
+    return { ok: true, torch: torchState, message: `Senter HP ${torchState ? 'dinyalakan' : 'dimatikan'}.` };
+  } catch (e) {
+    return { ok: false, message: 'Gagal mengontrol senter: ' + e.message };
+  }
+}
+
+function triggerVibrate(duration = 400) {
+  try {
+    if (os.platform() !== 'win32') {
+      execSync(`termux-vibrate -d ${duration} 2>/dev/null || true`, { timeout: 2000 });
+    }
+    return { ok: true, message: 'Getaran dikirim ke perangkat HP.' };
+  } catch (e) {
+    return { ok: false, message: 'Gagal menggetarkan HP: ' + e.message };
+  }
+}
+
+function toggleWakeLock(enable = true) {
+  try {
+    if (os.platform() !== 'win32') {
+      execSync(enable ? 'termux-wake-lock 2>/dev/null || true' : 'termux-wake-unlock 2>/dev/null || true', { timeout: 2000 });
+    }
+    return { ok: true, message: enable ? 'Wake-Lock diaktifkan (HP tidak akan sleep).' : 'Wake-Lock dinonaktifkan.' };
+  } catch (e) {
+    return { ok: false, message: 'Gagal mengatur wake-lock: ' + e.message };
+  }
+}
+
 function rebootDevice() {
   setTimeout(() => {
     try {
@@ -1746,6 +1782,27 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/device/screen-on') {
     sendJSON(res, 200, controlScreen('on'));
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/device/torch') {
+    let body = {};
+    try { body = await parseBody(req); } catch (e) {}
+    sendJSON(res, 200, controlTorch(body.state));
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/device/vibrate') {
+    let body = {};
+    try { body = await parseBody(req); } catch (e) {}
+    sendJSON(res, 200, triggerVibrate(body.duration || 400));
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/device/wakelock') {
+    let body = {};
+    try { body = await parseBody(req); } catch (e) {}
+    sendJSON(res, 200, toggleWakeLock(body.enable !== undefined ? body.enable : true));
     return;
   }
 
