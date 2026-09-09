@@ -51,7 +51,7 @@ Installer otomatis mendeteksi versi Android dan arsitektur CPU perangkat Anda. A
 Buka aplikasi **Termux**, lalu jalankan:
 ```bash
 pkg update -y && pkg install git -y
-git clone https://github.com/Lenzx999/panel.git ~/panel
+git clone https://github.com/Lenzx999/LenzNode.git ~/panel
 cd ~/panel
 bash install.sh
 ```
@@ -74,17 +74,79 @@ bash install.sh
 
 ---
 
-## 🌐 Cara Mengakses & Kredensial Default
+## 🌐 Cara Mengakses Website & VPS
 
-Setelah server menyala, pastikan perangkat lain (laptop/HP lain) terhubung ke **satu jaringan Wi-Fi yang sama**.
+Setelah instalasi selesai dan server dijalankan (`bash ~/panel/start.sh` atau `lenz-server`), berikut panduan lengkap untuk mengakses Web Dashboard dan Ubuntu VPS.
 
-| Layanan | URL / Alamat Akses | Kredensial Default |
-| :--- | :--- | :--- |
-| **Web Dashboard** | `http://<IP-HP>:8080` *(atau via domain publik Cloudflare)* | Username: `admin`<br>Password: `admin123` *(Dapat diubah di menu Pengaturan Akun)* |
-| **Ubuntu VPS (SSH)** | `ssh root@<IP-HP> -p 2222`<br>atau `ssh ubuntu@<IP-HP> -p 2222` | Password: `ubuntu123` |
-| **Masuk VPS via Termux** | Ketik: `ubuntu` di Termux | Langsung masuk terminal root Ubuntu |
+---
 
-> 💡 *Alamat IP lokal HP dan link publik HTTPS akan ditampilkan secara otomatis di Web Dashboard dan terminal saat server dijalankan.*
+### 1. 🌐 Cara Mengakses Web Dashboard (Website)
+
+Web Dashboard berfungsi sebagai pusat kendali visual untuk memantau sistem, mengelola file, terminal web, dan proses server.
+
+#### A. Akses Jaringan Lokal (Wi-Fi yang Sama)
+Pastikan perangkat Anda (Laptop / PC / HP lain) terhubung ke **satu jaringan Wi-Fi / Hotspot yang sama** dengan HP Server.
+1. Buka browser (Chrome, Firefox, Edge, Safari, dll).
+2. Kunjungi alamat:
+   ```text
+   http://<IP-HP>:8080
+   ```
+   *(Contoh: `http://192.168.1.15:8080`)*
+
+#### B. Akses Jarak Jauh / Publik (Cloudflare Tunnel)
+Jika Cloudflare Tunnel aktif, Anda dapat mengakses dashboard dari mana saja (tanpa perlu satu Wi-Fi):
+* Gunakan URL publik HTTPS yang muncul di terminal Termux saat server dijalankan *(contoh: `https://xxx-xxx-xxx.trycloudflare.com`)*.
+
+#### 🔑 Kredensial Login Web Dashboard:
+* **Username**: `admin`
+* **Password**: `admin123`
+*(Password dapat diubah kapan saja melalui menu **Pengaturan Akun** di dashboard)*
+
+---
+
+### 2. 🖥️ Cara Mengakses Ubuntu VPS
+
+Ubuntu VPS berjalan di background Android dan menyediakan lingkungan Linux lengkap dengan OpenSSH.
+
+#### A. Masuk Langsung dari HP Server (Aplikasi Termux)
+Cukup buka aplikasi **Termux** di HP server, lalu ketik salah satu perintah berikut:
+```bash
+ubuntu
+# atau
+lenz-vps
+```
+Anda akan langsung masuk ke terminal root Ubuntu (`root@localhost:~#`).
+
+#### B. Akses via SSH dari Laptop / PC / HP Lain (Satu Wi-Fi)
+Buka Terminal (macOS/Linux) atau Command Prompt / PowerShell (Windows) di laptop Anda, lalu jalankan:
+```bash
+# Login sebagai root:
+ssh root@<IP-HP> -p 2222
+
+# Atau login sebagai user biasa (ubuntu):
+ssh ubuntu@<IP-HP> -p 2222
+```
+* **Port**: `2222`
+* **Password**: `ubuntu123`
+
+#### C. Akses via Aplikasi SSH Client (PuTTY, Termius, JuiceSSH)
+Jika menggunakan aplikasi SSH GUI, masukkan parameter berikut:
+* **Host / IP Address**: `<IP-HP>` *(contoh: `192.168.1.15`)*
+* **Port**: `2222`
+* **Username**: `root` atau `ubuntu`
+* **Password**: `ubuntu123`
+
+---
+
+### 📋 Tabel Ringkasan Akses & Port
+
+| Layanan | Protokol / Port | Alamat / Perintah Akses | Kredensial Default |
+| :--- | :--- | :--- | :--- |
+| **Web Dashboard** | HTTP / `8080` | `http://<IP-HP>:8080` *(atau URL Cloudflare)* | `admin` / `admin123` |
+| **Ubuntu VPS (SSH)** | SSH / `2222` | `ssh root@<IP-HP> -p 2222` | `root` (atau `ubuntu`) / `ubuntu123` |
+| **Ubuntu VPS (Lokal)** | Internal | Ketik: `ubuntu` di Termux | Langsung login root |
+
+> 💡 **Tips Mengetahui IP HP**: Alamat IP lokal HP dan link publik Cloudflare akan ditampilkan secara otomatis di log terminal Termux saat `start.sh` dijalankan. Anda juga bisa mengecek IP HP di menu **Pengaturan Wi-Fi** perangkat.
 
 ---
 
