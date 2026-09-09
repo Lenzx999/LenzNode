@@ -43,10 +43,10 @@ Transformasikan smartphone Android lama atau baru (Android 5.0 s/d 14+, arsitekt
   * **Ubuntu VPS (PRoot + OpenSSH `sshd`)**: ~25 – 40 MB RAM
   * **Total RAM Aktif**: **~60 – 100 MB RAM** *(Sangat hemat daya baterai & ringan)*
 * 💾 **Penggunaan Ruang Penyimpanan**:
-  * **Source Code Server & Panel**: ~5 MB
-  * **Paket Termux Dasar** (*Node.js, OpenSSH, Python, PRoot, FFmpeg, dll.*): ~200 – 300 MB
-  * **Rootfs Distro Linux Ubuntu VPS** (*setelah diekstrak + OpenSSH Server*): ~400 – 650 MB
-  * **Total Ruang Terpakai**: **~700 MB – 1 GB**
+  * **Paket Termux Host** (*Node.js, PM2, OpenSSH, Python, FFmpeg, ImageMagick, PRoot*): ~500 MB – 1 GB
+  * **Ubuntu Linux VPS Full** (*Rootfs, GCC/G++ Compiler `build-essential`, Python3, FFmpeg, ImageMagick, SSH Server*): ~1.5 GB – 2.5 GB
+  * **Total Penyimpanan Bersih**: **~2 GB – 3.5 GB** *(Bisa hingga 5 GB jika cache unduhan `.deb` belum dibersihkan)*
+  * 💡 *Tips Hemat Penyimpanan*: Jalankan `pkg clean` di Termux dan `vps-fix` atau `apt-get clean` di Ubuntu VPS untuk menghapus sisa cache installer.
 
 ---
 

@@ -209,7 +209,7 @@ bash "$BASE_DIR/scripts/start-ubuntu.sh" /bin/bash -c "
     dpkg --configure -a 2>/dev/null || true
     apt-get install -f -y 2>/dev/null || true
     apt-get update -y 2>/dev/null || true
-    apt-get install -y openssh-server sudo curl wget git nano xz-utils python3 python3-pip ffmpeg webp imagemagick build-essential 2>/dev/null || true
+    apt-get install -y --no-install-recommends openssh-server sudo curl wget git nano xz-utils python3 python3-pip ffmpeg webp imagemagick build-essential 2>/dev/null || true
 
     # Siapkan bridge shell untuk user Lenz
     cat << 'SHELL_EOF' > /usr/local/bin/termux-shell
@@ -241,7 +241,14 @@ SHELL_EOF
     mkdir -p /run/sshd /var/run/sshd
     chmod 0755 /run/sshd /var/run/sshd 2>/dev/null || true
     ssh-keygen -A 2>/dev/null || true
+
+    # Bersihkan cache installer APT di Ubuntu untuk hemat penyimpanan
+    apt-get clean 2>/dev/null || true
+    rm -rf /var/cache/apt/archives/* 2>/dev/null || true
 " 2>/dev/null || true
+
+# Bersihkan cache Termux
+pkg clean 2>/dev/null || true
 
 # Helper tools & CLI shortcuts di Termux & Ubuntu
 if [ -d "$PREFIX_BIN" ]; then
