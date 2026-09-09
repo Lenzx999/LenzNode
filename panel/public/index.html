@@ -1631,13 +1631,13 @@
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 260px;">
           <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #93C5FD; letter-spacing: 0.5px;">🌐 Web Publik (HTTPS):</span>
           <code id="ribbon-public-url" style="font-family: var(--font-mono); font-size: 12px; color: #F8FAFC; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">Menghubungkan tunnel...</code>
-          <button class="btn btn-primary btn-sm" onclick="copyRibbonPublicUrl()" style="padding: 3px 8px; font-size: 11px;">Salin Publik</button>
+          <button class="btn btn-primary btn-sm" onclick="copyRibbonPublicUrl()" style="padding: 3px 8px; font-size: 11px;">Salin</button>
           <a class="btn btn-sm" id="ribbon-btn-visit" href="#" target="_blank" rel="noopener" style="padding: 3px 8px; font-size: 11px; text-decoration: none; color: #60A5FA; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); display: none;">Kunjungi ↗</a>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap;">
           <span>🏠 Web Lokal (Wi-Fi):</span>
           <code id="ribbon-local-url" style="font-family: var(--font-mono); font-size: 11.5px; color: #E2E8F0; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">http://127.0.0.1:8080</code>
-          <button class="btn btn-sm" onclick="copyRibbonLocalUrl()" style="padding: 3px 8px; font-size: 11px;">Salin Lokal</button>
+          <button class="btn btn-sm" onclick="copyRibbonLocalUrl()" style="padding: 3px 8px; font-size: 11px;">Salin</button>
         </div>
       </div>
 
@@ -1852,7 +1852,7 @@
               <code id="vps-ssh-command">Menghubungkan tunnel remote SSH...</code>
               <button class="btn btn-primary btn-sm" id="btn-copy-ssh" onclick="copySshCommand()" title="Salin Perintah SSH Publik">
                 <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span>Salin Publik</span>
+                <span>Salin</span>
               </button>
             </div>
             
@@ -1863,7 +1863,7 @@
               <code id="vps-local-ssh-code">ssh root@127.0.0.1 -p 2222</code>
               <button class="btn btn-sm" id="btn-copy-local-ssh" onclick="copyLocalSshCommand()" title="Salin Perintah SSH Lokal">
                 <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-                <span>Salin Lokal</span>
+                <span>Salin</span>
               </button>
             </div>
 
