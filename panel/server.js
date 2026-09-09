@@ -1815,7 +1815,9 @@ const server = http.createServer(async (req, res) => {
     try {
       const body = await parseJSONBody(req);
       const command = (body.command || '').trim();
-      const termuxHome = process.env.HOME || (os.platform() === 'win32' ? os.homedir() : '/data/data/com.termux/files/home');
+      const termuxHome = os.platform() === 'win32'
+        ? BASE_DIR
+        : (process.env.HOME || '/data/data/com.termux/files/home');
       const jobId = body.id || ('job_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7));
 
       let targetCwd = termuxHome;
@@ -1840,8 +1842,8 @@ const server = http.createServer(async (req, res) => {
       const delim = '___TERM_PWD___';
 
       const script = isWin
-        ? `cd /d "${targetCwd}" & ${command} & echo ${delim}%CD%`
-        : `cd "${targetCwd}"\n${command}\necho "${delim}$PWD"`;
+        ? `${command} & echo ${delim}%CD%`
+        : `${command}\necho "${delim}$PWD"`;
 
       const shellArgs = isWin ? ['/c', script] : ['-c', script];
 
