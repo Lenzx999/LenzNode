@@ -742,62 +742,158 @@
     .file-icon.dir { stroke: #FBBF24; fill: rgba(251, 191, 36, 0.15); }
     .file-icon.file { stroke: #94A3B8; }
 
-    /* Web Terminal */
+    /* Web Terminal — Sleek Modern Console Style */
     .terminal-container {
-      background: #060911;
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius-md);
+      background: #060913;
+      border: 1px solid #1A2333;
+      border-radius: 12px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 170px);
-      min-height: 480px;
-      box-shadow: var(--shadow-md);
+      height: calc(100vh - 145px);
+      min-height: 420px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
     }
     .terminal-header {
       padding: 10px 16px;
-      background: #0B101D;
-      border-bottom: 1px solid var(--border-color);
+      background: #0A0F1D;
+      border-bottom: 1px solid #161F30;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
     }
     .terminal-title {
-      font-size: 12.5px;
+      font-size: 13.5px;
       font-weight: 600;
-      color: var(--text-main);
-      font-family: var(--font-mono);
+      color: #F8FAFC;
       display: flex;
       align-items: center;
       gap: 8px;
     }
+    .term-prompt-icon {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: #F43F5E;
+      display: inline-block;
+      letter-spacing: -0.5px;
+    }
+    .term-badge-cwd {
+      background: #151D2C;
+      color: #94A3B8;
+      border: 1px solid #243046;
+      border-radius: 6px;
+      padding: 1.5px 8px;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      font-weight: 500;
+    }
+    .terminal-header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .term-status-badge {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10B981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 9999px;
+      padding: 4px 12px;
+      font-size: 11.5px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+      font-family: var(--font-sans);
+    }
+    .term-status-dot {
+      width: 6.5px;
+      height: 6.5px;
+      background: #10B981;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+    .term-status-badge.running {
+      background: rgba(245, 158, 11, 0.12);
+      color: #F59E0B;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .term-status-badge.running .term-status-dot {
+      background: #F59E0B;
+      box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+      animation: blink-dot 1s infinite alternate;
+    }
+    .btn-term-header {
+      background: #151D2C;
+      border: 1px solid #243046;
+      color: #CBD5E1;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .btn-term-header:hover {
+      background: #1E293B;
+      color: #FFFFFF;
+      border-color: #3B82F6;
+    }
+    .btn-term-header.btn-term-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #F87171;
+    }
+    .btn-term-header.btn-term-danger:hover {
+      background: #EF4444;
+      color: #FFFFFF;
+      border-color: #EF4444;
+    }
     .terminal-body {
       flex: 1;
-      padding: 14px 16px;
-      font-family: var(--font-mono);
+      padding: 16px;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 12.5px;
       color: #E2E8F0;
+      background: #040711;
       overflow-y: auto;
-      line-height: 1.5;
+      line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-all;
     }
     .terminal-input-bar {
       padding: 10px 14px;
-      background: #0A0F1B;
-      border-top: 1px solid var(--border-color);
+      background: #080D1A;
+      border-top: 1px solid #161F30;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
-    .terminal-prompt-label {
+    .terminal-prompt-prefix {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       font-family: var(--font-mono);
-      font-size: 13px;
-      color: #10B981;
-      font-weight: 700;
+      font-size: 13.5px;
+      font-weight: 600;
       flex-shrink: 0;
+      user-select: none;
+    }
+    .prompt-tilde {
+      color: #EC4899;
+      font-weight: 600;
+    }
+    .prompt-dollar {
+      color: #F43F5E;
+      font-weight: 700;
     }
     .terminal-input {
       flex: 1;
@@ -807,6 +903,39 @@
       font-family: var(--font-mono);
       font-size: 13px;
       outline: none;
+    }
+    .terminal-input::placeholder {
+      color: #475569;
+    }
+    .terminal-input-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .btn-term-execute {
+      background: #2563EB;
+      border: 1px solid #3B82F6;
+      color: #FFFFFF;
+      border-radius: 8px;
+      padding: 7px 18px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+    .btn-term-execute:hover {
+      background: #1D4ED8;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5);
+      transform: translateY(-1px);
+    }
+    .btn-term-execute:active {
+      transform: translateY(0);
     }
     .term-running-bar {
       padding: 8px 14px;
@@ -1713,18 +1842,22 @@
       <div class="terminal-container">
         <div class="terminal-header">
           <div class="terminal-title">
-            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#10B981;fill:none;stroke-width:2;"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            <span>Konsol Terminal Web</span>
-            <span id="term-cwd-badge" class="spec-badge">~</span>
+            <span class="term-prompt-icon">&gt;_</span>
+            <span>Terminal</span>
+            <span id="term-cwd-badge" class="term-badge-cwd">~</span>
           </div>
-          <div class="fm-actions">
-            <button class="btn btn-sm btn-danger" id="btn-term-header-kill" onclick="killTerminalJob()" title="Kirim sinyal SIGINT (Ctrl + C)" style="display:none;">
-              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              Hentikan (Ctrl + C)
+          <div class="terminal-header-right">
+            <div id="term-status-badge" class="term-status-badge">
+              <span class="term-status-dot"></span>
+              <span id="term-status-text">Shell Siap</span>
+            </div>
+            <button class="btn-term-header btn-term-danger" id="btn-term-header-kill" onclick="killTerminalJob()" title="Kirim sinyal SIGINT (Ctrl + C)" style="display:none;">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span>Stop</span>
             </button>
-            <button class="btn btn-sm" onclick="clearTerminalOutput()">
-              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-              Bersihkan
+            <button class="btn-term-header" onclick="clearTerminalOutput()" title="Bersihkan riwayat layar terminal">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <span>Clear</span>
             </button>
           </div>
         </div>
@@ -1741,10 +1874,16 @@
           </button>
         </div>
         <div class="terminal-input-bar">
-          <span class="terminal-prompt-label" id="term-prompt-sym">$</span>
-          <input type="text" class="terminal-input" id="term-input" placeholder="Ketik perintah (misal: ls -la, pkg status, free -m, top)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleTerminalKey(event)">
-          <div style="display:flex;gap:6px;align-items:center;">
-            <button class="btn btn-primary btn-sm" id="btn-term-submit" onclick="handleTerminalSubmitClick()">Kirim</button>
+          <div class="terminal-prompt-prefix" id="term-prompt-sym">
+            <span class="prompt-tilde">~</span>
+            <span class="prompt-dollar">$</span>
+          </div>
+          <input type="text" class="terminal-input" id="term-input" placeholder="Ketik perintah (contoh: ls, pwd, pkg update)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleTerminalKey(event)">
+          <div class="terminal-input-actions">
+            <button class="btn-term-execute" id="btn-term-submit" onclick="handleTerminalSubmitClick()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.5;"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span id="btn-term-submit-text">Execute</span>
+            </button>
             <button class="btn btn-danger btn-sm" id="btn-term-stop" onclick="killTerminalJob()" style="display:none;" title="Hentikan proses yang sedang berjalan (Ctrl + C)">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               <span>Stop</span>
@@ -2711,9 +2850,11 @@
     function setTerminalRunning(isRunning, cmdText = '', pid = '') {
       const runningBar = document.getElementById('term-running-bar');
       const runningText = document.getElementById('term-running-text');
-      const submitBtn = document.getElementById('btn-term-submit');
+      const submitText = document.getElementById('btn-term-submit-text');
       const stopBtn = document.getElementById('btn-term-stop');
       const headerKillBtn = document.getElementById('btn-term-header-kill');
+      const statusBadge = document.getElementById('term-status-badge');
+      const statusText = document.getElementById('term-status-text');
       const promptSym = document.getElementById('term-prompt-sym');
       const input = document.getElementById('term-input');
 
@@ -2721,29 +2862,33 @@
         if (runningBar) runningBar.style.display = 'flex';
         if (stopBtn) stopBtn.style.display = 'inline-flex';
         if (headerKillBtn) headerKillBtn.style.display = 'inline-flex';
+        if (statusBadge) {
+          statusBadge.className = 'term-status-badge running';
+          if (statusText) statusText.textContent = 'Proses Berjalan';
+        }
         if (promptSym) {
-          promptSym.textContent = '>';
-          promptSym.style.color = '#38BDF8';
+          promptSym.innerHTML = '<span style="color:#38BDF8;font-weight:700;">&gt;</span>';
         }
         if (runningText) runningText.textContent = `Menjalankan: ${cmdText} ${pid ? `(PID: ${pid})` : ''}...`;
-        if (submitBtn) {
-          submitBtn.innerHTML = 'Kirim Input';
-          submitBtn.title = 'Kirim teks input ke proses yang sedang berjalan';
+        if (submitText) {
+          submitText.textContent = 'Kirim Input';
         }
         if (input) input.placeholder = 'Ketik input / respons ke proses lalu tekan Enter (misal: Y, pairing code, nomor WA)...';
       } else {
         if (runningBar) runningBar.style.display = 'none';
         if (stopBtn) stopBtn.style.display = 'none';
         if (headerKillBtn) headerKillBtn.style.display = 'none';
+        if (statusBadge) {
+          statusBadge.className = 'term-status-badge';
+          if (statusText) statusText.textContent = 'Shell Siap';
+        }
         if (promptSym) {
-          promptSym.textContent = '$';
-          promptSym.style.color = '#10B981';
+          promptSym.innerHTML = '<span class="prompt-tilde">~</span> <span class="prompt-dollar">$</span>';
         }
-        if (submitBtn) {
-          submitBtn.innerHTML = 'Kirim';
-          submitBtn.title = 'Kirim perintah';
+        if (submitText) {
+          submitText.textContent = 'Execute';
         }
-        if (input) input.placeholder = 'Ketik perintah (misal: ls -la, pkg status, free -m, top)...';
+        if (input) input.placeholder = 'Ketik perintah (contoh: ls, pwd, pkg update)...';
       }
     }
 
