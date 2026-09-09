@@ -953,10 +953,14 @@ function startFallbackSshTunnel() {
   const sshCmd = 'ssh';
   const sshArgs = [
     '-p', '443',
+    '-o', 'BatchMode=yes',
+    '-o', 'PasswordAuthentication=no',
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'UserKnownHostsFile=/dev/null',
+    '-o', 'ConnectTimeout=10',
     '-o', 'ServerAliveInterval=30',
     '-o', 'ServerAliveCountMax=3',
+    '-o', 'LogLevel=ERROR',
     `-R0:127.0.0.1:${PANEL_PORT}`,
     'free.pinggy.io',
   ];
@@ -1018,10 +1022,14 @@ async function startVpsTunnel() {
   const sshCmd = 'ssh';
   const sshArgs = [
     '-p', '443',
+    '-o', 'BatchMode=yes',
+    '-o', 'PasswordAuthentication=no',
     '-o', 'StrictHostKeyChecking=no',
     '-o', 'UserKnownHostsFile=/dev/null',
+    '-o', 'ConnectTimeout=10',
     '-o', 'ServerAliveInterval=30',
     '-o', 'ServerAliveCountMax=3',
+    '-o', 'LogLevel=ERROR',
     `-R0:127.0.0.1:${vpsPort}`,
     'tcp@free.pinggy.io',
   ];
