@@ -4,6 +4,12 @@
 # Author / Developer: Lenz
 # ==============================================================================
 
+# Inisialisasi Environment Termux (Kompatibel Root/su & Non-Root)
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+[ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
+export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+[ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 UBUNTU_DIR="$HOME/ubuntu-fs"
 unset LD_PRELOAD
 export PROOT_NO_SECCOMP=1

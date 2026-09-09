@@ -12,6 +12,12 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Inisialisasi Environment Termux
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+[ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
+export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+[ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
 [ -d "$HOME/panel" ] && SERVER_DIR="$HOME/panel" || SERVER_DIR="$DIR"
 LOG_DIR="$SERVER_DIR/logs"
@@ -100,13 +106,43 @@ stop_vps() {
     echo -e "${GREEN}✓ VPS OpenSSH dihentikan.${NC}"
 }
 
-# -----------------------------------------------------------------------------
-# 2. KONTROL WEB DASHBOARD PANEL (Port 8080)
-# -----------------------------------------------------------------------------
+get_node_bin() {
+    if command -v node >/dev/null 2>&1; then
+        command -v node
+    elif [ -x "$PREFIX/bin/node" ]; then
+        echo "$PREFIX/bin/node"
+    elif [ -x "/data/data/com.termux/files/usr/bin/node" ]; then
+        echo "/data/data/com.termux/files/usr/bin/node"
+    elif [ -x "/usr/bin/node" ]; then
+        echo "/usr/bin/node"
+    elif [ -x "/usr/local/bin/node" ]; then
+        echo "/usr/local/bin/node"
+    else
+        echo ""
+    fi
+}
+
 start_panel() {
     if is_port_active 8080; then
         echo -e "${GREEN}✓ Web Dashboard Panel sudah aktif di port 8080.${NC}"
         return 0
+    fi
+
+    echo -e "${YELLOW}>> Memeriksa runtime Node.js...${NC}"
+    local NODE_BIN
+    NODE_BIN=$(get_node_bin)
+
+    if [ -z "$NODE_BIN" ]; then
+        echo -e "${YELLOW}⚠️ Node.js tidak terdeteksi. Mencoba menginstal Node.js di Termux...${NC}"
+        pkg update -y 2>/dev/null || true
+        pkg install -y nodejs || pkg install -y nodejs-lts || true
+        NODE_BIN=$(get_node_bin)
+    fi
+
+    if [ -z "$NODE_BIN" ]; then
+        echo -e "${RED}✗ Error: Node.js belum terpasang! Web Panel tidak dapat dijalankan.${NC}"
+        echo -e "${YELLOW}Solusi: Jalankan 'pkg install nodejs -y' di Termux lalu coba lagi.${NC}"
+        return 1
     fi
 
     echo -e "${YELLOW}>> Menjalankan Web Dashboard Panel (Port 8080)...${NC}"
@@ -118,10 +154,25 @@ start_panel() {
     [ ! -f "$SERVER_JS" ] && SERVER_JS="$DIR/panel/server.js"
     [ ! -f "$SERVER_JS" ] && SERVER_JS="$DIR/server.js"
 
-    nohup node "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+    if [ ! -f "$SERVER_JS" ]; then
+        echo -e "${RED}✗ Error: File server.js tidak ditemukan di direktori $SERVER_DIR/panel atau $DIR!${NC}"
+        return 1
+    fi
+
+    nohup "$NODE_BIN" "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
     PANEL_PID=$!
-    sleep 1
-    echo -e "${GREEN}✓ Web Panel aktif di background (PID: $PANEL_PID).${NC}"
+    sleep 1.2
+
+    if kill -0 "$PANEL_PID" 2>/dev/null; then
+        echo -e "${GREEN}✓ Web Panel aktif di background (PID: $PANEL_PID).${NC}"
+    else
+        echo -e "${RED}✗ Gagal menjalankan Web Panel. Cek log di: $PANEL_LOG${NC}"
+        if [ -f "$PANEL_LOG" ]; then
+            echo -e "${RED}Isi Log Terakhir:${NC}"
+            tail -n 10 "$PANEL_LOG"
+        fi
+        return 1
+    fi
 }
 
 stop_panel() {

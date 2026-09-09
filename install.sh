@@ -14,6 +14,12 @@ CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Inisialisasi Environment Termux (Kompatibel Root/su & Non-Root)
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+[ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
+export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+[ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 clear
 echo -e "${CYAN}=================================================================="
 echo "    __     ___            __   __   __      ____                         "
@@ -85,11 +91,15 @@ echo -e "${GREEN}✓ Izin penyimpanan & Wake-Lock aktif.${NC}"
 # -----------------------------------------------------------------------------
 # 2. INSTALASI DEPENDENSI TERMUX HOST
 # -----------------------------------------------------------------------------
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 echo -e "${YELLOW}[2/5] Memperbarui paket Termux & Memasang dependensi...${NC}"
 pkg update -y 2>/dev/null || true
 pkg install -y openssh curl wget zip unzip nano git python ffmpeg libwebp imagemagick proot tar xz-utils 2>/dev/null || true
 
-if ! command -v node >/dev/null 2>&1; then
+if ! command -v node >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/node" ]; then
+    echo ">> Memasang Node.js di Termux..."
     pkg install -y nodejs || pkg install -y nodejs-lts || true
 fi
 
@@ -99,7 +109,8 @@ if ! command -v pm2 >/dev/null 2>&1 || ! pm2 -v >/dev/null 2>&1; then
     npm install -g pm2 2>/dev/null || npm install -g pm2@5.1.2 --force 2>/dev/null || true
 fi
 
-echo -e "${GREEN}✓ Termux siap (Node $(node -v 2>/dev/null || echo '-'), PM2 $(pm2 -v 2>/dev/null || echo '-'))${NC}"
+NODE_VER="$(node -v 2>/dev/null || "$PREFIX/bin/node" -v 2>/dev/null || echo 'Belum terpasang')"
+echo -e "${GREEN}✓ Termux siap (Node: $NODE_VER, PM2: $(pm2 -v 2>/dev/null || echo '-'))${NC}"
 
 # -----------------------------------------------------------------------------
 # 3. PENATAAN STRUKTUR FOLDER SERVER
@@ -119,6 +130,11 @@ echo -e "${YELLOW}[4/5] Menyiapkan Distro Ubuntu VPS ($ROOTFS_ARCH Rootfs)...${N
 
 cat << 'EOF' > "$BASE_DIR/scripts/start-ubuntu.sh"
 #!/data/data/com.termux/files/usr/bin/bash
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+[ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
+export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+[ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 UBUNTU_DIR="$HOME/ubuntu-fs"
 unset LD_PRELOAD
 export PROOT_NO_SECCOMP=1
