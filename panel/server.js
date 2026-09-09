@@ -336,12 +336,24 @@ function getThermalInfo() {
 
 function getBatteryInfo() {
   if (os.platform() === 'win32') {
-    return { percentage: 100, status: 'AC Powered', temperature: null };
+    return {
+      percentage: 100,
+      status: 'AC Powered',
+      temperature: 33.0,
+      voltage: '4.15 V',
+      current: '0.65 A',
+      watts: 2.70,
+      powerText: 'Pengisian: +2.70 W (4.15V • 0.65A)',
+      isCharging: true
+    };
   }
 
   let percentage = null;
   let status = 'Unknown';
   let temperature = null;
+  let rawVoltage = null; // in uV or mV
+  let rawCurrent = null; // in uA or mA
+  let isCharging = false;
 
   // 1. Scan seluruh node power_supply di Linux / Android (/sys/class/power_supply/*)
   try {
@@ -358,24 +370,46 @@ function getBatteryInfo() {
 
       for (let i = 0; i < sortedDirs.length; i++) {
         const d = sortedDirs[i];
-        const capFile = path.join(psDir, d, 'capacity');
+        const dirPath = path.join(psDir, d);
+        const capFile = path.join(dirPath, 'capacity');
         if (fs.existsSync(capFile)) {
           const rawCap = parseInt(fs.readFileSync(capFile, 'utf8').trim(), 10);
           if (!isNaN(rawCap) && rawCap >= 0 && rawCap <= 100) {
             percentage = rawCap;
 
-            const stFile = path.join(psDir, d, 'status');
+            const stFile = path.join(dirPath, 'status');
             if (fs.existsSync(stFile)) {
               status = fs.readFileSync(stFile, 'utf8').trim();
             }
 
-            const tempFile = path.join(psDir, d, 'temp');
+            const tempFile = path.join(dirPath, 'temp');
             if (fs.existsSync(tempFile)) {
               const rawT = parseInt(fs.readFileSync(tempFile, 'utf8').trim(), 10);
               if (!isNaN(rawT)) {
                 temperature = (rawT > 100 ? (rawT / 10) : rawT).toFixed(1);
               }
             }
+
+            // Voltage
+            const vFiles = ['voltage_now', 'batt_vol', 'voltage_avg'];
+            for (const vf of vFiles) {
+              const vp = path.join(dirPath, vf);
+              if (fs.existsSync(vp)) {
+                const vVal = parseInt(fs.readFileSync(vp, 'utf8').trim(), 10);
+                if (!isNaN(vVal) && vVal > 0) { rawVoltage = vVal; break; }
+              }
+            }
+
+            // Current
+            const iFiles = ['current_now', 'batt_current', 'current_avg'];
+            for (const ifile of iFiles) {
+              const ip = path.join(dirPath, ifile);
+              if (fs.existsSync(ip)) {
+                const iVal = parseInt(fs.readFileSync(ip, 'utf8').trim(), 10);
+                if (!isNaN(iVal)) { rawCurrent = iVal; break; }
+              }
+            }
+
             break;
           }
         }
@@ -384,54 +418,109 @@ function getBatteryInfo() {
   } catch {}
 
   // 2. Fallback ke dumpsys battery & cmd battery (Android Framework API bawaan)
-  if (percentage === null) {
+  if (percentage === null || rawVoltage === null || rawCurrent === null) {
     try {
       const out = execSync('dumpsys battery 2>/dev/null || cmd battery get level 2>/dev/null', { timeout: 1200, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
       if (out) {
-        const levelMatch = out.match(/level:\s*([0-9]+)/i);
-        if (levelMatch) {
-          percentage = parseInt(levelMatch[1], 10);
-        } else if (/^[0-9]+$/.test(out.trim())) {
-          percentage = parseInt(out.trim(), 10);
+        if (percentage === null) {
+          const levelMatch = out.match(/level:\s*([0-9]+)/i);
+          if (levelMatch) {
+            percentage = parseInt(levelMatch[1], 10);
+          } else if (/^[0-9]+$/.test(out.trim())) {
+            percentage = parseInt(out.trim(), 10);
+          }
         }
 
-        const statusMatch = out.match(/status:\s*([0-9]+)/i);
-        if (statusMatch) {
-          const stCode = parseInt(statusMatch[1], 10);
-          if (stCode === 2) status = 'Charging';
-          else if (stCode === 3) status = 'Discharging';
-          else if (stCode === 5) status = 'Full';
-          else status = 'In Use';
+        if (status === 'Unknown') {
+          const statusMatch = out.match(/status:\s*([0-9]+)/i);
+          if (statusMatch) {
+            const stCode = parseInt(statusMatch[1], 10);
+            if (stCode === 2) status = 'Charging';
+            else if (stCode === 3) status = 'Discharging';
+            else if (stCode === 5) status = 'Full';
+            else status = 'In Use';
+          }
         }
 
-        const tempMatch = out.match(/temperature:\s*([0-9]+)/i);
-        if (tempMatch) {
-          const rawT = parseInt(tempMatch[1], 10);
-          temperature = (rawT > 100 ? (rawT / 10) : rawT).toFixed(1);
+        if (temperature === null) {
+          const tempMatch = out.match(/temperature:\s*([0-9]+)/i);
+          if (tempMatch) {
+            const rawT = parseInt(tempMatch[1], 10);
+            temperature = (rawT > 100 ? (rawT / 10) : rawT).toFixed(1);
+          }
+        }
+
+        if (rawVoltage === null) {
+          const vMatch = out.match(/voltage:\s*([0-9]+)/i);
+          if (vMatch) rawVoltage = parseInt(vMatch[1], 10);
+        }
+
+        if (rawCurrent === null) {
+          const cMatch = out.match(/current\s*now:\s*(-?[0-9]+)/i);
+          if (cMatch) rawCurrent = parseInt(cMatch[1], 10);
         }
       }
     } catch {}
   }
 
   // 3. Fallback ke termux-battery-status (jika paket Termux:API terpasang)
-  if (percentage === null) {
+  if (percentage === null || rawVoltage === null || rawCurrent === null) {
     try {
       const out = execSync('termux-battery-status 2>/dev/null', { timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
       const data = JSON.parse(out);
       if (data && data.percentage !== undefined) {
-        percentage = data.percentage;
-        status = data.status || status;
-        if (data.temperature) {
-          temperature = (data.temperature / 10).toFixed(1);
+        if (percentage === null) percentage = data.percentage;
+        if (data.status) status = data.status;
+        if (temperature === null && data.temperature) {
+          temperature = (data.temperature > 100 ? data.temperature / 10 : data.temperature).toFixed(1);
         }
+        if (rawVoltage === null && data.voltage !== undefined) rawVoltage = data.voltage;
+        if (rawCurrent === null && data.current !== undefined) rawCurrent = data.current;
       }
     } catch {}
+  }
+
+  const stLower = (status || '').toLowerCase();
+  isCharging = stLower.includes('charg') || stLower.includes('ac') || stLower.includes('usb') || stLower.includes('full');
+
+  let volts = null;
+  if (rawVoltage !== null) {
+    volts = rawVoltage > 10000 ? (rawVoltage / 1000000) : (rawVoltage / 1000);
+  }
+
+  let amps = null;
+  if (rawCurrent !== null) {
+    const absCurrent = Math.abs(rawCurrent);
+    amps = absCurrent > 5000 ? (absCurrent / 1000000) : (absCurrent / 1000);
+  }
+
+  let watts = null;
+  let powerText = null;
+
+  if (volts !== null && amps !== null && volts > 0 && amps > 0) {
+    watts = parseFloat((volts * amps).toFixed(2));
+    const vStr = `${volts.toFixed(2)}V`;
+    const aStr = `${amps.toFixed(2)}A`;
+    if (isCharging) {
+      powerText = `Pengisian: +${watts} W (${vStr} • ${aStr})`;
+    } else {
+      powerText = `Konsumsi: ${watts} W (${vStr} • ${aStr})`;
+    }
+  } else if (isCharging) {
+    powerText = `Pengisian Aktif (${status})`;
+  } else {
+    powerText = `Penggunaan Baterai (${status})`;
   }
 
   return {
     percentage: percentage !== null ? percentage : null,
     status: percentage !== null ? status : 'Tidak terbaca',
     temperature: temperature !== null ? temperature : null,
+    voltage: volts ? `${volts.toFixed(2)} V` : null,
+    current: amps ? `${amps.toFixed(2)} A` : null,
+    watts: watts,
+    powerText: powerText,
+    isCharging: isCharging
   };
 }
 

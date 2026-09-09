@@ -1740,15 +1740,40 @@
         </div>
 
         <!-- Card Baterai -->
-        <div class="card card-span-2">
+        <div class="card card-span-2" id="card-battery">
           <div class="card-header">
             <span class="card-title">
               <svg viewBox="0 0 24 24"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
               Baterai
             </span>
+            <span id="battery-status-badge" class="card-title" style="color: var(--accent-emerald); font-weight: 600;">Optimal</span>
           </div>
-          <div class="card-value" id="val-battery">-</div>
-          <div class="card-subtext" id="val-battery-sub">Status: Normal</div>
+          <div class="card-value" style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <span id="val-battery">-</span>
+            <span id="val-battery-watts" style="font-size: 14px; font-weight: 600; font-family: var(--font-mono); color: #60A5FA;">-</span>
+          </div>
+          <div class="card-subtext" id="val-battery-sub">Memuat status daya...</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="battery-bar" style="width: 100%; background: linear-gradient(90deg, #10B981, #3B82F6);"></div>
+          </div>
+          <div class="core-temps-grid">
+            <div class="core-temp-item">
+              <span class="core-temp-label">DAYA (WATT)</span>
+              <span class="core-temp-val" id="bat-watt-val" style="color: var(--accent-emerald);">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">TEGANGAN</span>
+              <span class="core-temp-val" id="bat-volt-val">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">ARUS</span>
+              <span class="core-temp-val" id="bat-current-val">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">SUHU BATERAI</span>
+              <span class="core-temp-val" id="bat-temp-val">-</span>
+            </div>
+          </div>
         </div>
 
         <!-- Card Suhu Server -->
@@ -2510,8 +2535,59 @@
         // Battery
         if (data.battery) {
           const bPct = data.battery.percentage !== null ? `${data.battery.percentage}%` : '-';
+          const bNum = data.battery.percentage !== null ? data.battery.percentage : 0;
           document.getElementById('val-battery').textContent = bPct;
-          document.getElementById('val-battery-sub').textContent = `Status: ${data.battery.status || 'Normal'}${data.battery.temperature ? ' • ' + data.battery.temperature + '°C' : ''}`;
+
+          const batBar = document.getElementById('battery-bar');
+          if (batBar) {
+            batBar.style.width = `${Math.min(100, Math.max(5, bNum))}%`;
+            if (data.battery.isCharging) {
+              batBar.style.background = 'linear-gradient(90deg, #10B981, #3B82F6)';
+            } else if (bNum <= 20) {
+              batBar.style.background = '#EF4444';
+            } else {
+              batBar.style.background = '#3B82F6';
+            }
+          }
+
+          const badge = document.getElementById('battery-status-badge');
+          if (badge) {
+            badge.textContent = data.battery.status || (data.battery.isCharging ? 'Charging' : 'Discharging');
+            badge.style.color = data.battery.isCharging ? 'var(--accent-emerald)' : '#93C5FD';
+          }
+
+          const wattEl = document.getElementById('val-battery-watts');
+          if (wattEl) {
+            if (data.battery.watts !== null && data.battery.watts !== undefined) {
+              const sign = data.battery.isCharging ? '+' : '';
+              wattEl.textContent = `${sign}${data.battery.watts} W`;
+              wattEl.style.color = data.battery.isCharging ? '#34D399' : '#60A5FA';
+            } else {
+              wattEl.textContent = data.battery.isCharging ? '⚡ Charging' : '🔋 Discharging';
+            }
+          }
+
+          document.getElementById('val-battery-sub').textContent = data.battery.powerText || `Status: ${data.battery.status || 'Normal'}`;
+
+          const batWattVal = document.getElementById('bat-watt-val');
+          if (batWattVal) {
+            if (data.battery.watts !== null && data.battery.watts !== undefined) {
+              const sign = data.battery.isCharging ? '+' : '';
+              batWattVal.textContent = `${sign}${data.battery.watts} W`;
+              batWattVal.style.color = data.battery.isCharging ? '#34D399' : '#60A5FA';
+            } else {
+              batWattVal.textContent = '-';
+            }
+          }
+
+          const batVoltVal = document.getElementById('bat-volt-val');
+          if (batVoltVal) batVoltVal.textContent = data.battery.voltage || '-';
+
+          const batCurrVal = document.getElementById('bat-current-val');
+          if (batCurrVal) batCurrVal.textContent = data.battery.current || '-';
+
+          const batTempVal = document.getElementById('bat-temp-val');
+          if (batTempVal) batTempVal.textContent = data.battery.temperature ? `${data.battery.temperature}°C` : '-';
         }
 
         // Thermal

@@ -96,7 +96,7 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets
 
 echo -e "${YELLOW}[2/6] Memperbarui paket Termux & Memasang dependensi...${NC}"
 pkg update -y 2>/dev/null || true
-pkg install -y openssh curl wget zip unzip nano git python ffmpeg libwebp imagemagick proot tar xz-utils 2>/dev/null || true
+pkg install -y openssh curl wget zip unzip nano git python ffmpeg libwebp imagemagick proot tar xz-utils termux-api jq 2>/dev/null || true
 
 if ! command -v node >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/node" ]; then
     echo ">> Memasang Node.js di Termux..."
