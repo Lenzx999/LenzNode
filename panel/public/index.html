@@ -1075,11 +1075,142 @@
       100% { transform: rotate(360deg); }
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
+      header {
+        padding: 8px 12px;
+      }
+      main {
+        padding: 12px 10px 28px;
+      }
+      .grid-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .spec-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+      }
+      .remote-ctrl-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .header-container {
+        gap: 8px;
+      }
+      .brand-text h1 {
+        font-size: 13.5px;
+      }
+      .header-actions {
+        gap: 5px;
+      }
+      .header-actions .btn {
+        padding: 5px 8px;
+        font-size: 11px;
+        min-height: 32px;
+      }
       .header-actions .btn-restart-label-long { display: none; }
       .header-actions .btn-restart-label-short { display: inline; }
-      .grid-cards { grid-template-columns: repeat(2, 1fr); }
-      .remote-controls-grid { grid-template-columns: 1fr; }
+
+      .tabs-nav {
+        gap: 2px;
+        padding: 2px;
+        margin-bottom: 12px;
+      }
+      .tab-btn {
+        padding: 6px 8px;
+        font-size: 11.5px;
+        gap: 4px;
+        min-height: 34px;
+      }
+      .tab-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      .quick-url-ribbon {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 8px !important;
+        padding: 10px 12px !important;
+      }
+      .quick-url-ribbon > div {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .grid-cards {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .card {
+        padding: 12px 14px;
+      }
+      .card-value {
+        font-size: 20px;
+      }
+
+      .remote-controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .remote-ssh-cmd-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+      .remote-ssh-cmd-row code {
+        max-width: 100%;
+      }
+      .remote-ssh-cmd-row > div {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+      }
+      .remote-ssh-cmd-row > div > button,
+      .remote-ssh-cmd-row > div > a {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .fm-toolbar {
+        padding: 8px 10px;
+        gap: 8px;
+      }
+      .fm-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+      }
+      .fm-actions .btn {
+        width: 100%;
+        padding: 6px 8px;
+        font-size: 11.5px;
+      }
+
+      .terminal-container {
+        height: calc(100vh - 180px);
+        min-height: 380px;
+      }
+      .terminal-body {
+        padding: 10px 12px;
+        font-size: 11.5px;
+      }
+      .terminal-input-bar {
+        padding: 8px 10px;
+        gap: 6px;
+      }
+      .terminal-input {
+        font-size: 12px;
+      }
+
+      .modal-box, .concept-confirm-box {
+        width: 95vw;
+        max-width: 380px;
+        padding: 18px 14px;
+      }
     }
   </style>
 </head>
@@ -1597,9 +1728,7 @@
             </button>
           </div>
         </div>
-        <div class="terminal-body" id="term-output">Selamat datang di Terminal Web Lenz Mini Server.
-Ketik perintah Linux/Termux di bawah dan tekan Enter.
-</div>
+        <div class="terminal-body" id="term-output"></div>
         <!-- Live Running Status Indicator -->
         <div id="term-running-bar" class="term-running-bar" style="display: none;">
           <div class="term-running-info">
@@ -2646,8 +2775,11 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
     }
 
     function appendTerminal(text) {
+      if (!text) return;
+      const clean = text.replace(/WARNING:\s*apt\s+does\s+not\s+have\s+a\s+stable\s+cli\s+interface[^\r\n]*\r?\n?/gi, '');
+      if (!clean) return;
       const out = document.getElementById('term-output');
-      out.textContent += text;
+      out.textContent += clean;
       out.scrollTop = out.scrollHeight;
     }
 

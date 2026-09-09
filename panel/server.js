@@ -1855,6 +1855,9 @@ const server = http.createServer(async (req, res) => {
       const termEnv = Object.assign({}, process.env, {
         PYTHONUNBUFFERED: '1',
         FORCE_COLOR: '1',
+        TERM: 'xterm-256color',
+        DEBIAN_FRONTEND: 'noninteractive',
+        APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE: '1',
       });
 
       const child = spawn(shell, shellArgs, {
@@ -1868,8 +1871,16 @@ const server = http.createServer(async (req, res) => {
       res.write(JSON.stringify({ type: 'init', jobId, pid: child.pid }) + '\n');
 
       let pwdBuffer = '';
+      const cleanOutput = (text) => {
+        if (!text) return '';
+        return text.replace(/WARNING:\s*apt\s+does\s+not\s+have\s+a\s+stable\s+cli\s+interface[^\r\n]*\r?\n?/gi, '');
+      };
+
       const onData = (chunk, type) => {
-        const str = chunk.toString();
+        let str = chunk.toString();
+        str = cleanOutput(str);
+        if (!str) return;
+
         if (str.includes(delim)) {
           const parts = str.split(delim);
           if (parts[0]) {
