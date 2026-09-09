@@ -1612,9 +1612,15 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
           </button>
         </div>
         <div class="terminal-input-bar">
-          <span class="terminal-prompt-label">$</span>
+          <span class="terminal-prompt-label" id="term-prompt-sym">$</span>
           <input type="text" class="terminal-input" id="term-input" placeholder="Ketik perintah (misal: ls -la, pkg status, free -m, top)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleTerminalKey(event)">
-          <button class="btn btn-primary btn-sm" id="btn-term-submit" onclick="handleTerminalSubmitClick()">Kirim</button>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-primary btn-sm" id="btn-term-submit" onclick="handleTerminalSubmitClick()">Kirim</button>
+            <button class="btn btn-danger btn-sm" id="btn-term-stop" onclick="killTerminalJob()" style="display:none;" title="Hentikan proses yang sedang berjalan (Ctrl + C)">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span>Stop</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -2577,27 +2583,34 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
       const runningBar = document.getElementById('term-running-bar');
       const runningText = document.getElementById('term-running-text');
       const submitBtn = document.getElementById('btn-term-submit');
+      const stopBtn = document.getElementById('btn-term-stop');
       const headerKillBtn = document.getElementById('btn-term-header-kill');
+      const promptSym = document.getElementById('term-prompt-sym');
       const input = document.getElementById('term-input');
 
       if (isRunning) {
         if (runningBar) runningBar.style.display = 'flex';
+        if (stopBtn) stopBtn.style.display = 'inline-flex';
         if (headerKillBtn) headerKillBtn.style.display = 'inline-flex';
+        if (promptSym) {
+          promptSym.textContent = '>';
+          promptSym.style.color = '#38BDF8';
+        }
         if (runningText) runningText.textContent = `Menjalankan: ${cmdText} ${pid ? `(PID: ${pid})` : ''}...`;
         if (submitBtn) {
-          submitBtn.className = 'btn btn-danger btn-sm';
-          submitBtn.innerHTML = `
-            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
-            <span>Hentikan</span>
-          `;
-          submitBtn.title = 'Hentikan proses yang sedang berjalan (Ctrl + C)';
+          submitBtn.innerHTML = 'Kirim Input';
+          submitBtn.title = 'Kirim teks input ke proses yang sedang berjalan';
         }
-        if (input) input.placeholder = 'Proses sedang berjalan... Klik Hentikan untuk membatalkan.';
+        if (input) input.placeholder = 'Ketik input / respons ke proses lalu tekan Enter (misal: Y, pairing code, nomor WA)...';
       } else {
         if (runningBar) runningBar.style.display = 'none';
+        if (stopBtn) stopBtn.style.display = 'none';
         if (headerKillBtn) headerKillBtn.style.display = 'none';
+        if (promptSym) {
+          promptSym.textContent = '$';
+          promptSym.style.color = '#10B981';
+        }
         if (submitBtn) {
-          submitBtn.className = 'btn btn-primary btn-sm';
           submitBtn.innerHTML = 'Kirim';
           submitBtn.title = 'Kirim perintah';
         }
@@ -2607,9 +2620,28 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
 
     function handleTerminalSubmitClick() {
       if (currentTerminalJobId) {
-        killTerminalJob();
+        sendTerminalInput();
       } else {
         submitTerminalCommand();
+      }
+    }
+
+    async function sendTerminalInput() {
+      const input = document.getElementById('term-input');
+      const text = input.value;
+      if (!currentTerminalJobId) return;
+
+      input.value = '';
+      appendTerminal(`${text}\n`);
+
+      try {
+        await api('/api/terminal/input', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentTerminalJobId, input: text })
+        });
+      } catch (e) {
+        showToast('Gagal mengirim input: ' + e.message, 'error');
       }
     }
 
@@ -2626,7 +2658,7 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
     function handleTerminalKey(e) {
       if (e.key === 'Enter') {
         if (currentTerminalJobId) {
-          showToast('Proses lain sedang berjalan. Hentikan dulu proses saat ini.', 'info');
+          sendTerminalInput();
         } else {
           submitTerminalCommand();
         }
