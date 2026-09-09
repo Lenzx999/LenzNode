@@ -1,0 +1,2721 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lenz Mini Server Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090D16;
+      --bg-surface: #0F1523;
+      --bg-surface-elevated: #161D2E;
+      --bg-card: #121826;
+      --bg-input: #0A0E18;
+      
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-subtle: rgba(255, 255, 255, 0.04);
+      --border-focus: #3B82F6;
+      
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      
+      --accent-blue: #3B82F6;
+      --accent-blue-hover: #2563EB;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --accent-rose: #EF4444;
+      --accent-purple: #8B5CF6;
+      
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      
+      --radius-xs: 4px;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-pill: 9999px;
+      
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+      max-width: 100vw;
+    }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Top Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(9, 13, 22, 0.94);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 10px 20px;
+    }
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-sm);
+      background: #182235;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-logo svg {
+      width: 18px;
+      height: 18px;
+      stroke: #60A5FA;
+      fill: none;
+      stroke-width: 2;
+    }
+    .brand-text h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .brand-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 1px;
+    }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 1px 7px;
+      border-radius: var(--radius-pill);
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      line-height: 1.4;
+    }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 6px var(--accent-emerald);
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .btn-restart-label-short {
+      display: none;
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 18px 18px 36px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Segmented Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tabs-nav::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.16s ease;
+      flex: 1;
+      min-height: 38px;
+    }
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: #FFFFFF;
+      background: var(--bg-surface-elevated);
+      border-color: rgba(255, 255, 255, 0.1);
+      box-shadow: var(--shadow-sm);
+      font-weight: 600;
+    }
+    .tab-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      flex-shrink: 0;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: tabFadeIn 0.2s ease-out;
+    }
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(3px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface-elevated);
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      user-select: none;
+      min-height: 36px;
+    }
+    .btn:hover {
+      background: #1F293D;
+      border-color: rgba(255, 255, 255, 0.15);
+      color: #FFFFFF;
+    }
+    .btn:active {
+      transform: scale(0.98);
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #FFFFFF;
+    }
+    .btn-primary:hover {
+      background: var(--accent-blue-hover);
+      border-color: var(--accent-blue-hover);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #F87171;
+    }
+    .btn-danger:hover {
+      background: var(--accent-rose);
+      border-color: var(--accent-rose);
+      color: #FFFFFF;
+    }
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      min-height: 30px;
+    }
+
+    /* Grid & Cards */
+    .spec-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .spec-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .spec-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spec-title svg {
+      width: 16px;
+      height: 16px;
+      stroke: var(--accent-blue);
+      fill: none;
+      stroke-width: 2;
+    }
+    .spec-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: var(--radius-xs);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      border: 1px solid var(--border-color);
+    }
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+    }
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .spec-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .spec-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      word-break: break-all;
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .card-title svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+    .card-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+    .card-subtext {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      margin-top: auto;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: var(--radius-pill);
+      background: var(--accent-blue);
+      transition: width 0.3s ease;
+    }
+
+    .core-temps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-subtle);
+    }
+    .core-temp-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 4px 2px;
+      border-radius: var(--radius-xs);
+    }
+    .core-temp-label {
+      font-size: 9.5px;
+      color: var(--text-dim);
+      margin-bottom: 1px;
+    }
+    .core-temp-val {
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--text-main);
+    }
+
+    /* Remote Services & Control Cards */
+    .remote-ctrl-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .remote-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .remote-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .remote-card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .remote-icon-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .remote-icon-badge.vps { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+    .remote-icon-badge.device { background: rgba(139, 92, 246, 0.15); color: #C084FC; }
+    .remote-icon-badge.cloudflare { background: rgba(249, 115, 22, 0.15); color: #FB923C; }
+    .remote-icon-badge svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+    .remote-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .remote-card-subtitle {
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+    .remote-ssh-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .remote-ssh-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .badge-pinggy {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #93C5FD;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+    .remote-ssh-cmd-row {
+      display: flex;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 7px 10px;
+      gap: 8px;
+    }
+    .remote-ssh-cmd-row code {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: #F1F5F9;
+      word-break: break-all;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .remote-ssh-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .remote-ssh-meta code {
+      font-family: var(--font-mono);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .remote-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .remote-controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .remote-ctrl-btn {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
+      color: var(--text-main);
+      min-height: 48px;
+    }
+    .remote-ctrl-btn:hover {
+      background: #1F293D;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .remote-ctrl-btn:active {
+      transform: scale(0.98);
+    }
+    .remote-ctrl-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .remote-ctrl-icon svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+    .remote-ctrl-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .remote-ctrl-name {
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .remote-ctrl-desc {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* File Manager */
+    .fm-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .fm-toolbar {
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .fm-path-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 200px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .fm-path-segment {
+      color: #93C5FD;
+      cursor: pointer;
+      padding: 1px 3px;
+      border-radius: 3px;
+    }
+    .fm-path-segment:hover {
+      background: rgba(59, 130, 246, 0.15);
+    }
+    .fm-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .quick-locations {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.015);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      white-space: nowrap;
+      align-items: center;
+    }
+    .quick-loc-btn {
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+    .quick-loc-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+    }
+
+    .fm-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .fm-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .fm-table th {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px 14px;
+      font-weight: 600;
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .fm-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+    .fm-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .file-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .file-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      fill: none;
+      stroke-width: 2;
+    }
+    .file-icon.dir { stroke: #FBBF24; fill: rgba(251, 191, 36, 0.15); }
+    .file-icon.file { stroke: #94A3B8; }
+
+    /* Web Terminal */
+    .terminal-container {
+      background: #060911;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 170px);
+      min-height: 480px;
+      box-shadow: var(--shadow-md);
+    }
+    .terminal-header {
+      padding: 10px 16px;
+      background: #0B101D;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .terminal-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .terminal-body {
+      flex: 1;
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: #E2E8F0;
+      overflow-y: auto;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal-input-bar {
+      padding: 10px 14px;
+      background: #0A0F1B;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .terminal-prompt-label {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: #10B981;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .terminal-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #F8FAFC;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      outline: none;
+    }
+
+    /* Logs & Process Manager */
+    .log-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .log-card-header {
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .log-card-title {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .log-terminal-box {
+      background: #060911;
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #94A3B8;
+      height: 340px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.45;
+    }
+
+    /* Modals & Overlays */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      color: var(--text-main);
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+    .form-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 9px 12px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--border-focus);
+    }
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .concept-confirm-box {
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px 24px;
+      width: 100%;
+      max-width: min(440px, 92vw);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.94); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .concept-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: #FACC15;
+    }
+    .concept-icon-wrap svg {
+      width: 48px;
+      height: 48px;
+    }
+    .concept-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+    .concept-desc {
+      font-size: 13.5px;
+      color: #CBD5E1;
+      line-height: 1.5;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+    .concept-warning {
+      font-size: 12px;
+      color: #F87171;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    .concept-btn-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+    }
+    .concept-btn-action {
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      color: #FFFFFF;
+      background: var(--accent-rose);
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      min-height: 40px;
+      flex: 1;
+      min-width: 120px;
+    }
+    .concept-btn-action:hover {
+      filter: brightness(1.1);
+    }
+    .concept-btn-cancel {
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      color: #FFFFFF;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      min-height: 40px;
+      flex: 1;
+      min-width: 90px;
+    }
+    .concept-btn-cancel:hover {
+      background: #1F293D;
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--border-color);
+      border-left: 4px solid var(--accent-blue);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      font-size: 13px;
+      color: #F8FAFC;
+      box-shadow: var(--shadow-md);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+      transition: opacity 0.3s ease;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 640px) {
+      .header-actions .btn-restart-label-long { display: none; }
+      .header-actions .btn-restart-label-short { display: inline; }
+      .grid-cards { grid-template-columns: repeat(2, 1fr); }
+      .remote-controls-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        </div>
+        <div class="brand-text">
+          <h1>Lenz Mini Server</h1>
+          <div class="brand-badges">
+            <span class="status-badge"><span class="status-dot"></span> Online</span>
+            <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:9999px;border:1px solid var(--border-subtle);">by Lenz</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-sm" id="btn-account-settings" onclick="openAccountSettings()" title="Pengaturan Akun Admin">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          <span class="btn-restart-label-long">Pengaturan Akun</span>
+          <span class="btn-restart-label-short">Akun</span>
+        </button>
+        <button class="btn btn-sm" id="btn-restart-panel" onclick="doRestartPanel()" title="Restart Server Panel">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+          <span class="btn-restart-label-long">Restart Panel</span>
+          <span class="btn-restart-label-short">Restart</span>
+        </button>
+        <button class="btn btn-sm" id="btn-logout" onclick="doLogout()">
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          Keluar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('tab-monitoring')">
+        <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        Monitoring
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-files')">
+        <svg viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+        File Manager
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-terminal')">
+        <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        Terminal
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-services')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        Logs &amp; PM2
+      </button>
+    </nav>
+
+    <!-- 1. TAB MONITORING -->
+    <section id="tab-monitoring" class="tab-content active">
+      <!-- Quick URL Ribbon (Public & Local Web Access) -->
+      <div class="quick-url-ribbon" id="quick-url-ribbon" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; justify-content: space-between; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: var(--radius-sm); padding: 10px 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; min-width: 260px;">
+          <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #93C5FD; letter-spacing: 0.5px;">🌐 Web Publik (HTTPS):</span>
+          <code id="ribbon-public-url" style="font-family: var(--font-mono); font-size: 12px; color: #F8FAFC; background: rgba(0,0,0,0.35); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">Menghubungkan tunnel...</code>
+          <button class="btn btn-primary btn-sm" onclick="copyRibbonPublicUrl()" style="padding: 3px 8px; font-size: 11px;">Salin Publik</button>
+          <a class="btn btn-sm" id="ribbon-btn-visit" href="#" target="_blank" rel="noopener" style="padding: 3px 8px; font-size: 11px; text-decoration: none; color: #60A5FA; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); display: none;">Kunjungi ↗</a>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap;">
+          <span>🏠 Web Lokal (Wi-Fi):</span>
+          <code id="ribbon-local-url" style="font-family: var(--font-mono); font-size: 11.5px; color: #E2E8F0; background: rgba(0,0,0,0.25); padding: 3px 8px; border-radius: 4px;">http://127.0.0.1:8080</code>
+          <button class="btn btn-sm" onclick="copyRibbonLocalUrl()" style="padding: 3px 8px; font-size: 11px;">Salin Lokal</button>
+        </div>
+      </div>
+
+      <!-- Spesifikasi Server -->
+      <div class="spec-card">
+        <div class="spec-header">
+          <div class="spec-title">
+            <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>Spesifikasi Server</span>
+          </div>
+          <span class="spec-badge">Lenz Mini Server</span>
+        </div>
+        <div class="spec-grid">
+          <div class="spec-item">
+            <span class="spec-label">CPU</span>
+            <span class="spec-value" id="spec-cpu">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">RAM</span>
+            <span class="spec-value" id="spec-ram">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Penyimpanan</span>
+            <span class="spec-value" id="spec-disk">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">OS</span>
+            <span class="spec-value" id="spec-os">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Arsitektur</span>
+            <span class="spec-value" id="spec-arch">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Node.js</span>
+            <span class="spec-value" id="spec-runtime">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">Suhu Server</span>
+            <span class="spec-value" id="spec-thermal" style="color: var(--accent-emerald);">Memuat...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resource Grid -->
+      <div class="grid-cards">
+        <!-- Card CPU -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+              CPU
+            </span>
+            <span id="cpu-percent" class="card-title">0%</span>
+          </div>
+          <div class="card-value" id="cpu-usage">0%</div>
+          <div class="card-subtext" id="cpu-sub">4 Cores • Load: -</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="cpu-bar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Card RAM -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+              RAM
+            </span>
+            <span id="ram-percent" class="card-title">0%</span>
+          </div>
+          <div class="card-value" id="ram-used">0 MB</div>
+          <div class="card-subtext" id="ram-total">Total: 0 MB</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="ram-bar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Card Penyimpanan Disk -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line></svg>
+              Penyimpanan
+            </span>
+            <span id="disk-percent" class="card-title">0%</span>
+          </div>
+          <div class="card-value" id="disk-free">0 GB Bebas</div>
+          <div class="card-subtext" id="disk-total">Total: 0 GB</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="disk-bar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Card Uptime -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Runtime
+            </span>
+          </div>
+          <div class="card-value" id="val-uptime">00:00:00</div>
+          <div class="card-subtext" id="val-panel-uptime">Panel: 0m</div>
+        </div>
+
+        <!-- Card Baterai -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" y1="11" x2="22" y2="13"/></svg>
+              Baterai
+            </span>
+          </div>
+          <div class="card-value" id="val-battery">-</div>
+          <div class="card-subtext" id="val-battery-sub">Status: Normal</div>
+        </div>
+
+        <!-- Card Suhu Server -->
+        <div class="card" id="card-thermal">
+          <div class="card-header">
+            <span class="card-title">
+              <svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+              Suhu Server
+            </span>
+            <span id="thermal-badge" class="card-title" style="color: var(--accent-emerald); font-weight: 600;">Optimal</span>
+          </div>
+          <div class="card-value" id="val-temp-cpu" style="display: flex; align-items: baseline; gap: 6px;">
+            <span>-</span>
+            <span style="font-size: 13px; font-weight: 500; color: var(--text-dim); text-transform: uppercase;">SoC</span>
+          </div>
+          <div class="card-subtext" id="val-temp-sub">Memuat sensor...</div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="temp-bar" style="width: 40%; background: linear-gradient(90deg, var(--accent-emerald), var(--accent-blue));"></div>
+          </div>
+          <div class="core-temps-grid" id="core-temps-container">
+            <div class="core-temp-item">
+              <span class="core-temp-label">CPU 1</span>
+              <span class="core-temp-val" id="core-temp-1">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">CPU 2</span>
+              <span class="core-temp-val" id="core-temp-2">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">CPU 3</span>
+              <span class="core-temp-val" id="core-temp-3">-</span>
+            </div>
+            <div class="core-temp-item">
+              <span class="core-temp-label">CPU 4</span>
+              <span class="core-temp-val" id="core-temp-4">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pusat Akses Online & Kontrol Jarak Jauh -->
+      <div class="remote-ctrl-container">
+        <!-- Card 1: VPS Ubuntu SSH Remote -->
+        <div class="remote-card">
+          <div class="remote-card-header">
+            <div class="remote-card-title">
+              <div class="remote-icon-badge vps">
+                <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="7 8 10 11 7 14"/><line x1="12" y1="14" x2="16" y2="14"/></svg>
+              </div>
+              <div>
+                <h3>VPS Ubuntu SSH Console</h3>
+                <p class="remote-card-subtitle">User: <strong>ubuntu / root</strong> • Port: <strong>2222</strong></p>
+              </div>
+            </div>
+            <div id="vps-live-badge" class="status-badge">
+              <span class="status-dot"></span> Aktif
+            </div>
+          </div>
+
+          <div class="remote-ssh-box">
+            <div class="remote-ssh-label">
+              <span>Perintah Akses SSH Publik (Jarak Jauh)</span>
+              <span class="badge-pinggy" id="vps-tunnel-badge">Public Tunnel</span>
+            </div>
+            <div class="remote-ssh-cmd-row">
+              <code id="vps-ssh-command">Menghubungkan tunnel remote SSH...</code>
+              <button class="btn btn-primary btn-sm" id="btn-copy-ssh" onclick="copySshCommand()" title="Salin Perintah SSH Publik">
+                <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                <span>Salin Publik</span>
+              </button>
+            </div>
+            
+            <div class="remote-ssh-label" style="margin-top: 6px;">
+              <span>Akses SSH Jaringan Lokal (Wi-Fi):</span>
+            </div>
+            <div class="remote-ssh-cmd-row" style="background: rgba(0,0,0,0.18);">
+              <code id="vps-local-ssh-code">ssh root@127.0.0.1 -p 2222</code>
+              <button class="btn btn-sm" id="btn-copy-local-ssh" onclick="copyLocalSshCommand()" title="Salin Perintah SSH Lokal">
+                <span>Salin Lokal</span>
+              </button>
+            </div>
+
+            <div class="remote-ssh-meta" style="margin-top: 2px;">
+              <span>Password SSH: <code style="color:#60A5FA;">ubuntu123</code></span>
+              <span style="color:var(--text-dim);">•</span>
+              <span>Port: <code>2222</code></span>
+            </div>
+          </div>
+
+          <div class="remote-actions-bar">
+            <button class="btn btn-sm" id="btn-vps-start" onclick="doVpsAction('start')" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3); display: none;">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span>Mulai VPS</span>
+            </button>
+            <button class="btn btn-sm" id="btn-vps-stop" onclick="confirmVpsStop()" style="background: rgba(239, 68, 68, 0.12); color: #F87171; border-color: rgba(239, 68, 68, 0.3);">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
+              <span>Hentikan VPS</span>
+            </button>
+            <button class="btn btn-sm" id="btn-vps-restart" onclick="doVpsAction('restart')">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>Restart VPS</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 2: Manajemen Layanan & Operasional Server -->
+        <div class="remote-card">
+          <div class="remote-card-header">
+            <div class="remote-card-title">
+              <div class="remote-icon-badge device">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </div>
+              <div>
+                <h3>Kontrol Cepat &amp; Operasional</h3>
+                <p class="remote-card-subtitle">Lenz Mini Server • Manajemen Mandiri</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="remote-ssh-box">
+            <div class="remote-ssh-label">
+              <span>Status Operasional Sistem</span>
+              <span class="badge-pinggy" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">Online 24/7</span>
+            </div>
+            <div class="remote-ssh-meta">
+              <span>CPU Wake-Lock: <code style="color:#34D399;">Aktif</code></span>
+              <span style="color:var(--text-dim);">•</span>
+              <span>Port Web: <code>8080</code></span>
+              <span style="color:var(--text-dim);">•</span>
+              <span>SSH: <code>2222</code></span>
+            </div>
+          </div>
+
+          <div class="remote-controls-grid">
+            <button class="remote-ctrl-btn" onclick="doRestartPanel()" title="Mulai ulang service web dashboard">
+              <div class="remote-ctrl-icon" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;">
+                <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Restart Panel</span>
+                <span class="remote-ctrl-desc">Muat ulang server</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="updateStats(); showToast('Data monitoring berhasil diperbarui', 'info')" title="Perbarui metrik server">
+              <div class="remote-ctrl-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
+                <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Segarkan Data</span>
+                <span class="remote-ctrl-desc">Sinkronkan status</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="switchTab('tab-terminal')" title="Buka terminal command line">
+              <div class="remote-ctrl-icon" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA;">
+                <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Konsol Terminal</span>
+                <span class="remote-ctrl-desc">Buka perintah bash</span>
+              </div>
+            </button>
+
+            <button class="remote-ctrl-btn" onclick="openAccountSettings()" title="Buka pengaturan akun admin">
+              <div class="remote-ctrl-icon" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">
+                <svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </div>
+              <div class="remote-ctrl-text">
+                <span class="remote-ctrl-name">Akun Admin</span>
+                <span class="remote-ctrl-desc">Ubah password</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 3: Domain Publik Cloudflare Website -->
+        <div class="remote-card" id="card-cloudflare" style="grid-column: 1 / -1;">
+          <div class="remote-card-header">
+            <div class="remote-card-title">
+              <div class="remote-icon-badge cloudflare">
+                <svg viewBox="0 0 24 24"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+              </div>
+              <div>
+                <h3>Domain &amp; Akses Publik Website</h3>
+                <p class="remote-card-subtitle">Cloudflare Tunnel / Pinggy • Akses Bebas Firewall &amp; Tanpa Port Forwarding</p>
+              </div>
+            </div>
+            <div id="cloudflare-live-badge" class="status-badge">
+              <span class="status-dot"></span> Terhubung
+            </div>
+          </div>
+
+          <div class="remote-ssh-box">
+            <div class="remote-ssh-label">
+              <span>Link Publik Global (HTTPS)</span>
+              <span class="badge-pinggy" style="background: rgba(249, 115, 22, 0.12); color: #FB923C; border-color: rgba(249, 115, 22, 0.25);">Global Access</span>
+            </div>
+            <div class="remote-ssh-cmd-row">
+              <code id="cloudflare-url-text">Menghubungkan domain publik...</code>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-primary btn-sm" id="btn-copy-cf" onclick="copyCfUrl()" title="Salin Link Publik">
+                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  <span>Salin Link</span>
+                </button>
+                <a class="btn btn-sm" id="btn-open-cf" href="#" target="_blank" rel="noopener" style="background: rgba(249, 115, 22, 0.15); color: #FB923C; border-color: rgba(249, 115, 22, 0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Kunjungi Website Publik">
+                  <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  <span>Kunjungi</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="remote-ssh-label" style="margin-top: 6px;">
+              <span>Alamat Web Lokal (Wi-Fi LAN):</span>
+            </div>
+            <div class="remote-ssh-cmd-row" style="background: rgba(0,0,0,0.18);">
+              <code id="local-web-url-text">http://127.0.0.1:8080</code>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-sm" onclick="copyLocalWebUrl()" title="Salin URL Lokal">
+                  <span>Salin Lokal</span>
+                </button>
+                <a class="btn btn-sm" id="btn-open-local" href="#" target="_blank" rel="noopener" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px;" title="Buka Tab Baru">
+                  <span>Buka ↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="remote-actions-bar">
+            <button class="btn btn-sm" id="btn-cf-refresh" onclick="updateStats(); showToast('Status domain publik disinkronkan', 'info')" title="Periksa status link">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+              <span>Periksa Domain</span>
+            </button>
+            <button class="btn btn-sm" id="btn-cf-reconnect" onclick="doReconnectTunnel()" style="background: rgba(59, 130, 246, 0.12); color: #60A5FA; border-color: rgba(59, 130, 246, 0.3);" title="Hubungkan ulang Tunnel">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              <span>Hubungkan Ulang</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TAB FILE MANAGER -->
+    <section id="tab-files" class="tab-content">
+      <div class="fm-container">
+        <!-- Toolbar -->
+        <div class="fm-toolbar">
+          <div class="fm-path-bar" id="fm-breadcrumbs">
+            <span>Path: /</span>
+          </div>
+          <div class="fm-actions">
+            <input type="file" id="fm-file-input" style="display: none" multiple onchange="handleFileUpload(event)">
+            <input type="file" id="fm-folder-input" style="display: none" webkitdirectory directory multiple onchange="handleFileUpload(event)">
+            <input type="file" id="fm-zip-input" style="display: none" accept=".zip" onchange="handleZipUpload(event)">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('fm-file-input').click()" title="Pilih file">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Upload File
+            </button>
+            <button class="btn btn-sm" onclick="document.getElementById('fm-folder-input').click()" title="Pilih folder">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+              Upload Folder
+            </button>
+            <button class="btn btn-sm" onclick="openMkdirModal()" title="Buat Folder Baru">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Folder Baru
+            </button>
+            <button class="btn btn-sm" onclick="openCreateFileModal()" title="Buat File Baru">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+              File Baru
+            </button>
+            <button class="btn btn-sm" onclick="loadFiles()" title="Segarkan File">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Locations -->
+        <div class="quick-locations">
+          <span style="font-size: 11px; color: var(--text-dim);">Pintasan:</span>
+          <button class="quick-loc-btn" onclick="navigateTo(defaultServerDir)">📁 Server Panel</button>
+          <button class="quick-loc-btn" onclick="navigateTo(defaultHomeDir)">🏠 Termux Home (~)</button>
+          <button class="quick-loc-btn" onclick="navigateTo('/sdcard')">📱 Memori Internal (/sdcard)</button>
+          <button class="quick-loc-btn" onclick="navigateTo('/sdcard/Download')">📥 Download</button>
+        </div>
+
+        <!-- Table -->
+        <div class="fm-table-wrap">
+          <table class="fm-table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Ukuran</th>
+                <th>Waktu Diubah</th>
+                <th style="text-align: right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="fm-tbody">
+              <tr>
+                <td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">Memuat file...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TAB TERMINAL -->
+    <section id="tab-terminal" class="tab-content">
+      <div class="terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-title">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:#10B981;fill:none;stroke-width:2;"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            <span>Konsol Terminal Web</span>
+            <span id="term-cwd-badge" class="spec-badge">~</span>
+          </div>
+          <div class="fm-actions">
+            <button class="btn btn-sm btn-danger" onclick="killTerminalJob()" title="Kirim sinyal SIGINT (Ctrl + C)">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              Ctrl + C
+            </button>
+            <button class="btn btn-sm" onclick="clearTerminalOutput()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Bersihkan
+            </button>
+          </div>
+        </div>
+        <div class="terminal-body" id="term-output">Selamat datang di Terminal Web Lenz Mini Server.
+Ketik perintah Linux/Termux di bawah dan tekan Enter.
+</div>
+        <div class="terminal-input-bar">
+          <span class="terminal-prompt-label">$</span>
+          <input type="text" class="terminal-input" id="term-input" placeholder="Ketik perintah (misal: ls -la, pkg status, free -m, top)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleTerminalKey(event)">
+          <button class="btn btn-primary btn-sm" onclick="submitTerminalCommand()">Kirim</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TAB LOGS & PM2 -->
+    <section id="tab-services" class="tab-content">
+      <!-- 1. Log Server -->
+      <div class="log-card">
+        <div class="log-card-header">
+          <div class="log-card-title">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;color:#3B82F6;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <span>Log Server Panel (Live Output)</span>
+          </div>
+          <div class="fm-actions">
+            <button class="btn btn-sm" onclick="fetchWebsiteLogs()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+              Refresh
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="clearServerLog()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Bersihkan
+            </button>
+          </div>
+        </div>
+        <div class="log-terminal-box" id="website-log-view">Memuat log server...</div>
+      </div>
+
+      <!-- 2. Manajer Proses PM2 -->
+      <div class="log-card">
+        <div class="log-card-header">
+          <div class="log-card-title">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;color:#F59E0B;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span>Manajer Proses PM2 (Node.js)</span>
+          </div>
+          <div class="fm-actions">
+            <button class="btn btn-sm" onclick="loadPm2Status()">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+              Cek PM2
+            </button>
+          </div>
+        </div>
+        <div id="pm2-processes-container" style="padding: 14px 16px;">
+          <div style="font-size:13px;color:var(--text-muted);">Memeriksa status PM2...</div>
+        </div>
+        <div id="pm2-log-section" style="display:none;border-top:1px solid var(--border-color);">
+          <div style="padding:10px 16px;background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:space-between;">
+            <span id="pm2-log-title" style="font-size:12px;font-family:var(--font-mono);color:#FBBF24;">Log PM2: -</span>
+            <button class="btn btn-sm" onclick="closePm2LogView()">Tutup Log</button>
+          </div>
+          <div class="log-terminal-box" id="pm2-log-view" style="height:260px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Watermark -->
+    <footer style="text-align:center;padding:32px 16px 20px;color:var(--text-dim);font-size:12px;font-family:var(--font-mono);border-top:1px solid var(--border-subtle);margin-top:40px;">
+      Lenz Mini Server &bull; Created with &hearts; by <strong>Lenz</strong>
+    </footer>
+  </main>
+
+  <!-- MODAL: LOGIN -->
+  <div class="modal-overlay" id="modal-login">
+    <div class="modal-box">
+      <div class="brand" style="margin-bottom: 8px;">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+        </div>
+        <h2 style="font-size: 18px;">Login Server</h2>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">Masukkan username dan password server untuk mengakses dashboard.</p>
+      
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input type="text" class="form-input" id="login-user" value="admin" autocomplete="username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input type="password" class="form-input" id="login-pass" autocomplete="current-password" placeholder="Password server">
+      </div>
+      <div class="modal-footer" style="margin-top: 14px;">
+        <button class="btn btn-primary" style="width: 100%;" onclick="submitLogin()">Masuk ke Server</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PENGATURAN AKUN ADMIN -->
+  <div class="modal-overlay" id="modal-account-settings">
+    <div class="modal-box" style="max-width: 440px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="modal-title" style="margin:0; font-size:16px; display:flex; align-items:center; gap:8px;">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--accent-blue);fill:none;stroke-width:2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          Pengaturan Akun Admin
+        </h3>
+        <button class="btn btn-sm" onclick="closeModal('modal-account-settings')">✕</button>
+      </div>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
+        Ubah username dan password untuk login ke Web Dashboard. Kredensial baru akan disimpan secara permanen.
+      </p>
+      
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label class="form-label" for="settings-username">Username Admin Baru</label>
+        <input type="text" class="form-input" id="settings-username" placeholder="admin" autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label class="form-label" for="settings-current-pass">Password Saat Ini <span style="color:var(--accent-rose)">*</span></label>
+        <input type="password" class="form-input" id="settings-current-pass" placeholder="Masukkan password saat ini" autocomplete="current-password">
+      </div>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label class="form-label" for="settings-new-pass">Password Baru (Opsional)</label>
+        <input type="password" class="form-input" id="settings-new-pass" placeholder="Minimal 5 karakter" autocomplete="new-password">
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label class="form-label" for="settings-confirm-pass">Konfirmasi Password Baru</label>
+        <input type="password" class="form-input" id="settings-confirm-pass" placeholder="Ulangi password baru" autocomplete="new-password">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('modal-account-settings')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="saveAccountSettings()">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KONFIRMASI UNIVERSAL -->
+  <div class="modal-overlay" id="modal-app-confirm">
+    <div class="concept-confirm-box">
+      <div class="concept-icon-wrap" id="concept-confirm-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <circle cx="12" cy="12" r="10" stroke-width="1.8"></circle>
+          <line x1="12" y1="7" x2="12" y2="13" stroke-width="2.2" stroke-linecap="round"></line>
+          <circle cx="12" cy="17" r="1.2" fill="currentColor"></circle>
+        </svg>
+      </div>
+      <h3 class="concept-title" id="concept-confirm-title">Konfirmasi Aksi</h3>
+      <p class="concept-desc" id="concept-confirm-msg">Deskripsi aksi...</p>
+      <p class="concept-warning" id="concept-confirm-warn">Tindakan ini tidak dapat dibatalkan.</p>
+      <div class="concept-btn-row">
+        <button class="concept-btn-action" id="concept-confirm-action-btn" onclick="executeConceptConfirm()">
+          Ya, Lanjutkan
+        </button>
+        <button class="concept-btn-cancel" onclick="closeModal('modal-app-confirm')">
+          Batal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FOLDER BARU -->
+  <div class="modal-overlay" id="modal-mkdir">
+    <div class="modal-box">
+      <h3 class="modal-title">Buat Folder Baru</h3>
+      <div class="form-group">
+        <label class="form-label">Nama Folder</label>
+        <input type="text" class="form-input" id="mkdir-name" placeholder="nama-folder">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('modal-mkdir')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="submitMkdir()">Buat Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FILE BARU -->
+  <div class="modal-overlay" id="modal-create-file">
+    <div class="modal-box">
+      <h3 class="modal-title">Buat File Baru</h3>
+      <div class="form-group">
+        <label class="form-label">Nama File</label>
+        <input type="text" class="form-input" id="create-file-name" placeholder="script.sh / index.js">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('modal-create-file')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="submitCreateFile()">Buat File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: RENAME -->
+  <div class="modal-overlay" id="modal-rename">
+    <div class="modal-box">
+      <h3 class="modal-title">Ubah Nama</h3>
+      <div class="form-group">
+        <label class="form-label">Nama Baru</label>
+        <input type="text" class="form-input" id="rename-new-name">
+        <input type="hidden" id="rename-old-path">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('modal-rename')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="submitRename()">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TEXT EDITOR -->
+  <div class="modal-overlay" id="modal-editor">
+    <div class="modal-box" style="max-width: 800px; width: 95vw;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 class="modal-title" id="editor-title" style="margin:0; font-family:var(--font-mono); font-size:14px;">Edit File</h3>
+        <button class="btn btn-sm" onclick="closeModal('modal-editor')">✕</button>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <textarea id="editor-content" class="form-input" style="height: 380px; font-family: var(--font-mono); font-size: 12px; line-height: 1.45; resize: vertical;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm" onclick="closeModal('modal-editor')">Batal</button>
+        <button class="btn btn-primary btn-sm" onclick="saveFileContent()">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-wrap"></div>
+
+  <script>
+    let currentDir = '';
+    let defaultHomeDir = '';
+    let defaultServerDir = '';
+    let currentEditingPath = '';
+    const cmdHistory = [];
+    let cmdHistoryIdx = -1;
+    let currentTerminalJobId = null;
+
+    async function api(endpoint, options = {}) {
+      const res = await fetch(endpoint, options);
+      if (res.status === 401) {
+        showLoginModal();
+        throw new Error('Unauthorized');
+      }
+      return res.json();
+    }
+
+    function showToast(message, type = 'info') {
+      const wrap = document.getElementById('toast-wrap');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      if (type === 'error') toast.style.borderLeftColor = '#EF4444';
+      if (type === 'success') toast.style.borderLeftColor = '#10B981';
+      toast.textContent = message;
+      wrap.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise((resolve, reject) => {
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          const success = document.execCommand('copy');
+          document.body.removeChild(textarea);
+          if (success) resolve();
+          else reject(new Error('Gagal menyalin'));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+
+    function copyText(txt) {
+      copyToClipboard(txt).then(() => {
+        showToast('Teks disalin ke clipboard!', 'success');
+      }).catch(() => {
+        showToast('Gagal menyalin teks', 'error');
+      });
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function formatUptime(sec) {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = sec % 60;
+      if (h > 0) return `${h}j ${m}m ${s}d`;
+      if (m > 0) return `${m}m ${s}d`;
+      return `${s}d`;
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>'"]/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[c]));
+    }
+
+    function switchTab(tabId) {
+      if (tabId === 'terminal') tabId = 'tab-terminal';
+      if (tabId === 'files') tabId = 'tab-files';
+      if (tabId === 'monitoring') tabId = 'tab-monitoring';
+      if (tabId === 'services') tabId = 'tab-services';
+
+      document.querySelectorAll('.tab-btn').forEach((btn) => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
+      
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) targetContent.classList.add('active');
+
+      const btn = Array.from(document.querySelectorAll('.tab-btn')).find((b) => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+
+      if (tabId === 'tab-files' && !currentDir) {
+        loadFiles();
+      }
+      if (tabId === 'tab-services') {
+        fetchWebsiteLogs();
+        loadPm2Status();
+      }
+    }
+
+    // Modal Helpers
+    let pendingConceptAction = null;
+    function showConceptConfirm(opts) {
+      document.getElementById('concept-confirm-title').textContent = opts.title || 'Konfirmasi Tindakan';
+      document.getElementById('concept-confirm-msg').innerHTML = opts.messageHtml || opts.message || '';
+      
+      const warnEl = document.getElementById('concept-confirm-warn');
+      if (opts.warningText) {
+        warnEl.textContent = opts.warningText;
+        warnEl.style.display = 'block';
+      } else {
+        warnEl.style.display = 'none';
+      }
+
+      const actBtn = document.getElementById('concept-confirm-action-btn');
+      actBtn.textContent = opts.actionText || 'Ya, Lanjutkan';
+      actBtn.style.background = opts.actionColor || 'var(--accent-rose)';
+
+      pendingConceptAction = opts.onConfirm || null;
+      document.getElementById('modal-app-confirm').classList.add('open');
+    }
+
+    function executeConceptConfirm() {
+      closeModal('modal-app-confirm');
+      if (typeof pendingConceptAction === 'function') {
+        pendingConceptAction();
+      }
+      pendingConceptAction = null;
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.remove('open');
+    }
+
+    function showLoginModal() {
+      const modal = document.getElementById('modal-login');
+      if (modal) modal.classList.add('open');
+    }
+
+    async function submitLogin() {
+      const user = document.getElementById('login-user').value.trim();
+      const pass = document.getElementById('login-pass').value.trim();
+      if (!user || !pass) {
+        showToast('Harap isi username dan password', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          closeModal('modal-login');
+          showToast('Login berhasil', 'success');
+          updateStats();
+        } else {
+          showToast(data.message || 'Login gagal', 'error');
+        }
+      } catch (e) {
+        showToast('Error koneksi login', 'error');
+      }
+    }
+
+    async function doLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        showLoginModal();
+        showToast('Anda telah logout', 'info');
+      } catch (e) {}
+    }
+
+    // Monitoring
+    async function updateStats() {
+      try {
+        const data = await api('/api/system/stats');
+        if (!data) return;
+
+        // Specs
+        document.getElementById('spec-cpu').textContent = data.cpu ? data.cpu.model : '-';
+        document.getElementById('spec-ram').textContent = data.memory ? formatBytes(data.memory.totalBytes) : '-';
+        document.getElementById('spec-os').textContent = `${data.platform || '-'} (${data.hostname || '-'})`;
+        document.getElementById('spec-arch').textContent = data.arch || '-';
+        document.getElementById('spec-runtime').textContent = data.nodeVersion || '-';
+
+        // CPU
+        const cpuPct = data.cpu ? (data.cpu.usagePercent || 0) : 0;
+        document.getElementById('cpu-percent').textContent = `${cpuPct}%`;
+        document.getElementById('cpu-usage').textContent = `${cpuPct}%`;
+        document.getElementById('cpu-bar').style.width = `${cpuPct}%`;
+        document.getElementById('cpu-sub').textContent = `${data.cpu ? data.cpu.cores : 4} Cores • Load: ${(data.cpu && data.cpu.loadavg) ? data.cpu.loadavg[0].toFixed(2) : '-'}`;
+
+        // RAM
+        if (data.memory) {
+          const usedMB = Math.round(data.memory.usedBytes / 1048576);
+          const totalMB = Math.round(data.memory.totalBytes / 1048576);
+          const ramPct = data.memory.usagePercent || 0;
+          document.getElementById('ram-used').textContent = `${usedMB} MB`;
+          document.getElementById('ram-total').textContent = `Total: ${totalMB} MB`;
+          document.getElementById('ram-percent').textContent = `${ramPct}%`;
+          document.getElementById('ram-bar').style.width = `${ramPct}%`;
+        }
+
+        // Disk
+        if (data.disks && data.disks.length > 0) {
+          const mainDisk = data.disks[0];
+          document.getElementById('disk-free').textContent = `${formatBytes(mainDisk.freeBytes)} Bebas`;
+          document.getElementById('disk-total').textContent = `Total: ${formatBytes(mainDisk.totalBytes)} (${mainDisk.mount})`;
+          document.getElementById('disk-percent').textContent = `${mainDisk.usagePercent}%`;
+          document.getElementById('disk-bar').style.width = `${mainDisk.usagePercent}%`;
+          document.getElementById('spec-disk').textContent = `${formatBytes(mainDisk.freeBytes)} Bebas / ${formatBytes(mainDisk.totalBytes)}`;
+        }
+
+        // Runtime Uptime
+        document.getElementById('val-uptime').textContent = formatUptime(data.uptimeSeconds || 0);
+        document.getElementById('val-panel-uptime').textContent = `Panel: ${formatUptime(data.panelUptimeSeconds || 0)}`;
+
+        // Battery
+        if (data.battery) {
+          const bPct = data.battery.percentage !== null ? `${data.battery.percentage}%` : '-';
+          document.getElementById('val-battery').textContent = bPct;
+          document.getElementById('val-battery-sub').textContent = `Status: ${data.battery.status || 'Normal'}${data.battery.temperature ? ' • ' + data.battery.temperature + '°C' : ''}`;
+        }
+
+        // Thermal
+        if (data.thermal) {
+          const cpuT = data.thermal.cpu || '-';
+          document.getElementById('val-temp-cpu').firstElementChild.textContent = cpuT;
+          document.getElementById('spec-thermal').textContent = `${cpuT} (${data.thermal.status || 'Optimal'})`;
+          document.getElementById('val-temp-sub').textContent = `Baterai: ${data.thermal.battery || '-'} • Status: ${data.thermal.status || 'Optimal'}`;
+          
+          const rawDeg = data.thermal.cpuTemp || 40;
+          const barPct = Math.min(100, Math.max(10, Math.round((rawDeg / 85) * 100)));
+          document.getElementById('temp-bar').style.width = `${barPct}%`;
+          
+          const badge = document.getElementById('thermal-badge');
+          badge.textContent = data.thermal.status || 'Optimal';
+          badge.style.color = rawDeg >= 75 ? '#EF4444' : (rawDeg >= 60 ? '#F59E0B' : '#10B981');
+
+          if (Array.isArray(data.thermal.cores)) {
+            data.thermal.cores.forEach((deg, idx) => {
+              const el = document.getElementById(`core-temp-${idx + 1}`);
+              if (el) el.textContent = deg !== null ? `${deg}°C` : '-';
+            });
+          }
+        }
+
+        // VPS OpenSSH Status
+        const vpsBadge = document.getElementById('vps-live-badge');
+        const vpsStartBtn = document.getElementById('btn-vps-start');
+        const vpsStopBtn = document.getElementById('btn-vps-stop');
+        const isVpsRunning = data.vps && data.vps.running;
+        
+        if (isVpsRunning) {
+          vpsBadge.innerHTML = '<span class="status-dot"></span> Aktif';
+          vpsBadge.style.color = 'var(--accent-emerald)';
+          vpsBadge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+          if (vpsStartBtn) vpsStartBtn.style.display = 'none';
+          if (vpsStopBtn) vpsStopBtn.style.display = 'inline-flex';
+        } else {
+          vpsBadge.innerHTML = '<span class="status-dot" style="background:#EF4444;box-shadow:none;"></span> Mati';
+          vpsBadge.style.color = '#F87171';
+          vpsBadge.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+          if (vpsStartBtn) vpsStartBtn.style.display = 'inline-flex';
+          if (vpsStopBtn) vpsStopBtn.style.display = 'none';
+        }
+
+        const vpsCmd = (data.vps && data.vps.publicCommand) ? data.vps.publicCommand : 'Menghubungkan tunnel remote SSH...';
+        document.getElementById('vps-ssh-command').textContent = vpsCmd;
+        
+        const vpsBadgeEl = document.getElementById('vps-tunnel-badge');
+        if (vpsBadgeEl) {
+          if (data.vps && data.vps.publicCommand) {
+            vpsBadgeEl.textContent = 'Public Tunnel (Aktif)';
+            vpsBadgeEl.style.color = '#34D399';
+            vpsBadgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+          } else {
+            vpsBadgeEl.textContent = 'Menghubungkan...';
+            vpsBadgeEl.style.color = '#93C5FD';
+            vpsBadgeEl.style.background = 'rgba(59, 130, 246, 0.15)';
+          }
+        }
+
+        const localIp = (data.network && data.network.localIPs && data.network.localIPs[0]) ? data.network.localIPs[0].address : '127.0.0.1';
+        const localWebUrl = `http://${localIp}:8080`;
+        
+        document.getElementById('vps-local-ssh-code').textContent = `ssh root@${localIp} -p 2222`;
+        document.getElementById('ribbon-local-url').textContent = localWebUrl;
+        document.getElementById('local-web-url-text').textContent = localWebUrl;
+        
+        const openLocalBtn = document.getElementById('btn-open-local');
+        if (openLocalBtn) openLocalBtn.href = localWebUrl;
+
+        // Cloudflare Public Domain & Ribbon
+        const pubUrl = data.network ? data.network.publicUrl : null;
+        const cfText = document.getElementById('cloudflare-url-text');
+        const cfOpen = document.getElementById('btn-open-cf');
+        const cfBadge = document.getElementById('cloudflare-live-badge');
+        const ribbonPub = document.getElementById('ribbon-public-url');
+        const ribbonVisit = document.getElementById('ribbon-btn-visit');
+
+        if (pubUrl) {
+          cfText.textContent = pubUrl;
+          cfOpen.href = pubUrl;
+          cfOpen.style.display = 'inline-flex';
+          cfBadge.innerHTML = '<span class="status-dot"></span> Terhubung';
+          cfBadge.style.color = 'var(--accent-emerald)';
+
+          if (ribbonPub) ribbonPub.textContent = pubUrl;
+          if (ribbonVisit) {
+            ribbonVisit.href = pubUrl;
+            ribbonVisit.style.display = 'inline-flex';
+          }
+        } else {
+          cfText.textContent = 'Menghubungkan domain publik...';
+          cfOpen.style.display = 'none';
+          cfBadge.innerHTML = '<span class="status-dot" style="background:#F59E0B;box-shadow:none;"></span> Menghubungkan';
+          cfBadge.style.color = '#F59E0B';
+
+          if (ribbonPub) ribbonPub.textContent = 'Menghubungkan tunnel...';
+          if (ribbonVisit) ribbonVisit.style.display = 'none';
+        }
+      } catch (e) {}
+    }
+
+    function copySshCommand() {
+      const cmd = document.getElementById('vps-ssh-command').textContent;
+      if (cmd.startsWith('ssh')) copyText(cmd);
+      else showToast('Tunnel SSH publik belum aktif', 'info');
+    }
+
+    function copyLocalSshCommand() {
+      const cmd = document.getElementById('vps-local-ssh-code').textContent;
+      copyText(cmd);
+    }
+
+    function copyCfUrl() {
+      const url = document.getElementById('cloudflare-url-text').textContent;
+      if (url.startsWith('http')) copyText(url);
+      else showToast('Domain publik belum aktif', 'info');
+    }
+
+    function copyLocalWebUrl() {
+      const url = document.getElementById('local-web-url-text').textContent;
+      copyText(url);
+    }
+
+    function copyRibbonPublicUrl() {
+      const url = document.getElementById('ribbon-public-url').textContent;
+      if (url.startsWith('http')) copyText(url);
+      else showToast('Domain publik belum aktif', 'info');
+    }
+
+    function copyRibbonLocalUrl() {
+      const url = document.getElementById('ribbon-local-url').textContent;
+      copyText(url);
+    }
+
+    async function openAccountSettings() {
+      try {
+        const res = await api('/api/settings/account');
+        if (res && res.username) {
+          document.getElementById('settings-username').value = res.username;
+        }
+      } catch (e) {}
+      document.getElementById('settings-current-pass').value = '';
+      document.getElementById('settings-new-pass').value = '';
+      document.getElementById('settings-confirm-pass').value = '';
+      const modal = document.getElementById('modal-account-settings');
+      if (modal) modal.classList.add('open');
+    }
+
+    async function saveAccountSettings() {
+      const currentPassword = document.getElementById('settings-current-pass').value.trim();
+      const newUsername = document.getElementById('settings-username').value.trim();
+      const newPassword = document.getElementById('settings-new-pass').value.trim();
+      const confirmPassword = document.getElementById('settings-confirm-pass').value.trim();
+
+      if (!currentPassword) {
+        showToast('Password saat ini harus diisi', 'error');
+        return;
+      }
+      if (newPassword && newPassword.length < 5) {
+        showToast('Password baru minimal 5 karakter', 'error');
+        return;
+      }
+      if (newPassword && newPassword !== confirmPassword) {
+        showToast('Konfirmasi password baru tidak cocok', 'error');
+        return;
+      }
+
+      showToast('Menyimpan perubahan akun...', 'info');
+      try {
+        const res = await api('/api/settings/account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword, newUsername, newPassword })
+        });
+        if (res.ok) {
+          showToast(res.message || 'Kredensial akun berhasil diperbarui!', 'success');
+          closeModal('modal-account-settings');
+        } else {
+          showToast(res.message || 'Gagal mengubah pengaturan akun', 'error');
+        }
+      } catch (e) {
+        showToast('Error memperbarui akun: ' + e.message, 'error');
+      }
+    }
+
+    async function doVpsAction(action) {
+      showToast(`Sedang memproses ${action} VPS...`, 'info');
+      try {
+        const res = await api(`/api/vps/${action}`, { method: 'POST' });
+        showToast(res.message || 'Berhasil', res.ok ? 'success' : 'error');
+        updateStats();
+      } catch (e) {}
+    }
+
+    function confirmVpsStop() {
+      showConceptConfirm({
+        title: 'Hentikan OpenSSH VPS',
+        message: 'Apakah Anda yakin ingin mematikan service OpenSSH VPS? Sesi terminal SSH luar akan terputus.',
+        actionText: 'Hentikan VPS',
+        onConfirm: () => doVpsAction('stop')
+      });
+    }
+
+    function doRestartPanel() {
+      showConceptConfirm({
+        title: 'Restart Server Panel',
+        message: 'Mulai ulang server panel sekarang? Dashboard akan otomatis memuat ulang dalam beberapa detik.',
+        actionText: 'Restart Sekarang',
+        actionColor: '#3B82F6',
+        onConfirm: async () => {
+          showToast('Server panel sedang dimulai ulang...', 'info');
+          try {
+            await fetch('/api/restart-panel', { method: 'POST' });
+            setTimeout(() => {
+              location.reload();
+            }, 3000);
+          } catch (e) {}
+        }
+      });
+    }
+
+    async function doReconnectTunnel() {
+      showToast('Menghubungkan ulang tunnel publik...', 'info');
+      try {
+        const res = await api('/api/tunnel/reconnect', { method: 'POST' });
+        showToast(res.message || 'Tunnel dihubungkan ulang', 'info');
+        setTimeout(updateStats, 2000);
+      } catch (e) {}
+    }
+
+    // File Manager
+    async function loadFiles(targetPath = '') {
+      const p = targetPath || currentDir;
+      try {
+        const res = await api(`/api/files/list?path=${encodeURIComponent(p)}`);
+        if (!res.ok) {
+          showToast(res.message || 'Gagal memuat file', 'error');
+          return;
+        }
+
+        const d = res.data;
+        currentDir = d.currentPath;
+        defaultHomeDir = d.homeDir;
+        defaultServerDir = d.serverDir;
+
+        // Render Breadcrumbs
+        renderBreadcrumbs(d.currentPath);
+
+        // Render Table
+        const tbody = document.getElementById('fm-tbody');
+        if (!d.items || d.items.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">Folder ini kosong</td></tr>`;
+          return;
+        }
+
+        let html = '';
+        if (d.parentPath && d.parentPath !== d.currentPath) {
+          html += `
+            <tr>
+              <td colspan="4" class="file-name-cell" onclick="loadFiles('${escapeHtml(d.parentPath)}')">
+                <svg class="file-icon dir" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                <span style="font-weight:600; color:#93C5FD;">.. (Kembali ke folder atas)</span>
+              </td>
+            </tr>
+          `;
+        }
+
+        d.items.forEach((item) => {
+          const safeItemPath = escapeHtml(item.path);
+          const safeItemName = escapeHtml(item.name);
+          const isZip = item.name.endsWith('.zip');
+
+          html += `
+            <tr>
+              <td>
+                <div class="file-name-cell" onclick="${item.isDir ? `loadFiles('${safeItemPath}')` : `openFileEditor('${safeItemPath}')`}">
+                  ${item.isDir
+                    ? `<svg class="file-icon dir" viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>`
+                    : `<svg class="file-icon file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`
+                  }
+                  <span style="${item.isDir ? 'font-weight:600;color:#F8FAFC;' : ''}">${safeItemName}</span>
+                </div>
+              </td>
+              <td style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">${item.isDir ? '-' : formatBytes(item.sizeBytes)}</td>
+              <td style="font-size:12px;color:var(--text-dim);">${item.modifiedAt ? item.modifiedAt.replace('T', ' ').substring(0, 19) : '-'}</td>
+              <td style="text-align: right;">
+                <div class="fm-actions" style="justify-content: flex-end;">
+                  ${isZip ? `<button class="btn btn-sm" onclick="doUnzip('${safeItemPath}')" title="Ekstrak ZIP">Ekstrak</button>` : ''}
+                  <a class="btn btn-sm" href="/api/files/download?path=${encodeURIComponent(item.path)}" download title="Unduh">Unduh</a>
+                  <button class="btn btn-sm" onclick="openRenameModal('${safeItemPath}', '${safeItemName}')" title="Ubah Nama">Rename</button>
+                  <button class="btn btn-sm btn-danger" onclick="confirmDeleteFile('${safeItemPath}', '${safeItemName}')" title="Hapus">Hapus</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        });
+
+        tbody.innerHTML = html;
+      } catch (e) {
+        showToast('Gagal memuat daftar file: ' + e.message, 'error');
+      }
+    }
+
+    function renderBreadcrumbs(fullPath) {
+      const bar = document.getElementById('fm-breadcrumbs');
+      if (!fullPath) return;
+      const parts = fullPath.split(/[\/\\]/).filter(Boolean);
+      let built = '';
+      let html = '<span class="fm-path-segment" onclick="loadFiles(\'/\')">/</span>';
+      
+      parts.forEach((part, i) => {
+        built += '/' + part;
+        const target = built;
+        html += `<span style="color:var(--text-dim);margin:0 2px;">/</span><span class="fm-path-segment" onclick="loadFiles('${escapeHtml(target)}')">${escapeHtml(part)}</span>`;
+      });
+      bar.innerHTML = html;
+    }
+
+    function navigateTo(target) {
+      if (target) loadFiles(target);
+    }
+
+    async function handleFileUpload(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const relPath = file.webkitRelativePath || file.name;
+        formData.append('files', file, relPath);
+      }
+
+      showToast(`Mengunggah ${files.length} file ke server...`, 'info');
+      try {
+        const res = await fetch(`/api/files/upload?dir=${encodeURIComponent(currentDir)}`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(data.message || 'Upload berhasil', 'success');
+          loadFiles();
+        } else {
+          showToast(data.message || 'Upload gagal', 'error');
+        }
+      } catch (err) {
+        showToast('Gagal upload: ' + err.message, 'error');
+      } finally {
+        e.target.value = '';
+      }
+    }
+
+    async function handleZipUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+
+      showToast('Mengunggah & mengekstrak file ZIP...', 'info');
+      try {
+        const res = await fetch(`/api/files/upload?dir=${encodeURIComponent(currentDir)}`, {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.ok) {
+          const zipPath = currentDir + '/' + file.name;
+          await api(`/api/files/unzip?path=${encodeURIComponent(zipPath)}`, { method: 'POST' });
+          showToast('ZIP berhasil diunggah dan diekstrak!', 'success');
+          loadFiles();
+        }
+      } catch (err) {
+        showToast('Error ZIP upload: ' + err.message, 'error');
+      } finally {
+        e.target.value = '';
+      }
+    }
+
+    async function doUnzip(filePath) {
+      showToast('Mengekstrak berkas ZIP...', 'info');
+      try {
+        const res = await api(`/api/files/unzip?path=${encodeURIComponent(filePath)}`, { method: 'POST' });
+        showToast(res.message || 'Ekstrak selesai', res.ok ? 'success' : 'error');
+        loadFiles();
+      } catch (e) {}
+    }
+
+    function openMkdirModal() {
+      document.getElementById('mkdir-name').value = '';
+      document.getElementById('modal-mkdir').classList.add('open');
+    }
+
+    async function submitMkdir() {
+      const name = document.getElementById('mkdir-name').value.trim();
+      if (!name) return;
+      try {
+        const res = await api('/api/files/mkdir', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentPath: currentDir, name })
+        });
+        closeModal('modal-mkdir');
+        showToast(res.message || 'Folder dibuat', res.ok ? 'success' : 'error');
+        loadFiles();
+      } catch (e) {}
+    }
+
+    function openCreateFileModal() {
+      document.getElementById('create-file-name').value = '';
+      document.getElementById('modal-create-file').classList.add('open');
+    }
+
+    async function submitCreateFile() {
+      const name = document.getElementById('create-file-name').value.trim();
+      if (!name) return;
+      try {
+        const res = await api('/api/files/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ parentPath: currentDir, name })
+        });
+        closeModal('modal-create-file');
+        showToast(res.message || 'File dibuat', res.ok ? 'success' : 'error');
+        loadFiles();
+      } catch (e) {}
+    }
+
+    function openRenameModal(oldPath, oldName) {
+      document.getElementById('rename-old-path').value = oldPath;
+      document.getElementById('rename-new-name').value = oldName;
+      document.getElementById('modal-rename').classList.add('open');
+    }
+
+    async function submitRename() {
+      const oldPath = document.getElementById('rename-old-path').value;
+      const newName = document.getElementById('rename-new-name').value.trim();
+      if (!newName) return;
+      try {
+        const res = await api('/api/files/rename', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPath, newName })
+        });
+        closeModal('modal-rename');
+        showToast(res.message || 'Nama diubah', res.ok ? 'success' : 'error');
+        loadFiles();
+      } catch (e) {}
+    }
+
+    function confirmDeleteFile(filePath, fileName) {
+      showConceptConfirm({
+        title: 'Hapus Berkas',
+        messageHtml: `Apakah Anda yakin ingin menghapus <b>${escapeHtml(fileName)}</b>?`,
+        actionText: 'Hapus Berkas',
+        onConfirm: async () => {
+          try {
+            const res = await api('/api/files/delete', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ path: filePath })
+            });
+            showToast(res.message || 'Berhasil dihapus', 'info');
+            loadFiles();
+          } catch (e) {}
+        }
+      });
+    }
+
+    async function openFileEditor(filePath) {
+      try {
+        const res = await api('/api/files/content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath })
+        });
+        if (res.ok) {
+          currentEditingPath = filePath;
+          document.getElementById('editor-title').textContent = `Edit: ${filePath.split(/[\/\\]/).pop()}`;
+          document.getElementById('editor-content').value = res.content || '';
+          document.getElementById('modal-editor').classList.add('open');
+        } else {
+          showToast(res.message || 'Gagal membuka file', 'error');
+        }
+      } catch (e) {
+        showToast('Error membuka editor', 'error');
+      }
+    }
+
+    async function saveFileContent() {
+      if (!currentEditingPath) return;
+      const content = document.getElementById('editor-content').value;
+      try {
+        const res = await api('/api/files/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: currentEditingPath, content })
+        });
+        if (res.ok) {
+          showToast('File berhasil disimpan', 'success');
+          closeModal('modal-editor');
+        } else {
+          showToast(res.message || 'Gagal menyimpan', 'error');
+        }
+      } catch (e) {
+        showToast('Error menyimpan file', 'error');
+      }
+    }
+
+    // Web Terminal
+    function appendTerminal(text) {
+      const out = document.getElementById('term-output');
+      out.textContent += text;
+      out.scrollTop = out.scrollHeight;
+    }
+
+    function clearTerminalOutput() {
+      document.getElementById('term-output').textContent = '';
+    }
+
+    function handleTerminalKey(e) {
+      if (e.key === 'Enter') {
+        submitTerminalCommand();
+      } else if (e.key === 'ArrowUp') {
+        if (cmdHistory.length > 0 && cmdHistoryIdx < cmdHistory.length - 1) {
+          cmdHistoryIdx++;
+          e.target.value = cmdHistory[cmdHistory.length - 1 - cmdHistoryIdx];
+        }
+      } else if (e.key === 'ArrowDown') {
+        if (cmdHistoryIdx > 0) {
+          cmdHistoryIdx--;
+          e.target.value = cmdHistory[cmdHistory.length - 1 - cmdHistoryIdx];
+        } else if (cmdHistoryIdx === 0) {
+          cmdHistoryIdx = -1;
+          e.target.value = '';
+        }
+      }
+    }
+
+    async function submitTerminalCommand() {
+      const input = document.getElementById('term-input');
+      const cmd = input.value.trim();
+      if (!cmd) return;
+
+      cmdHistory.push(cmd);
+      cmdHistoryIdx = -1;
+      input.value = '';
+
+      appendTerminal(`\n$ ${cmd}\n`);
+
+      try {
+        const res = await fetch('/api/terminal/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: cmd, cwd: currentDir || '~' })
+        });
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const msg = JSON.parse(line);
+              if (msg.type === 'init') {
+                currentTerminalJobId = msg.jobId;
+              } else if (msg.type === 'out' || msg.type === 'err') {
+                appendTerminal(msg.data);
+              } else if (msg.type === 'end') {
+                currentTerminalJobId = null;
+                if (msg.cwd) {
+                  currentDir = msg.cwd;
+                  document.getElementById('term-cwd-badge').textContent = msg.cwd.split(/[\/\\]/).pop() || '~';
+                }
+              }
+            } catch (err) {
+              appendTerminal(line + '\n');
+            }
+          }
+        }
+      } catch (e) {
+        appendTerminal(`\n[Gagal menjalankan perintah: ${e.message}]\n`);
+      }
+    }
+
+    async function killTerminalJob() {
+      if (!currentTerminalJobId) {
+        showToast('Tidak ada proses aktif yang sedang berjalan', 'info');
+        return;
+      }
+      try {
+        await api('/api/terminal/kill', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: currentTerminalJobId })
+        });
+        appendTerminal('\n^C\n');
+        currentTerminalJobId = null;
+      } catch (e) {}
+    }
+
+    // Logs & PM2
+    async function fetchWebsiteLogs() {
+      try {
+        const res = await api('/api/logs/website');
+        document.getElementById('website-log-view').textContent = res.logs || '(log kosong)';
+      } catch (e) {}
+    }
+
+    async function clearServerLog() {
+      showConceptConfirm({
+        title: 'Bersihkan Log Server',
+        message: 'Kosongkan seluruh berkas catatan log server?',
+        actionText: 'Bersihkan Log',
+        onConfirm: async () => {
+          try {
+            await api('/api/logs/clear', { method: 'POST' });
+            showToast('Log server dibersihkan', 'info');
+            fetchWebsiteLogs();
+          } catch (e) {}
+        }
+      });
+    }
+
+    async function loadPm2Status() {
+      const container = document.getElementById('pm2-processes-container');
+      try {
+        const data = await api('/api/pm2/status');
+        if (!data.installed) {
+          container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">${escapeHtml(data.message)}</div>`;
+          return;
+        }
+
+        if (!data.processes || data.processes.length === 0) {
+          container.innerHTML = `<div style="color:var(--text-muted);font-size:13px;">PM2 aktif, belum ada proses yang berjalan.</div>`;
+          return;
+        }
+
+        let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        data.processes.forEach((p) => {
+          const isOnline = p.status === 'online';
+          html += `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:var(--radius-sm);flex-wrap:wrap;gap:8px;">
+              <div>
+                <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;">
+                  <span class="status-dot" style="background:${isOnline ? '#10B981' : '#EF4444'};box-shadow:none;"></span>
+                  ${escapeHtml(p.name)} <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);">(PID: ${p.pid})</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
+                  RAM: ${formatBytes(p.memoryBytes)} • Restarts: ${p.restarts} • Uptime: ${formatUptime(Math.floor((p.uptimeMs || 0)/1000))}
+                </div>
+              </div>
+              <div class="fm-actions">
+                <button class="btn btn-sm" onclick="showPm2Logs('${escapeHtml(p.name)}')">Log</button>
+                <button class="btn btn-sm" onclick="doPm2Action('restart', '${escapeHtml(p.name)}')">Restart</button>
+                <button class="btn btn-sm btn-danger" onclick="doPm2Action('stop', '${escapeHtml(p.name)}')">Stop</button>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+      } catch (e) {
+        container.innerHTML = `<div style="color:#F87171;font-size:13px;">Gagal memuat status PM2.</div>`;
+      }
+    }
+
+    async function doPm2Action(action, name) {
+      try {
+        const res = await api('/api/pm2/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action, name })
+        });
+        showToast(res.message || 'Aksi berhasil', res.ok ? 'success' : 'error');
+        loadPm2Status();
+      } catch (e) {}
+    }
+
+    async function showPm2Logs(name) {
+      try {
+        const res = await api(`/api/pm2/logs?name=${encodeURIComponent(name)}`);
+        document.getElementById('pm2-log-title').textContent = `Log PM2: ${name}`;
+        document.getElementById('pm2-log-view').textContent = res.logs || '(log kosong)';
+        document.getElementById('pm2-log-section').style.display = 'block';
+      } catch (e) {}
+    }
+
+    function closePm2LogView() {
+      document.getElementById('pm2-log-section').style.display = 'none';
+    }
+
+    // Auto Init
+    updateStats();
+    setInterval(updateStats, 4000);
+  </script>
+</body>
+</html>

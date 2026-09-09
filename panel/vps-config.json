@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "distro": "ubuntu",
+  "username": "root",
+  "password": "ubuntu123",
+  "port": 2222,
+  "publicHost": null,
+  "publicPort": null,
+  "publicCommand": null
+}

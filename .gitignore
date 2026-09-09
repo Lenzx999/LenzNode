@@ -1,0 +1,25 @@
+# Logs & Process Runtime Files
+logs/
+*.log
+panel/sessions.json
+panel/state.json
+
+# Environment & Sensitive Keys
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
+
+# Dependencies (Zero NPM is standard, but ignore if any local testing occurs)
+node_modules/
+package-lock.json
+
+# Ubuntu RootFS download cache if in repo dir
+ubuntu-fs/
+*.tar.xz
+*.tar.gz
+
+# OS specific files
+.DS_Store
+Thumbs.db
