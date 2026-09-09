@@ -1835,7 +1835,8 @@ const server = http.createServer(async (req, res) => {
       }
 
       const isWin = os.platform() === 'win32';
-      const shell = isWin ? 'cmd.exe' : 'bash';
+      const termuxBash = '/data/data/com.termux/files/usr/bin/bash';
+      const shell = isWin ? 'cmd.exe' : (fs.existsSync(termuxBash) ? termuxBash : (process.env.SHELL || 'bash'));
       const delim = '___TERM_PWD___';
 
       const script = isWin
