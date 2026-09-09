@@ -1876,7 +1876,6 @@
         <!-- Toolbar -->
         <div class="fm-toolbar">
           <div class="fm-path-bar" id="fm-breadcrumbs">
-            <span style="color:#38bdf8;font-weight:600;margin-right:4px;">/</span>
             <span class="fm-path-segment" onclick="loadFiles('/')">root</span>
           </div>
           <div class="fm-actions">
@@ -2665,6 +2664,16 @@
       } catch (e) {}
     }
 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function formatFileDate(isoStr) {
       if (!isoStr) return '-';
       try {
@@ -2774,22 +2783,34 @@
       const bar = document.getElementById('fm-breadcrumbs');
       if (!fullPath) return;
       const normalized = fullPath.replace(/\\/g, '/');
+      const isWin = /^[a-zA-Z]:/.test(normalized);
       const parts = normalized.split('/').filter(Boolean);
-      
-      let html = `<span style="color:#38bdf8;font-weight:600;margin-right:4px;">/</span>`;
+
       if (parts.length === 0) {
-        html += `<span class="fm-path-segment" onclick="loadFiles('/')">root</span>`;
-        bar.innerHTML = html;
+        bar.innerHTML = `<span class="fm-path-segment" onclick="loadFiles('/')">root</span>`;
         return;
       }
 
-      let built = '';
+      let html = '';
+      if (!isWin) {
+        html += `<span class="fm-path-segment" onclick="loadFiles('/')" style="color:#38bdf8;font-weight:600;margin-right:4px;">/</span>`;
+      }
+
       parts.forEach((part, i) => {
-        built += '/' + part;
-        const target = built;
-        if (i > 0) html += `<span style="color:#64748b;margin:0 4px;">/</span>`;
+        let target = '';
+        if (isWin) {
+          target = parts.slice(0, i + 1).join('/');
+          if (i === 0 && !target.endsWith('/')) target += '/';
+        } else {
+          target = '/' + parts.slice(0, i + 1).join('/');
+        }
+
+        if (i > 0) {
+          html += `<span style="color:#64748b;margin:0 4px;">/</span>`;
+        }
         html += `<span class="fm-path-segment" onclick="loadFiles('${escapeHtml(target)}')">${escapeHtml(part)}</span>`;
       });
+
       bar.innerHTML = html;
     }
 
