@@ -26,6 +26,30 @@ Transformasikan smartphone Android lama atau baru (Android 5.0 s/d 14+, arsitekt
 
 ---
 
+## 📋 Spesifikasi Minimal & Penggunaan Sumber Daya
+
+### 1. Spesifikasi Perangkat Minimal (Hardware & OS)
+| Komponen | Spesifikasi Minimal | Rekomendasi Ideal |
+| :--- | :--- | :--- |
+| **Sistem Operasi** | Android 5.0 (Lollipop / SDK 21) | Android 7.0 s/d 14+ |
+| **Arsitektur CPU** | ARM32 (`armhf`) / x86 | ARM64 (`aarch64`) / x86_64 |
+| **RAM Fisik HP** | **512 MB** | **1 GB – 2 GB+** |
+| **Penyimpanan Internal Bebas** | Minimal **1.5 GB** | **3 GB+** (ruang untuk file upload & app) |
+| **Status Root** | **Tanpa Root (Non-Root)** | Non-Root (didukung juga untuk HP Root) |
+
+### 2. Estimasi Penggunaan RAM & Penyimpanan (Resource Consumption)
+* 🧠 **Penggunaan RAM (Idle)**:
+  * **Web Dashboard Panel (Node.js murni)**: ~25 – 45 MB RAM
+  * **Ubuntu VPS (PRoot + OpenSSH `sshd`)**: ~25 – 40 MB RAM
+  * **Total RAM Aktif**: **~60 – 100 MB RAM** *(Sangat hemat daya baterai & ringan)*
+* 💾 **Penggunaan Ruang Penyimpanan**:
+  * **Source Code Server & Panel**: ~5 MB
+  * **Paket Termux Dasar** (*Node.js, OpenSSH, Python, PRoot, FFmpeg, dll.*): ~200 – 300 MB
+  * **Rootfs Distro Linux Ubuntu VPS** (*setelah diekstrak + OpenSSH Server*): ~400 – 650 MB
+  * **Total Ruang Terpakai**: **~700 MB – 1 GB**
+
+---
+
 ## 📱 Rekomendasi Versi Termux Sesuai Versi Android
 
 Installer otomatis mendeteksi versi Android dan arsitektur CPU perangkat Anda. Agar instalasi berjalan lancar, gunakan versi Termux yang sesuai:
