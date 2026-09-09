@@ -389,10 +389,17 @@ EOF
 chmod +x "$BOOT_DIR/start-server.sh"
 
 echo ""
-echo -e "${GREEN}==================================================================${NC}"
-echo -e "${GREEN} ✅ INSTALASI BERHASIL SELESAI!                                   ${NC}"
-echo -e "${GREEN}==================================================================${NC}"
+echo -e "${GREEN}┌─────────────────────────────────────────────────────────────┐${NC}"
+echo -e "${GREEN}│        ✅ INSTALASI LENZ MINI SERVER BERHASIL SELESAI!      │${NC}"
+echo -e "${GREEN}├─────────────────────────────────────────────────────────────┤${NC}"
+echo -e "   • Seluruh paket & dependensi telah berhasil dipasang."
+echo -e "   • Cache & sisa installer telah dibersihkan secara otomatis."
+echo -e "   • Autostart boot Termux telah disiapkan."
+echo -e "${GREEN}└─────────────────────────────────────────────────────────────┘${NC}"
 echo ""
+echo -e "${YELLOW}>> Menjalankan server sekarang...${NC}"
+echo ""
+sleep 1
 
 # Jalankan server
 exec bash "$HOME/start.sh"

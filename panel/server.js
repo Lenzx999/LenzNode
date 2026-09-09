@@ -2066,14 +2066,11 @@ server.on('connection', (sock) => {
 
 server.listen(PANEL_PORT, '0.0.0.0', () => {
   const localIps = getLocalIPs();
-  console.log(`\n==================================================`);
-  console.log(`🚀 Lenz Mini Server Aktif di Port ${PANEL_PORT}`);
-  console.log(`🏠 Akses Lokal: http://127.0.0.1:${PANEL_PORT}`);
+  const timeStr = new Date().toLocaleTimeString('id-ID');
+  console.log(`[${timeStr}] Web Dashboard aktif di Port ${PANEL_PORT}`);
   localIps.forEach((ip) => {
-    console.log(`   - http://${ip.address}:${PANEL_PORT} (${ip.iface})`);
+    console.log(`[${timeStr}] Akses Lokal: http://${ip.address}:${PANEL_PORT} (${ip.iface})`);
   });
-  console.log(`🔑 Login: user="${authConfig.username}" pass="${authConfig.password}"`);
-  console.log(`==================================================\n`);
 
   startPublicTunnel();
   startVpsTunnel();

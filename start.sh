@@ -191,9 +191,12 @@ stop_panel() {
 start_all() {
     command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || true
 
-    echo -e "${CYAN}==================================================================${NC}"
-    echo -e "${CYAN} 🚀 Memulai Layanan Lenz Mini Server...                          ${NC}"
-    echo -e "${CYAN}==================================================================${NC}"
+    echo ""
+    echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│                 🚀 LENZ MINI SERVER & VPS                   │${NC}"
+    echo -e "${CYAN}│              Memulai Seluruh Layanan Server...              │${NC}"
+    echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
 
     start_vps
     start_panel
@@ -202,15 +205,29 @@ start_all() {
     LOCAL_IP=$(get_local_ip)
 
     echo ""
-    echo -e "${GREEN}==================================================================${NC}"
-    echo -e "${GREEN} ✅ Seluruh Layanan Server Berhasil Dijalankan!                   ${NC}"
-    echo -e "   • 🌐 Web Dashboard : ${YELLOW}http://${LOCAL_IP}:8080${NC} (${PANEL_USER} : ${PANEL_PASS})"
-    echo -e "   • 🖥️ Ubuntu VPS SSH: ${YELLOW}ssh root@${LOCAL_IP} -p 2222${NC} (ubuntu123)"
-    echo -e "${GREEN}==================================================================${NC}"
+    echo -e "${GREEN}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${GREEN}│  ✅ SELURUH LAYANAN SERVER BERHASIL DIAKTIFKAN!             │${NC}"
+    echo -e "${GREEN}├─────────────────────────────────────────────────────────────┤${NC}"
+    echo -e "   🌐 ${CYAN}Web Dashboard Panel (Buka di Browser HP / Laptop):${NC}"
+    echo -e "      ➜ Alamat   : ${YELLOW}http://${LOCAL_IP}:${PANEL_PORT}${NC}"
+    echo -e "      ➜ Username : ${YELLOW}${PANEL_USER}${NC}"
+    echo -e "      ➜ Password : ${YELLOW}${PANEL_PASS}${NC}"
+    echo -e ""
+    echo -e "   🖥️ ${CYAN}Ubuntu VPS Console (Akses SSH):${NC}"
+    echo -e "      ➜ Perintah : ${YELLOW}ssh root@${LOCAL_IP} -p 2222${NC}"
+    echo -e "      ➜ Password : ${YELLOW}ubuntu123${NC}"
+    echo -e "${GREEN}└─────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
+    echo -e "${BLUE}💡 Panduan Penggunaan:${NC}"
+    echo -e "   • Buka alamat Web Dashboard di atas untuk kelola file, terminal, & bot."
+    echo -e "   • Server berjalan di latar belakang (background) dan aman ditinggal."
+    echo -e "   • Tekan ${YELLOW}Ctrl + C${NC} kapan saja untuk keluar ke layar terminal biasa."
     echo ""
 
     if [ -t 1 ]; then
-        echo -e "${CYAN}📋 Menampilkan log live (Tekan Ctrl + C kapan saja untuk keluar terminal):${NC}"
+        echo -e "${CYAN}───────────────────────────────────────────────────────────────${NC}"
+        echo -e "${CYAN}📋 Log Server (Live Output):                                   ${NC}"
+        echo -e "${CYAN}───────────────────────────────────────────────────────────────${NC}"
         tail -f "$PANEL_LOG"
     fi
 }
@@ -219,19 +236,29 @@ stop_all() {
     echo -e "${RED}>> Menghentikan semua layanan server...${NC}"
     stop_panel
     stop_vps
-    echo -e "${GREEN}✓ Seluruh layanan telah dimatikan.${NC}"
+    echo -e "${GREEN}✓ Seluruh layanan server telah dimatikan.${NC}"
 }
 
 status_all() {
     local LOCAL_IP
     LOCAL_IP=$(get_local_ip)
 
-    echo -e "${CYAN}==================================================================${NC}"
-    echo -e "${CYAN} 📊 Status Layanan Lenz Mini Server (${LOCAL_IP})                ${NC}"
-    echo -e "${CYAN}==================================================================${NC}"
-    is_port_active 8080 && echo -e "  • Web Panel (8080)   : ${GREEN}🟢 AKTIF${NC} -> http://${LOCAL_IP}:8080" || echo -e "  • Web Panel (8080)   : ${RED}🔴 MATI${NC}"
-    is_port_active 2222 && echo -e "  • VPS SSH (2222)     : ${GREEN}🟢 AKTIF${NC} -> ssh root@${LOCAL_IP} -p 2222" || echo -e "  • VPS SSH (2222)     : ${RED}🔴 MATI${NC}"
-    echo -e "${CYAN}==================================================================${NC}"
+    echo ""
+    echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
+    echo -e "${CYAN}│               📊 STATUS LAYANAN LENZ SERVER                 │${NC}"
+    echo -e "${CYAN}├─────────────────────────────────────────────────────────────┤${NC}"
+    if is_port_active 8080; then
+        echo -e "   • Web Dashboard Panel (Port 8080) : ${GREEN}🟢 AKTIF${NC} -> http://${LOCAL_IP}:8080"
+    else
+        echo -e "   • Web Dashboard Panel (Port 8080) : ${RED}🔴 NONAKTIF${NC}"
+    fi
+    if is_port_active 2222; then
+        echo -e "   • Ubuntu VPS SSH      (Port 2222) : ${GREEN}🟢 AKTIF${NC} -> ssh root@${LOCAL_IP} -p 2222"
+    else
+        echo -e "   • Ubuntu VPS SSH      (Port 2222) : ${RED}🔴 NONAKTIF${NC}"
+    fi
+    echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
+    echo ""
 }
 
 case "$1" in
