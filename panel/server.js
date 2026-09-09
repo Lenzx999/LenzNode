@@ -1476,7 +1476,7 @@ function getWebsiteLogs(lines = 150) {
         const content = fs.readFileSync(fPath, 'utf8');
         if (content.trim()) {
           const arr = content.split('\n');
-          logs += `=== [ ${path.basename(fPath)} ] ===\n` + arr.slice(Math.max(0, arr.length - lines)).join('\n') + '\n\n';
+          logs += arr.slice(Math.max(0, arr.length - lines)).join('\n') + '\n';
         }
       } catch (e) {}
     }
