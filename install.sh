@@ -39,7 +39,7 @@ UBUNTU_DIR="$HOME/ubuntu-fs"
 # -----------------------------------------------------------------------------
 # 0. DETEKSI PERANGKAT & REKOMENDASI VERSI TERMUX (UNIVERSAL)
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[0/5] Mendeteksi Perangkat & Lingkungan Sistem...${NC}"
+echo -e "${YELLOW}[0/6] Mendeteksi Perangkat & Lingkungan Sistem...${NC}"
 
 ANDROID_VER=$(getprop ro.build.version.release 2>/dev/null || echo "Unknown")
 ANDROID_SDK=$(getprop ro.build.version.sdk 2>/dev/null || echo "0")
@@ -80,7 +80,7 @@ fi
 # -----------------------------------------------------------------------------
 # 1. SETUP PENYIMPANAN & WAKE LOCK
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[1/5] Menyiapkan izin penyimpanan & Wake-Lock...${NC}"
+echo -e "${YELLOW}[1/6] Menyiapkan izin penyimpanan & Wake-Lock...${NC}"
 if [ ! -d "$HOME/storage" ]; then
     termux-setup-storage 2>/dev/null || true
     sleep 2
@@ -94,7 +94,7 @@ echo -e "${GREEN}✓ Izin penyimpanan & Wake-Lock aktif.${NC}"
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 
-echo -e "${YELLOW}[2/5] Memperbarui paket Termux & Memasang dependensi...${NC}"
+echo -e "${YELLOW}[2/6] Memperbarui paket Termux & Memasang dependensi...${NC}"
 pkg update -y 2>/dev/null || true
 pkg install -y openssh curl wget zip unzip nano git python ffmpeg libwebp imagemagick proot tar xz-utils 2>/dev/null || true
 
@@ -115,7 +115,7 @@ echo -e "${GREEN}✓ Termux siap (Node: $NODE_VER, PM2: $(pm2 -v 2>/dev/null || 
 # -----------------------------------------------------------------------------
 # 3. PENATAAN STRUKTUR FOLDER SERVER
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[3/5] Menyiapkan struktur folder server di $BASE_DIR...${NC}"
+echo -e "${YELLOW}[3/6] Menyiapkan struktur folder server di $BASE_DIR...${NC}"
 mkdir -p "$BASE_DIR/logs" "$BASE_DIR/panel" "$BASE_DIR/apps" "$BASE_DIR/scripts"
 
 [ -d "$SRC_DIR/panel" ] && cp -r "$SRC_DIR/panel/"* "$BASE_DIR/panel/" 2>/dev/null || true
@@ -126,7 +126,7 @@ mkdir -p "$BASE_DIR/logs" "$BASE_DIR/panel" "$BASE_DIR/apps" "$BASE_DIR/scripts"
 # -----------------------------------------------------------------------------
 # 4. INSTALASI DISTRO UBUNTU VPS (PRoot)
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[4/5] Menyiapkan Distro Ubuntu VPS ($ROOTFS_ARCH Rootfs)...${NC}"
+echo -e "${YELLOW}[4/6] Menyiapkan Distro Ubuntu VPS ($ROOTFS_ARCH Rootfs)...${NC}"
 
 cat << 'EOF' > "$BASE_DIR/scripts/start-ubuntu.sh"
 #!/data/data/com.termux/files/usr/bin/bash
@@ -335,9 +335,30 @@ EOF
 chmod +x "$UBUNTU_DIR/usr/local/bin/vps-install"
 
 # -----------------------------------------------------------------------------
-# 5. AUTOSTART BOOT & JALANKAN SERVER
+# 5. PEMBERSIHAN CACHE & OPTIMASI PENYIMPANAN OTOMATIS
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[5/5] Menyiapkan autostart Termux:Boot & Menjalankan Server...${NC}"
+echo -e "${YELLOW}[5/6] Membersihkan sisa cache installer & mengoptimalkan penyimpanan...${NC}"
+
+# Bersihkan cache di dalam Ubuntu VPS
+if [ -d "$UBUNTU_DIR" ]; then
+    bash "$BASE_DIR/scripts/start-ubuntu.sh" /bin/bash -c "
+        apt-get clean 2>/dev/null || true
+        apt-get autoremove -y 2>/dev/null || true
+        rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /tmp/* /var/tmp/* 2>/dev/null || true
+    " 2>/dev/null || true
+fi
+
+# Bersihkan cache di Termux Host
+pkg clean 2>/dev/null || true
+apt-get clean 2>/dev/null || true
+rm -rf "$PREFIX/var/cache/apt/archives"/* "$HOME/.cache"/* /data/data/com.termux/files/usr/tmp/* 2>/dev/null || true
+npm cache clean --force 2>/dev/null || true
+echo -e "${GREEN}✓ Cache instalasi dibersihkan (Penyimpanan berhasil dioptimalkan).${NC}"
+
+# -----------------------------------------------------------------------------
+# 6. AUTOSTART BOOT & JALANKAN SERVER
+# -----------------------------------------------------------------------------
+echo -e "${YELLOW}[6/6] Menyiapkan autostart Termux:Boot & Menjalankan Server...${NC}"
 
 BOOT_DIR="$HOME/.termux/boot"
 mkdir -p "$BOOT_DIR"
