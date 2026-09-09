@@ -339,38 +339,100 @@ function getBatteryInfo() {
     return { percentage: 100, status: 'AC Powered', temperature: null };
   }
 
+  let percentage = null;
+  let status = 'Unknown';
+  let temperature = null;
+
+  // 1. Scan seluruh node power_supply di Linux / Android (/sys/class/power_supply/*)
   try {
-    const capPath = '/sys/class/power_supply/battery/capacity';
-    const statusPath = '/sys/class/power_supply/battery/status';
-    const tempPath = '/sys/class/power_supply/battery/temp';
-    if (fs.existsSync(capPath)) {
-      const percentage = parseInt(fs.readFileSync(capPath, 'utf8').trim(), 10);
-      let status = 'Unknown';
-      if (fs.existsSync(statusPath)) {
-        status = fs.readFileSync(statusPath, 'utf8').trim();
-      }
-      let temperature = null;
-      if (fs.existsSync(tempPath)) {
-        const raw = parseInt(fs.readFileSync(tempPath, 'utf8').trim(), 10);
-        if (!isNaN(raw)) {
-          temperature = (raw > 100 ? (raw / 10) : raw).toFixed(1);
+    const psDir = '/sys/class/power_supply';
+    if (fs.existsSync(psDir)) {
+      const candidates = ['battery', 'bms', 'main', 'sec-fuelgauge', 'qcom-battery', 'smb-battery', 'max170xx_battery'];
+      const dirs = fs.readdirSync(psDir);
+      
+      const sortedDirs = dirs.slice().sort((a, b) => {
+        const aPri = candidates.indexOf(a) !== -1 ? candidates.indexOf(a) : 999;
+        const bPri = candidates.indexOf(b) !== -1 ? candidates.indexOf(b) : 999;
+        return aPri - bPri;
+      });
+
+      for (let i = 0; i < sortedDirs.length; i++) {
+        const d = sortedDirs[i];
+        const capFile = path.join(psDir, d, 'capacity');
+        if (fs.existsSync(capFile)) {
+          const rawCap = parseInt(fs.readFileSync(capFile, 'utf8').trim(), 10);
+          if (!isNaN(rawCap) && rawCap >= 0 && rawCap <= 100) {
+            percentage = rawCap;
+
+            const stFile = path.join(psDir, d, 'status');
+            if (fs.existsSync(stFile)) {
+              status = fs.readFileSync(stFile, 'utf8').trim();
+            }
+
+            const tempFile = path.join(psDir, d, 'temp');
+            if (fs.existsSync(tempFile)) {
+              const rawT = parseInt(fs.readFileSync(tempFile, 'utf8').trim(), 10);
+              if (!isNaN(rawT)) {
+                temperature = (rawT > 100 ? (rawT / 10) : rawT).toFixed(1);
+              }
+            }
+            break;
+          }
         }
       }
-      return { percentage, status, temperature };
     }
   } catch {}
 
-  try {
-    const out = execSync('termux-battery-status', { timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
-    const data = JSON.parse(out);
-    return {
-      percentage: (data && data.percentage !== undefined) ? data.percentage : null,
-      status: (data && data.status) ? data.status : 'Unknown',
-      temperature: data && data.temperature ? (data.temperature / 10).toFixed(1) : null,
-    };
-  } catch {}
+  // 2. Fallback ke dumpsys battery & cmd battery (Android Framework API bawaan)
+  if (percentage === null) {
+    try {
+      const out = execSync('dumpsys battery 2>/dev/null || cmd battery get level 2>/dev/null', { timeout: 1200, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      if (out) {
+        const levelMatch = out.match(/level:\s*([0-9]+)/i);
+        if (levelMatch) {
+          percentage = parseInt(levelMatch[1], 10);
+        } else if (/^[0-9]+$/.test(out.trim())) {
+          percentage = parseInt(out.trim(), 10);
+        }
 
-  return { percentage: null, status: 'Tidak terbaca', temperature: null };
+        const statusMatch = out.match(/status:\s*([0-9]+)/i);
+        if (statusMatch) {
+          const stCode = parseInt(statusMatch[1], 10);
+          if (stCode === 2) status = 'Charging';
+          else if (stCode === 3) status = 'Discharging';
+          else if (stCode === 5) status = 'Full';
+          else status = 'In Use';
+        }
+
+        const tempMatch = out.match(/temperature:\s*([0-9]+)/i);
+        if (tempMatch) {
+          const rawT = parseInt(tempMatch[1], 10);
+          temperature = (rawT > 100 ? (rawT / 10) : rawT).toFixed(1);
+        }
+      }
+    } catch {}
+  }
+
+  // 3. Fallback ke termux-battery-status (jika paket Termux:API terpasang)
+  if (percentage === null) {
+    try {
+      const out = execSync('termux-battery-status 2>/dev/null', { timeout: 1000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+      const data = JSON.parse(out);
+      if (data && data.percentage !== undefined) {
+        percentage = data.percentage;
+        status = data.status || status;
+        if (data.temperature) {
+          temperature = (data.temperature / 10).toFixed(1);
+        }
+      }
+    } catch {}
+  }
+
+  return {
+    percentage: percentage !== null ? percentage : null,
+    status: percentage !== null ? status : 'Tidak terbaca',
+    temperature: temperature !== null ? temperature : null,
+  };
 }
 
 function parseHumanSize(str) {
@@ -808,28 +870,50 @@ let vpsTunnelProcess = null;
 let vpsTunnelRetryTimer = null;
 let vpsFailCount = 0;
 
-function startPublicTunnel() {
-  if (tunnelProcess) return;
-
+function findCloudflaredBin() {
+  const prefix = process.env.PREFIX || '/data/data/com.termux/files/usr';
   const termuxHome = process.env.HOME || '/data/data/com.termux/files/home';
-  const ubuntuFsCloudflared = path.join(termuxHome, 'ubuntu-fs', 'usr', 'local', 'bin', 'cloudflared');
-  const startUbuntu = path.join(termuxHome, 'start-ubuntu.sh');
 
-  let cmd = 'cloudflared';
-  let args = ['tunnel', '--url', `http://127.0.0.1:${PANEL_PORT}`];
+  const candidates = [
+    path.join(prefix, 'bin', 'cloudflared'),
+    '/data/data/com.termux/files/usr/bin/cloudflared',
+    path.join(termuxHome, 'ubuntu-fs', 'usr', 'local', 'bin', 'cloudflared'),
+    path.join(termuxHome, 'ubuntu-fs', 'usr', 'bin', 'cloudflared'),
+    '/usr/local/bin/cloudflared',
+    '/usr/bin/cloudflared',
+  ];
 
-  if (fs.existsSync(startUbuntu) && fs.existsSync(ubuntuFsCloudflared)) {
-    cmd = startUbuntu;
-    args = ['cloudflared', 'tunnel', '--url', `http://127.0.0.1:${PANEL_PORT}`];
+  for (let i = 0; i < candidates.length; i++) {
+    if (fs.existsSync(candidates[i])) return candidates[i];
   }
 
   try {
-    tunnelProcess = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const which = execSync('command -v cloudflared 2>/dev/null', { timeout: 1000 }).toString().trim();
+    if (which) return which;
+  } catch (e) {}
+
+  return null;
+}
+
+function startPublicTunnel() {
+  if (tunnelProcess) return;
+
+  const cfBin = findCloudflaredBin();
+
+  if (!cfBin) {
+    startFallbackSshTunnel();
+    return;
+  }
+
+  try {
+    tunnelProcess = spawn(cfBin, ['tunnel', '--url', `http://127.0.0.1:${PANEL_PORT}`], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
 
     let stdoutBuffer = '';
     const checkUrl = (data) => {
       stdoutBuffer += data.toString();
-      if (stdoutBuffer.length > 2048) stdoutBuffer = stdoutBuffer.slice(-1024);
+      if (stdoutBuffer.length > 3000) stdoutBuffer = stdoutBuffer.slice(-1500);
       const match = stdoutBuffer.match(/https:\/\/(?!api\.)[a-zA-Z0-9-]+\.trycloudflare\.com/);
       if (match && match[0] !== currentPublicUrl) {
         currentPublicUrl = match[0];
@@ -847,7 +931,7 @@ function startPublicTunnel() {
       tunnelProcess = null;
       currentPublicUrl = null;
       tunnelFailCount++;
-      const delay = Math.min(60000, 10000 * tunnelFailCount);
+      const delay = Math.min(60000, 8000 * tunnelFailCount);
       clearTimeout(tunnelRetryTimer);
       tunnelRetryTimer = setTimeout(startPublicTunnel, delay);
     });
@@ -883,12 +967,12 @@ function startFallbackSshTunnel() {
     let stdoutBuffer = '';
     const checkUrl = (data) => {
       stdoutBuffer += data.toString();
-      if (stdoutBuffer.length > 2048) stdoutBuffer = stdoutBuffer.slice(-1024);
-      const match = stdoutBuffer.match(/https:\/\/[a-zA-Z0-9-._]+\.pinggy\.link|https:\/\/(?!api\.)[a-zA-Z0-9-]+\.trycloudflare\.com/);
+      if (stdoutBuffer.length > 3000) stdoutBuffer = stdoutBuffer.slice(-1500);
+      const match = stdoutBuffer.match(/https:\/\/(?:[a-zA-Z0-9-._]+\.pinggy\.(?:link|online|io)|[a-zA-Z0-9-._]+\.free\.pinggy\.link|[a-zA-Z0-9-._]+\.a\.pinggy\.link|(?!api\.)[a-zA-Z0-9-]+\.trycloudflare\.com)/);
       if (match && match[0] !== currentPublicUrl) {
         currentPublicUrl = match[0];
         tunnelFailCount = 0;
-        console.log(`🌐 Web Tunnel Aktif: ${currentPublicUrl}`);
+        console.log(`🌐 Web Tunnel Aktif (Fallback Pinggy): ${currentPublicUrl}`);
       }
     };
 
@@ -907,7 +991,7 @@ function startFallbackSshTunnel() {
     tunnelProcess.on('error', () => {
       tunnelProcess = null;
       clearTimeout(tunnelRetryTimer);
-      tunnelRetryTimer = setTimeout(startPublicTunnel, 20000);
+      tunnelRetryTimer = setTimeout(startPublicTunnel, 15000);
     });
   } catch (e) {}
 }

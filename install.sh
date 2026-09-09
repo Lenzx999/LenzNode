@@ -109,6 +109,24 @@ if ! command -v pm2 >/dev/null 2>&1 || ! pm2 -v >/dev/null 2>&1; then
     npm install -g pm2 2>/dev/null || npm install -g pm2@5.1.2 --force 2>/dev/null || true
 fi
 
+# Cloudflared Tunnel untuk Domain Publik Otomatis
+if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
+    echo ">> Menyiapkan Cloudflared Tunnel..."
+    pkg install -y cloudflared 2>/dev/null || true
+    if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
+        CF_ARCH="arm64"
+        case "$ROOTFS_ARCH" in
+            arm64) CF_ARCH="arm64" ;;
+            armhf) CF_ARCH="arm" ;;
+            amd64) CF_ARCH="amd64" ;;
+            i386) CF_ARCH="386" ;;
+        esac
+        mkdir -p "$PREFIX/bin"
+        curl -L -o "$PREFIX/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" 2>/dev/null || wget -O "$PREFIX/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" 2>/dev/null || true
+        chmod +x "$PREFIX/bin/cloudflared" 2>/dev/null || true
+    fi
+fi
+
 NODE_VER="$(node -v 2>/dev/null || "$PREFIX/bin/node" -v 2>/dev/null || echo 'Belum terpasang')"
 echo -e "${GREEN}✓ Termux siap (Node: $NODE_VER, PM2: $(pm2 -v 2>/dev/null || echo '-'))${NC}"
 

@@ -808,6 +808,45 @@
       font-size: 13px;
       outline: none;
     }
+    .term-running-bar {
+      padding: 8px 14px;
+      background: rgba(239, 68, 68, 0.12);
+      border-top: 1px solid rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #FCA5A5;
+      animation: pulse-bg 2s infinite ease-in-out;
+    }
+    .term-running-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .spinner-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #EF4444;
+      box-shadow: 0 0 8px #EF4444;
+      animation: blink-dot 1s infinite alternate;
+      flex-shrink: 0;
+    }
+    @keyframes blink-dot {
+      0% { opacity: 0.3; transform: scale(0.8); }
+      100% { opacity: 1; transform: scale(1.2); }
+    }
+    @keyframes pulse-bg {
+      0%, 100% { background: rgba(239, 68, 68, 0.12); }
+      50% { background: rgba(239, 68, 68, 0.22); }
+    }
 
     /* Logs & Process Manager */
     .log-card {
@@ -1548,9 +1587,9 @@
             <span id="term-cwd-badge" class="spec-badge">~</span>
           </div>
           <div class="fm-actions">
-            <button class="btn btn-sm btn-danger" onclick="killTerminalJob()" title="Kirim sinyal SIGINT (Ctrl + C)">
+            <button class="btn btn-sm btn-danger" id="btn-term-header-kill" onclick="killTerminalJob()" title="Kirim sinyal SIGINT (Ctrl + C)" style="display:none;">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              Ctrl + C
+              Hentikan (Ctrl + C)
             </button>
             <button class="btn btn-sm" onclick="clearTerminalOutput()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -1561,10 +1600,21 @@
         <div class="terminal-body" id="term-output">Selamat datang di Terminal Web Lenz Mini Server.
 Ketik perintah Linux/Termux di bawah dan tekan Enter.
 </div>
+        <!-- Live Running Status Indicator -->
+        <div id="term-running-bar" class="term-running-bar" style="display: none;">
+          <div class="term-running-info">
+            <span class="spinner-dot"></span>
+            <span id="term-running-text">Proses sedang berjalan...</span>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="killTerminalJob()" title="Hentikan proses yang sedang berjalan (Ctrl + C)">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <span>Hentikan Proses (Ctrl + C)</span>
+          </button>
+        </div>
         <div class="terminal-input-bar">
           <span class="terminal-prompt-label">$</span>
           <input type="text" class="terminal-input" id="term-input" placeholder="Ketik perintah (misal: ls -la, pkg status, free -m, top)..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onkeydown="handleTerminalKey(event)">
-          <button class="btn btn-primary btn-sm" onclick="submitTerminalCommand()">Kirim</button>
+          <button class="btn btn-primary btn-sm" id="btn-term-submit" onclick="handleTerminalSubmitClick()">Kirim</button>
         </div>
       </div>
     </section>
@@ -2523,6 +2573,46 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
     }
 
     // Web Terminal
+    function setTerminalRunning(isRunning, cmdText = '', pid = '') {
+      const runningBar = document.getElementById('term-running-bar');
+      const runningText = document.getElementById('term-running-text');
+      const submitBtn = document.getElementById('btn-term-submit');
+      const headerKillBtn = document.getElementById('btn-term-header-kill');
+      const input = document.getElementById('term-input');
+
+      if (isRunning) {
+        if (runningBar) runningBar.style.display = 'flex';
+        if (headerKillBtn) headerKillBtn.style.display = 'inline-flex';
+        if (runningText) runningText.textContent = `Menjalankan: ${cmdText} ${pid ? `(PID: ${pid})` : ''}...`;
+        if (submitBtn) {
+          submitBtn.className = 'btn btn-danger btn-sm';
+          submitBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+            <span>Hentikan</span>
+          `;
+          submitBtn.title = 'Hentikan proses yang sedang berjalan (Ctrl + C)';
+        }
+        if (input) input.placeholder = 'Proses sedang berjalan... Klik Hentikan untuk membatalkan.';
+      } else {
+        if (runningBar) runningBar.style.display = 'none';
+        if (headerKillBtn) headerKillBtn.style.display = 'none';
+        if (submitBtn) {
+          submitBtn.className = 'btn btn-primary btn-sm';
+          submitBtn.innerHTML = 'Kirim';
+          submitBtn.title = 'Kirim perintah';
+        }
+        if (input) input.placeholder = 'Ketik perintah (misal: ls -la, pkg status, free -m, top)...';
+      }
+    }
+
+    function handleTerminalSubmitClick() {
+      if (currentTerminalJobId) {
+        killTerminalJob();
+      } else {
+        submitTerminalCommand();
+      }
+    }
+
     function appendTerminal(text) {
       const out = document.getElementById('term-output');
       out.textContent += text;
@@ -2535,7 +2625,11 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
 
     function handleTerminalKey(e) {
       if (e.key === 'Enter') {
-        submitTerminalCommand();
+        if (currentTerminalJobId) {
+          showToast('Proses lain sedang berjalan. Hentikan dulu proses saat ini.', 'info');
+        } else {
+          submitTerminalCommand();
+        }
       } else if (e.key === 'ArrowUp') {
         if (cmdHistory.length > 0 && cmdHistoryIdx < cmdHistory.length - 1) {
           cmdHistoryIdx++;
@@ -2562,6 +2656,7 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
       input.value = '';
 
       appendTerminal(`\n$ ${cmd}\n`);
+      setTerminalRunning(true, cmd);
 
       try {
         const res = await fetch('/api/terminal/stream', {
@@ -2587,10 +2682,12 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
               const msg = JSON.parse(line);
               if (msg.type === 'init') {
                 currentTerminalJobId = msg.jobId;
+                setTerminalRunning(true, cmd, msg.pid);
               } else if (msg.type === 'out' || msg.type === 'err') {
                 appendTerminal(msg.data);
               } else if (msg.type === 'end') {
                 currentTerminalJobId = null;
+                setTerminalRunning(false);
                 if (msg.cwd) {
                   currentDir = msg.cwd;
                   document.getElementById('term-cwd-badge').textContent = msg.cwd.split(/[\/\\]/).pop() || '~';
@@ -2603,23 +2700,32 @@ Ketik perintah Linux/Termux di bawah dan tekan Enter.
         }
       } catch (e) {
         appendTerminal(`\n[Gagal menjalankan perintah: ${e.message}]\n`);
+      } finally {
+        currentTerminalJobId = null;
+        setTerminalRunning(false);
       }
     }
 
     async function killTerminalJob() {
       if (!currentTerminalJobId) {
         showToast('Tidak ada proses aktif yang sedang berjalan', 'info');
+        setTerminalRunning(false);
         return;
       }
       try {
+        const jobId = currentTerminalJobId;
+        currentTerminalJobId = null;
+        setTerminalRunning(false);
         await api('/api/terminal/kill', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: currentTerminalJobId })
+          body: JSON.stringify({ id: jobId })
         });
-        appendTerminal('\n^C\n');
-        currentTerminalJobId = null;
-      } catch (e) {}
+        appendTerminal('\n^C [Proses dihentikan]\n');
+        showToast('Proses terminal dihentikan', 'info');
+      } catch (e) {
+        setTerminalRunning(false);
+      }
     }
 
     // Logs & PM2
