@@ -274,6 +274,42 @@
       border-color: var(--accent-rose);
       color: #FFFFFF;
     }
+    .btn-action-blue {
+      background: #2563EB !important;
+      border-color: #3B82F6 !important;
+      color: #FFFFFF !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+    .btn-action-blue:hover {
+      background: #1D4ED8 !important;
+      border-color: #60A5FA !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.55);
+    }
+    .btn-action-red {
+      background: #DC2626 !important;
+      border-color: #EF4444 !important;
+      color: #FFFFFF !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+    }
+    .btn-action-red:hover {
+      background: #B91C1C !important;
+      border-color: #F87171 !important;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.55);
+    }
+    .btn-action-amber {
+      background: #D97706 !important;
+      border-color: #F59E0B !important;
+      color: #FFFFFF !important;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+    }
+    .btn-action-amber:hover {
+      background: #B45309 !important;
+      border-color: #FBBF24 !important;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.55);
+    }
     .btn-sm {
       padding: 5px 10px;
       font-size: 12px;
@@ -322,26 +358,36 @@
     }
     .spec-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
     }
     .spec-item {
+      background: #080D1A;
+      border: 1px solid #141F36;
+      border-radius: 8px;
+      padding: 10px 14px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
+      transition: border-color 0.15s ease;
+    }
+    .spec-item:hover {
+      border-color: rgba(255, 255, 255, 0.12);
     }
     .spec-label {
-      font-size: 11px;
-      color: var(--text-dim);
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #64748B;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.05em;
     }
     .spec-value {
       font-size: 13px;
       font-weight: 600;
-      color: var(--text-main);
+      color: #F1F5F9;
       font-family: var(--font-mono);
-      word-break: break-all;
+      word-break: break-word;
+      line-height: 1.35;
     }
 
     .grid-cards {
@@ -1605,23 +1651,27 @@
             <span class="spec-value" id="spec-ram">Memuat...</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Penyimpanan</span>
+            <span class="spec-label">DISK LOKAL</span>
             <span class="spec-value" id="spec-disk">Memuat...</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-label">STATUS SISTEM</span>
+            <span class="spec-value" id="spec-status" style="color: var(--accent-emerald);">Online 24/7 (Stabil)</span>
           </div>
           <div class="spec-item">
             <span class="spec-label">OS</span>
             <span class="spec-value" id="spec-os">Memuat...</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Arsitektur</span>
+            <span class="spec-label">ARSITEKTUR</span>
             <span class="spec-value" id="spec-arch">Memuat...</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Node.js</span>
+            <span class="spec-label">NODE.JS</span>
             <span class="spec-value" id="spec-runtime">Memuat...</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Suhu Server</span>
+            <span class="spec-label">SUHU SERVER</span>
             <span class="spec-value" id="spec-thermal" style="color: var(--accent-emerald);">Memuat...</span>
           </div>
         </div>
@@ -2007,11 +2057,11 @@
             <span>Logs Server</span>
           </div>
           <div class="fm-actions">
-            <button class="btn btn-sm" onclick="fetchWebsiteLogs()">
+            <button class="btn btn-sm btn-action-blue" onclick="fetchWebsiteLogs()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
               Refresh
             </button>
-            <button class="btn btn-sm btn-danger" onclick="clearServerLog()">
+            <button class="btn btn-sm btn-action-red" onclick="clearServerLog()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Bersihkan
             </button>
@@ -2028,7 +2078,7 @@
             <span>Logs PM2</span>
           </div>
           <div class="fm-actions">
-            <button class="btn btn-sm" onclick="loadPm2Status()">
+            <button class="btn btn-sm btn-action-amber" onclick="loadPm2Status()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
               Cek PM2
             </button>
@@ -2395,11 +2445,35 @@
         if (!data) return;
 
         // Specs
-        document.getElementById('spec-cpu').textContent = data.cpu ? data.cpu.model : '-';
-        document.getElementById('spec-ram').textContent = data.memory ? formatBytes(data.memory.totalBytes) : '-';
+        if (data.cpu) {
+          const cpuModel = data.cpu.model || 'CPU Server';
+          const cpuPct = data.cpu.usagePercent !== undefined ? ` • ${data.cpu.usagePercent}%` : '';
+          document.getElementById('spec-cpu').textContent = `${cpuModel}${cpuPct}`;
+        } else {
+          document.getElementById('spec-cpu').textContent = '-';
+        }
+
+        if (data.memory) {
+          const totalStr = formatBytes(data.memory.totalBytes);
+          const freeStr = formatBytes(data.memory.freeBytes);
+          document.getElementById('spec-ram').textContent = `${totalStr} • Sisa ${freeStr}`;
+        } else {
+          document.getElementById('spec-ram').textContent = '-';
+        }
+
+        if (data.disks && data.disks.length > 0) {
+          const mainDisk = data.disks[0];
+          document.getElementById('spec-disk').textContent = `${formatBytes(mainDisk.totalBytes)} • Sisa ${formatBytes(mainDisk.freeBytes)}`;
+        }
+
+        const specStatus = document.getElementById('spec-status');
+        if (specStatus) {
+          specStatus.textContent = 'Online 24/7 (Stabil)';
+        }
+
         document.getElementById('spec-os').textContent = `${data.platform || '-'} (${data.hostname || '-'})`;
-        document.getElementById('spec-arch').textContent = data.arch || '-';
-        document.getElementById('spec-runtime').textContent = data.nodeVersion || '-';
+        document.getElementById('spec-arch').textContent = data.arch ? (data.arch.includes('64') ? `${data.arch} (64-bit)` : (data.arch.includes('arm') ? `${data.arch} (32-bit)` : data.arch)) : '-';
+        document.getElementById('spec-runtime').textContent = data.nodeVersion ? (data.nodeVersion.startsWith('Node') ? data.nodeVersion : `Node ${data.nodeVersion}`) : '-';
 
         // CPU
         const cpuPct = data.cpu ? (data.cpu.usagePercent || 0) : 0;
