@@ -237,7 +237,7 @@ curl -sL https://raw.githubusercontent.com/Lenzx999/LenzNode/main/update.sh | ba
 Jika HP digunakan sebagai server non-stop:
 
 1. **Kunci Aplikasi di Pengaturan Manajemen Daya Android**:
-   * Buka Pengaturan Baterai / iManager HP -> Izinkan konsumsi daya latar belakang tinggi untuk **Termux**.
+   * Buka Pengaturan Baterai / Manajemen Daya / App Settings HP -> Izinkan aktivitas latar belakang tanpa batas (*No Restrictions / Unrestricted Background*) untuk **Termux**.
    * Nonaktifkan fitur *Auto-Sleep* / Penghemat Baterai Ekstrem.
 2. **Setelan Kebijakan Wi-Fi**:
    * Pengaturan Wi-Fi HP -> Lanjutan -> Atur **Keep Wi-Fi on during sleep** ke **Always**.
