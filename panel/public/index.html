@@ -690,9 +690,9 @@
     .remote-actions-bar {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-top: 1px;
+      margin-top: 6px;
     }
     .remote-controls-grid {
       display: grid;
@@ -1786,10 +1786,19 @@
         display: flex;
         gap: 6px;
       }
-      .remote-ssh-cmd-row > div > button,
-      .remote-ssh-cmd-row > div > a {
+      .remote-actions-bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        width: 100%;
+      }
+      .remote-actions-bar .btn {
         flex: 1;
+        min-height: 38px;
         justify-content: center;
+        padding: 8px 12px;
+        font-size: 12px;
       }
 
       .fm-toolbar {
