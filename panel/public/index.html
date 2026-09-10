@@ -667,6 +667,27 @@
       gap: 6px;
       flex-wrap: wrap;
     }
+    .meta-chips-grid {
+      display: grid;
+      gap: 6px;
+      width: 100%;
+    }
+    .meta-chips-grid.cols-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .meta-chips-grid.cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .meta-chips-grid .meta-chip {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 3px 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .meta-chip {
       display: inline-flex;
       align-items: center;
@@ -1800,6 +1821,11 @@
         padding: 8px 12px;
         font-size: 12px;
       }
+      .meta-chips-grid .meta-chip {
+        font-size: 10px;
+        padding: 3px 4px;
+        gap: 3px;
+      }
 
       .fm-toolbar {
         padding: 8px 10px;
@@ -2132,7 +2158,7 @@
                 <svg viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="7 8 10 11 7 14"/><line x1="12" y1="14" x2="16" y2="14"/></svg>
               </div>
               <div>
-                <h3>VPS Ubuntu SSH Console</h3>
+                <h3>VPS Ubuntu SSH</h3>
                 <p class="remote-card-subtitle">User: <strong>ubuntu / root</strong> • Port: <strong>2222</strong></p>
               </div>
             </div>
@@ -2143,7 +2169,7 @@
 
           <div class="remote-ssh-box">
             <div class="remote-ssh-label">
-              <span>Perintah Akses SSH Publik (Jarak Jauh)</span>
+              <span>Akses SSH Publik</span>
               <span class="badge-pinggy" id="vps-tunnel-badge">Public Tunnel</span>
             </div>
             <div class="remote-ssh-cmd-row">
@@ -2155,7 +2181,7 @@
             </div>
             
             <div class="remote-ssh-label" style="margin-top: 4px;">
-              <span>Akses SSH Jaringan Lokal (Wi-Fi):</span>
+              <span>Akses SSH Lokal (Wi-Fi)</span>
             </div>
             <div class="remote-ssh-cmd-row">
               <code id="vps-local-ssh-code">ssh root@127.0.0.1 -p 2222</code>
@@ -2165,8 +2191,8 @@
               </button>
             </div>
 
-            <div class="meta-chips-row" style="margin-top: 2px;">
-              <span class="meta-chip">🔑 Password SSH: <strong style="color:#60A5FA;">ubuntu123</strong></span>
+            <div class="meta-chips-grid cols-2" style="margin-top: 2px;">
+              <span class="meta-chip">🔑 Password: <strong style="color:#60A5FA;">ubuntu123</strong></span>
               <span class="meta-chip">🔌 Port: <strong>2222</strong></span>
             </div>
           </div>
@@ -2187,7 +2213,7 @@
           </div>
         </div>
 
-        <!-- Card 2: Manajemen Layanan & Operasional Server -->
+        <!-- Card 2: Kontrol Sistem & Operasional -->
         <div class="remote-card">
           <div class="remote-card-header">
             <div class="remote-card-title">
@@ -2195,52 +2221,52 @@
                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               </div>
               <div>
-                <h3>Kontrol Cepat &amp; Operasional</h3>
-                <p class="remote-card-subtitle">Lenz Mini Server • Manajemen Mandiri</p>
+                <h3>Kontrol Sistem</h3>
+                <p class="remote-card-subtitle">Layanan Server &amp; Perangkat</p>
               </div>
             </div>
           </div>
 
           <div class="remote-ssh-box">
             <div class="remote-ssh-label">
-              <span>Status Operasional Sistem</span>
+              <span>Status Sistem</span>
               <span class="badge-pinggy" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">Online 24/7</span>
             </div>
-            <div class="meta-chips-row">
-              <span class="meta-chip success">⚡ Wake-Lock: <strong>Aktif</strong></span>
-              <span class="meta-chip info">🌐 Web Port: <strong>8080</strong></span>
-              <span class="meta-chip purple">🖥 SSH Port: <strong>2222</strong></span>
+            <div class="meta-chips-grid cols-3">
+              <span class="meta-chip info">🌐 Web: <strong>8080</strong></span>
+              <span class="meta-chip purple">🖥 SSH: <strong>2222</strong></span>
+              <span class="meta-chip success">⚡ CPU: <strong>Aktif</strong></span>
             </div>
           </div>
 
           <div class="remote-controls-grid">
-            <button class="remote-ctrl-btn" onclick="doDeviceAction('wakelock')" title="Kunci CPU HP agar proses server tidak sleep di background">
+            <button class="remote-ctrl-btn" onclick="doDeviceAction('wakelock')" title="Kunci CPU agar service tidak sleep di background">
               <div class="remote-ctrl-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
                 <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
               </div>
               <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Wake-Lock HP</span>
-                <span class="remote-ctrl-desc">Cegah Android sleep</span>
+                <span class="remote-ctrl-name">Wake-Lock</span>
+                <span class="remote-ctrl-desc">Kunci CPU Aktif</span>
               </div>
             </button>
 
-            <button class="remote-ctrl-btn" onclick="confirmReboot()" title="Mulai ulang (reboot) fisik smartphone Android">
+            <button class="remote-ctrl-btn" onclick="confirmReboot()" title="Restart smartphone">
               <div class="remote-ctrl-icon" style="background: rgba(239, 68, 68, 0.15); color: #F87171;">
                 <svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
               </div>
               <div class="remote-ctrl-text">
                 <span class="remote-ctrl-name">Reboot HP</span>
-                <span class="remote-ctrl-desc">Restart perangkat</span>
+                <span class="remote-ctrl-desc">Restart Ponsel</span>
               </div>
             </button>
 
-            <button class="remote-ctrl-btn" onclick="doRestartPanel()" title="Mulai ulang service web dashboard">
+            <button class="remote-ctrl-btn" onclick="doRestartPanel()" title="Restart service panel">
               <div class="remote-ctrl-icon" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;">
                 <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               </div>
               <div class="remote-ctrl-text">
                 <span class="remote-ctrl-name">Restart Panel</span>
-                <span class="remote-ctrl-desc">Muat ulang server</span>
+                <span class="remote-ctrl-desc">Restart Layanan</span>
               </div>
             </button>
 
@@ -2249,8 +2275,8 @@
                 <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
               </div>
               <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Konsol Terminal</span>
-                <span class="remote-ctrl-desc">Buka perintah bash</span>
+                <span class="remote-ctrl-name">Terminal Web</span>
+                <span class="remote-ctrl-desc">Akses CLI</span>
               </div>
             </button>
           </div>
