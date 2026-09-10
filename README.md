@@ -26,6 +26,22 @@ Transformasikan smartphone Android lama atau baru (Android 5.0 s/d 14+, arsitekt
 
 ---
 
+## 📸 Preview Tampilan Web Dashboard
+
+| 📊 Monitoring Sistem (Desktop) | 📱 Tampilan Mobile Responsif |
+| :---: | :---: |
+| ![Monitoring](screenshots/monitoring.png) | ![Mobile View](screenshots/mobile_view.png) |
+
+| 📁 Web File Manager | 💻 Web Terminal & Console |
+| :---: | :---: |
+| ![File Manager](screenshots/file_manager.png) | ![Terminal](screenshots/terminal.png) |
+
+| 📋 PM2 Process Manager & Server Logs |
+| :---: |
+| ![PM2 & Logs](screenshots/logs_pm2.png) |
+
+---
+
 ## 📋 Spesifikasi Minimal & Penggunaan Sumber Daya
 
 ### 1. Spesifikasi Perangkat Minimal (Hardware & OS)
@@ -69,9 +85,7 @@ Installer otomatis mendeteksi versi Android dan arsitektur CPU perangkat Anda. A
 1. Pasang aplikasi **Termux** yang sesuai dengan versi Android HP Anda.
 2. *(Opsional)* Pasang juga **Termux:Boot** dari halaman rilis yang sama agar server otomatis menyala saat HP direstart.
 
-### Langkah 2: Eksekusi Instalasi Otomatis (Pilih Salah Satu Metode)
-
-#### 🔹 Metode A: Langsung dari Git (Direkomendasikan)
+### Langkah 2: Eksekusi Instalasi Otomatis
 Buka aplikasi **Termux**, lalu jalankan:
 ```bash
 pkg update -y && pkg install git -y
@@ -79,15 +93,6 @@ git clone https://github.com/Lenzx999/LenzNode.git ~/panel
 cd ~/panel
 bash install.sh
 ```
-
-#### 🔹 Metode B: Dari File ZIP / Penyimpanan Internal HP
-Jika Anda memindahkan file secara manual ke folder `Download`:
-```bash
-termux-setup-storage
-cd ~/storage/downloads/panel
-bash install.sh
-```
-*(Atau jika berupa ZIP: `cd ~/storage/downloads && unzip panel.zip -d ~/ && cd ~/panel && bash install.sh`)*
 
 #### Proses yang Dijalankan `install.sh` Secara Otomatis:
 1. Mengaktifkan `termux-wake-lock` agar CPU HP tidak tidur saat layar mati.
