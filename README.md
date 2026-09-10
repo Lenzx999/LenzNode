@@ -28,17 +28,17 @@ Transformasikan smartphone Android lama atau baru (Android 5.0 s/d 14+, arsitekt
 
 ## 📸 Preview Tampilan Web Dashboard
 
-| 📊 Monitoring Sistem (Desktop) | 📱 Tampilan Mobile Responsif |
+| 📊 Dashboard (Dekstop) | 📱 Tampilan Mobile |
 | :---: | :---: |
-| ![Monitoring](screenshots/monitoring.png) | ![Mobile View](screenshots/mobile_view.png) |
+| ![Dashboard Desktop](screenshots/monitoring.png) | ![Tampilan Mobile](screenshots/mobile_view.png) |
 
 | 📁 Web File Manager | 💻 Web Terminal & Console |
 | :---: | :---: |
 | ![File Manager](screenshots/file_manager.png) | ![Terminal](screenshots/terminal.png) |
 
-| 📋 PM2 Process Manager & Server Logs |
+| 📋 Server Logs |
 | :---: |
-| ![PM2 & Logs](screenshots/logs_pm2.png) |
+| ![Server Logs](screenshots/logs_pm2.png) |
 
 ---
 
