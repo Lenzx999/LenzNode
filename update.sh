@@ -23,10 +23,12 @@ export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 [ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PATH"
 
-if [ -d "$HOME/panel" ]; then
-    SERVER_DIR="$HOME/panel"
-elif [ -f "./panel/server.js" ]; then
+if [ -f "./panel/server.js" ]; then
     SERVER_DIR="$(pwd)"
+elif [ -d "$HOME/panel" ]; then
+    SERVER_DIR="$HOME/panel"
+elif [ -d "$HOME/LenzNode" ]; then
+    SERVER_DIR="$HOME/LenzNode"
 else
     SERVER_DIR="$HOME/panel"
     mkdir -p "$SERVER_DIR"
