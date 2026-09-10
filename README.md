@@ -199,9 +199,37 @@ Gunakan script `start.sh` di Termux untuk mengelola layanan:
 
 ---
 
+## 🔄 Cara Update ke Versi Terbaru
+
+Jika ada pembaruan fitur atau perbaikan dari repository, pengguna dapat memperbarui server dengan salah satu cara berikut:
+
+### 🔹 Cara 1: Lewat Terminal Web Dashboard (Paling Praktis)
+Buka tab **Terminal** di web browser Anda, lalu jalankan:
+```bash
+bash ~/panel/update.sh
+```
+
+### 🔹 Cara 2: Lewat Termux di HP
+Buka aplikasi **Termux**, lalu ketik:
+```bash
+lenz-update
+# atau:
+cd ~/panel && bash update.sh
+```
+
+### 🔹 Cara 3: Manual Git Pull
+```bash
+cd ~/panel
+git pull
+bash start.sh
+```
+
+---
+
 ## 🛠️ CLI Helper Tools & Perintah Cepat
 
 ### Di Termux Host
+* `lenz-update` : Memperbarui server ke versi terbaru dari GitHub secara otomatis.
 * `lenz-server` : Menjalankan atau merestart seluruh layanan Lenz Mini Server & VPS.
 * `lenz-vps`    : Masuk langsung ke sesi interaktif Ubuntu Linux VPS.
 * `lenz-status` : Menampilkan status operasional port panel (8080) dan SSH (2222).

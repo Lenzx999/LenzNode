@@ -299,6 +299,19 @@ bash "$HOME/start.sh" --status
 EOF
     chmod +x "$PREFIX_BIN/lenz-status"
 
+    cat << 'EOF' > "$PREFIX_BIN/lenz-update"
+#!/data/data/com.termux/files/usr/bin/bash
+# Lenz Mini Server — Author: Lenz
+if [ -f "$HOME/panel/update.sh" ]; then
+    bash "$HOME/panel/update.sh"
+else
+    cd "$HOME/panel" 2>/dev/null || cd "$HOME"
+    git pull
+    bash "$HOME/panel/start.sh" --bg
+fi
+EOF
+    chmod +x "$PREFIX_BIN/lenz-update"
+
     cat << 'EOF' > "$PREFIX_BIN/termux-fix"
 #!/data/data/com.termux/files/usr/bin/bash
 # Lenz Mini Server — Author: Lenz
