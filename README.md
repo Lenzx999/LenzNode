@@ -201,15 +201,15 @@ Gunakan script `start.sh` di Termux untuk mengelola layanan:
 
 ## 🔄 Cara Update ke Versi Terbaru
 
-Jika ada pembaruan fitur atau perbaikan dari repository, pengguna dapat memperbarui server dengan salah satu cara berikut:
+Semua pengguna (baik yang memasang via **Git Clone** maupun download **ZIP**) dapat memperbarui server dengan salah satu cara berikut:
 
-### 🔹 Cara 1: Lewat Terminal Web Dashboard (Paling Praktis)
-Buka tab **Terminal** di web browser Anda, lalu jalankan:
+### 🔹 Metode 1: Perintah Cepat 1 Baris (Universal untuk Semua Pengguna)
+Jalankan perintah ini di **Terminal Web Dashboard** atau di **Termux**:
 ```bash
-bash ~/panel/update.sh
+curl -sL https://raw.githubusercontent.com/Lenzx999/LenzNode/main/update.sh | bash
 ```
 
-### 🔹 Cara 2: Lewat Termux di HP
+### 🔹 Metode 2: Lewat Termux di HP
 Buka aplikasi **Termux**, lalu ketik:
 ```bash
 lenz-update
@@ -217,7 +217,8 @@ lenz-update
 cd ~/panel && bash update.sh
 ```
 
-### 🔹 Cara 3: Manual Git Pull
+### 🔹 Metode 3: Manual Git
+Jika Anda menginstall via `git clone`:
 ```bash
 cd ~/panel
 git pull
