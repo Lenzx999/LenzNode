@@ -799,13 +799,19 @@
       justify-content: space-between;
       gap: 12px;
     }
+    .fm-path-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 480px;
+      min-width: 180px;
+    }
     .fm-path-bar {
       display: flex;
       align-items: center;
       gap: 6px;
       flex: 1;
-      max-width: 480px;
-      min-width: 180px;
       font-family: var(--font-mono);
       font-size: 13px;
       color: #94a3b8;
@@ -1703,23 +1709,23 @@
       .header-actions .btn-restart-label-short { display: inline; }
 
       .tabs-nav {
-        gap: 4px;
+        gap: 3px;
         padding: 3px;
-        margin-bottom: 12px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
       }
       .tab-btn {
-        padding: 7px 10px;
-        font-size: 11.5px;
-        gap: 5px;
-        min-height: 36px;
-        flex-shrink: 0;
+        padding: 6px 4px;
+        font-size: 11px;
+        gap: 4px;
+        min-height: 35px;
+        flex: 1;
+        min-width: 0;
       }
       .tab-btn svg {
-        width: 14px;
-        height: 14px;
+        width: 13px;
+        height: 13px;
       }
 
       .quick-url-ribbon {
@@ -1831,9 +1837,19 @@
         padding: 8px 10px;
         gap: 8px;
       }
-      .fm-path-bar {
-        max-width: 100%;
+      .fm-path-row {
         width: 100%;
+        max-width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .fm-path-bar {
+        flex: 1;
+        max-width: 100%;
+        width: auto;
+        padding: 6px 10px;
+        font-size: 12px;
       }
       .fm-actions {
         width: 100%;
@@ -1841,19 +1857,26 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 6px;
       }
-      .fm-actions .btn {
+      .fm-actions button {
         width: 100%;
-        padding: 6px 8px;
+        justify-content: center;
+        padding: 7px 8px;
         font-size: 11.5px;
       }
+      .fm-table-wrap {
+        border-radius: 0 0 10px 10px;
+      }
+      .fm-table {
+        min-width: 420px;
+      }
       .fm-table th, .fm-table td {
-        padding: 10px 12px;
-        font-size: 12.5px;
+        padding: 8px 10px;
+        font-size: 12px;
       }
       .fm-action-icon {
-        padding: 6px;
-        min-width: 30px;
-        min-height: 30px;
+        padding: 5px;
+        min-width: 28px;
+        min-height: 28px;
       }
 
       .terminal-container {
@@ -2289,8 +2312,13 @@
       <div class="fm-container">
         <!-- Toolbar -->
         <div class="fm-toolbar">
-          <div class="fm-path-bar" id="fm-breadcrumbs">
-            <span class="fm-path-segment" onclick="loadFiles('/')">root</span>
+          <div class="fm-path-row">
+            <div class="fm-path-bar" id="fm-breadcrumbs">
+              <span class="fm-path-segment" onclick="loadFiles('/')">root</span>
+            </div>
+            <button class="btn-fm-icon" onclick="loadFiles()" title="Segarkan File">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            </button>
           </div>
           <div class="fm-actions">
             <input type="file" id="fm-file-input" style="display: none" multiple onchange="handleFileUpload(event)">
@@ -2312,9 +2340,6 @@
             <button class="btn-fm-dark" onclick="openCreateFileModal()" title="Buat File Baru">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
               <span>File Baru</span>
-            </button>
-            <button class="btn-fm-icon" onclick="loadFiles()" title="Segarkan File">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
             </button>
           </div>
         </div>
