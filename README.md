@@ -89,8 +89,8 @@ Installer otomatis mendeteksi versi Android dan arsitektur CPU perangkat Anda. A
 Buka aplikasi **Termux**, lalu jalankan:
 ```bash
 pkg update -y && pkg install git -y
-git clone https://github.com/Lenzx999/LenzNode.git ~/panel
-cd ~/panel
+git clone https://github.com/Lenzx999/LenzNode.git
+cd LenzNode
 bash install.sh
 ```
 
@@ -105,7 +105,7 @@ bash install.sh
 
 ## 🌐 Cara Mengakses Website & VPS
 
-Setelah instalasi selesai dan server dijalankan (`bash ~/panel/start.sh` atau `lenz-server`), berikut panduan lengkap untuk mengakses Web Dashboard dan Ubuntu VPS.
+Setelah instalasi selesai dan server dijalankan (`bash ~/LenzNode/start.sh` atau `lenz-server`), berikut panduan lengkap untuk mengakses Web Dashboard dan Ubuntu VPS.
 
 ---
 
@@ -185,19 +185,19 @@ Gunakan script `start.sh` di Termux untuk mengelola layanan:
 
 * **Menjalankan Server**:
   ```bash
-  bash ~/panel/start.sh
+  bash ~/LenzNode/start.sh
   ```
 * **Melihat Status Layanan**:
   ```bash
-  bash ~/panel/start.sh status
+  bash ~/LenzNode/start.sh status
   ```
 * **Mematikan Server**:
   ```bash
-  bash ~/panel/start.sh stop
+  bash ~/LenzNode/start.sh stop
   ```
 * **Memulai Ulang (Restart)**:
   ```bash
-  bash ~/panel/start.sh restart
+  bash ~/LenzNode/start.sh restart
   ```
 
 ---
@@ -219,13 +219,13 @@ Buka aplikasi **Termux**, lalu ketik:
 ```bash
 lenz-update
 # atau:
-cd ~/panel && bash update.sh
+cd ~/LenzNode && bash update.sh
 ```
 
 ### 🔹 Metode 3: Manual Git
 Jika Anda menginstall via `git clone`:
 ```bash
-cd ~/panel
+cd ~/LenzNode
 git pull
 bash start.sh
 ```

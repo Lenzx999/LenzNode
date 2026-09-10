@@ -33,7 +33,7 @@ echo -e "==================================================================${NC}
 echo ""
 
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
-BASE_DIR="$HOME/panel"
+[ -d "$SRC_DIR" ] && BASE_DIR="$SRC_DIR" || BASE_DIR="$HOME/LenzNode"
 UBUNTU_DIR="$HOME/ubuntu-fs"
 
 # -----------------------------------------------------------------------------
@@ -302,12 +302,12 @@ EOF
     cat << 'EOF' > "$PREFIX_BIN/lenz-update"
 #!/data/data/com.termux/files/usr/bin/bash
 # Lenz Mini Server — Author: Lenz
-if [ -f "$HOME/panel/update.sh" ]; then
+if [ -f "$HOME/LenzNode/update.sh" ]; then
+    bash "$HOME/LenzNode/update.sh"
+elif [ -f "$HOME/panel/update.sh" ]; then
     bash "$HOME/panel/update.sh"
 else
-    cd "$HOME/panel" 2>/dev/null || cd "$HOME"
-    git pull
-    bash "$HOME/panel/start.sh" --bg
+    curl -sL https://raw.githubusercontent.com/Lenzx999/LenzNode/main/update.sh | bash
 fi
 EOF
     chmod +x "$PREFIX_BIN/lenz-update"

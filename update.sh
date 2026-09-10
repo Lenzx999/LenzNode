@@ -25,12 +25,12 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PATH"
 
 if [ -f "./panel/server.js" ]; then
     SERVER_DIR="$(pwd)"
-elif [ -d "$HOME/panel" ]; then
-    SERVER_DIR="$HOME/panel"
 elif [ -d "$HOME/LenzNode" ]; then
     SERVER_DIR="$HOME/LenzNode"
-else
+elif [ -d "$HOME/panel" ]; then
     SERVER_DIR="$HOME/panel"
+else
+    SERVER_DIR="$HOME/LenzNode"
     mkdir -p "$SERVER_DIR"
 fi
 

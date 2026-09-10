@@ -19,7 +19,15 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
-[ -d "$HOME/panel" ] && SERVER_DIR="$HOME/panel" || SERVER_DIR="$DIR"
+if [ -f "$DIR/panel/server.js" ]; then
+    SERVER_DIR="$DIR"
+elif [ -d "$HOME/LenzNode" ]; then
+    SERVER_DIR="$HOME/LenzNode"
+elif [ -d "$HOME/panel" ]; then
+    SERVER_DIR="$HOME/panel"
+else
+    SERVER_DIR="$DIR"
+fi
 LOG_DIR="$SERVER_DIR/logs"
 mkdir -p "$LOG_DIR"
 PANEL_LOG="$LOG_DIR/panel.log"
