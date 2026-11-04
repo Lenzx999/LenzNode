@@ -1945,23 +1945,60 @@
       .header-actions .btn-restart-label-short { display: inline; }
 
       .tabs-nav {
-        gap: 3px;
-        padding: 3px;
+        gap: 6px;
+        padding: 4px 6px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        display: flex;
+        flex-wrap: nowrap;
+      }
+      .tabs-nav::-webkit-scrollbar {
+        display: none;
       }
       .tab-btn {
-        padding: 6px 4px;
-        font-size: 11px;
-        gap: 4px;
-        min-height: 35px;
-        flex: 1;
-        min-width: 0;
+        padding: 7px 13px;
+        font-size: 11.5px;
+        gap: 5px;
+        min-height: 36px;
+        flex: 0 0 auto;
+        white-space: nowrap;
       }
       .tab-btn svg {
-        width: 13px;
-        height: 13px;
+        width: 14px;
+        height: 14px;
+      }
+
+      .app-card {
+        padding: 14px 14px;
+        gap: 12px;
+      }
+      .app-card-titles h3 {
+        font-size: 15px;
+      }
+      .app-card-titles p {
+        font-size: 11px;
+      }
+      .router-url-box {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px 12px;
+      }
+      .router-url-target {
+        font-size: 11.5px;
+      }
+      .app-actions-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .app-actions-row .btn {
+        flex: 1 1 calc(50% - 4px);
+        min-height: 38px;
+        font-size: 11.5px;
       }
 
       .quick-url-ribbon {
@@ -4295,23 +4332,23 @@
             <div class="meta-chip purple">Versi: <strong>v${escapeHtml(data.version || '0.5.112')}</strong></div>
           </div>
 
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <div class="app-actions-row">
             ${isRunning ? `
-              <button class="btn btn-sm btn-action-amber" onclick="stop9Router()" style="flex:1;min-width:110px;">
+              <button class="btn btn-sm btn-action-amber" onclick="stop9Router()">
                 <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
                 Stop (Hentikan)
               </button>
             ` : `
-              <button class="btn btn-sm btn-action-blue" onclick="start9Router()" style="flex:1;min-width:110px;">
+              <button class="btn btn-sm btn-action-blue" onclick="start9Router()">
                 <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                 Mulai (Start)
               </button>
             `}
-            <button class="btn btn-sm btn-action-blue" onclick="restart9Router()" style="flex:1;min-width:110px;">
+            <button class="btn btn-sm btn-action-blue" onclick="restart9Router()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
               Restart
             </button>
-            <button class="btn btn-sm btn-action-red" onclick="confirmDelete9Router()" style="flex:1;min-width:110px;">
+            <button class="btn btn-sm btn-action-red" onclick="confirmDelete9Router()">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Delete (Hapus)
             </button>
