@@ -1,8 +1,8 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
-# Lenz Mini Server — Master Unified Launcher & Manager
-# Author / Developer: Lenz
-# Mengelola: Web Dashboard Panel (Port 8080) & Ubuntu VPS OpenSSH (Port 2222)
+# LenzNode — Unified Launcher & Manager (Native Termux Edition)
+# Mengelola: Web Dashboard Panel (Port 8080), SSH Server (Port 2222), & Cloudflare Tunnel
+# 100% Native Termux — Ringan, Cepat, Tanpa PRootDistro (Zero Overhead)
 # ==============================================================================
 
 GREEN='\033[0;32m'
@@ -10,7 +10,15 @@ BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 RED='\033[0;31m'
+BOLD='\033[1m'
+DIM='\033[2m'
+GRAY='\033[0;90m'
 NC='\033[0m'
+
+# Anti-recursion guard: Mencegah eksekusi ganda jika dipanggil kembali oleh subshell
+if [ "$_LENZNODE_RUNNING" = "1" ] && [ -z "$1" ]; then
+    exit 0
+fi
 
 # Inisialisasi Environment Termux
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
@@ -28,29 +36,31 @@ elif [ -d "$HOME/panel" ]; then
 else
     SERVER_DIR="$DIR"
 fi
+
 LOG_DIR="$SERVER_DIR/logs"
 mkdir -p "$LOG_DIR"
 PANEL_LOG="$LOG_DIR/panel.log"
-VPS_LOG="$LOG_DIR/vps.log"
-
-UBUNTU_DIR="$HOME/ubuntu-fs"
-START_UBUNTU="$SERVER_DIR/scripts/start-ubuntu.sh"
-[ ! -f "$START_UBUNTU" ] && START_UBUNTU="$HOME/start-ubuntu.sh"
+SSH_LOG="$LOG_DIR/ssh.log"
+TUNNEL_LOG="$LOG_DIR/cloudflared.log"
+TUNNEL_FILE="$LOG_DIR/tunnel-url.txt"
 
 export PANEL_USER="admin"
 export PANEL_PASS="admin123"
 export PANEL_PORT="8080"
 
 get_local_ip() {
-    local ip
-    ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
-    if [ -z "$ip" ] || ! echo "$ip" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
-        ip=$(ip addr show 2>/dev/null | grep -E "inet [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -v "127.0.0.1" | awk '{print $2}' | cut -d'/' -f1 | head -n1)
+    local ip=""
+    if command -v node >/dev/null 2>&1; then
+        ip=$(node -e "const os=require('os'),i=os.networkInterfaces();let r='';for(const k in i){for(const x of i[k]){if(x.family==='IPv4'&&!x.internal){r=x.address;break;}}if(r)break;}console.log(r);" 2>/dev/null)
     fi
-    if [ -z "$ip" ]; then
-        ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | head -n1)
+    if [ -z "$ip" ] && command -v ip >/dev/null 2>&1; then
+        ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
     fi
-    echo "${ip:-127.0.0.1}"
+    if [ -z "$ip" ] && command -v ifconfig >/dev/null 2>&1; then
+        ip=$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | sed 's/addr://')
+    fi
+    [ -z "$ip" ] && ip="127.0.0.1"
+    echo "$ip"
 }
 
 is_port_active() {
@@ -68,208 +78,244 @@ is_port_active() {
 }
 
 # -----------------------------------------------------------------------------
-# 1. KONTROL VPS OPENSSH (Port 2222)
+# 1. KONTROL SSH SERVER (Port 2222) — NATIVE TERMUX (TANPA PROOT)
 # -----------------------------------------------------------------------------
-start_vps() {
+start_ssh() {
     if is_port_active 2222; then
-        echo -e "${GREEN}✓ VPS OpenSSH sudah aktif di port 2222.${NC}"
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}"
         return 0
     fi
 
-    echo -e "${YELLOW}>> Menjalankan OpenSSH Server di dalam Ubuntu VPS (Port 2222)...${NC}"
-    if [ -d "$UBUNTU_DIR" ] && command -v proot >/dev/null 2>&1; then
-        pkill -9 -f "sshd" 2>/dev/null || true
-        sleep 0.3
-        mkdir -p "$UBUNTU_DIR/run/sshd" "$UBUNTU_DIR/var/run/sshd" 2>/dev/null || true
-        chmod 0755 "$UBUNTU_DIR/run/sshd" "$UBUNTU_DIR/var/run/sshd" 2>/dev/null || true
-
-        unset LD_PRELOAD
-        export PROOT_NO_SECCOMP=1
-        nohup proot \
-            --link2symlink \
-            -0 \
-            -r "$UBUNTU_DIR" \
-            -b /dev \
-            -b /dev/pts \
-            -b /proc \
-            -b /sys \
-            -b /sdcard \
-            -b /data/data/com.termux/files:/data/data/com.termux/files \
-            -b "$HOME":/root/termux-home \
-            -w /root \
-            /usr/bin/env -i \
-            HOME=/root \
-            HOSTNAME=lenz \
-            PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-            /usr/sbin/sshd -p 2222 -D -e > "$VPS_LOG" 2>&1 &
-        sleep 1
-        echo -e "${GREEN}✓ VPS OpenSSH aktif di background (Port 2222).${NC}"
-    else
-        pkill -f "sshd -p 2222" 2>/dev/null || true
-        sshd -p 2222 2>/dev/null || true
-        echo -e "${GREEN}✓ OpenSSH Termux aktif di port 2222.${NC}"
-    fi
-}
-
-stop_vps() {
-    echo -e "${YELLOW}>> Menghentikan VPS OpenSSH...${NC}"
-    pkill -9 -f "sshd" 2>/dev/null || true
-    echo -e "${GREEN}✓ VPS OpenSSH dihentikan.${NC}"
-}
-
-get_node_bin() {
-    if command -v node >/dev/null 2>&1; then
-        command -v node
-    elif [ -x "$PREFIX/bin/node" ]; then
-        echo "$PREFIX/bin/node"
-    elif [ -x "/data/data/com.termux/files/usr/bin/node" ]; then
-        echo "/data/data/com.termux/files/usr/bin/node"
-    elif [ -x "/usr/bin/node" ]; then
-        echo "/usr/bin/node"
-    elif [ -x "/usr/local/bin/node" ]; then
-        echo "/usr/local/bin/node"
-    else
-        echo ""
-    fi
-}
-
-start_panel() {
-    if is_port_active 8080; then
-        echo -e "${GREEN}✓ Web Dashboard Panel sudah aktif di port 8080.${NC}"
-        return 0
-    fi
-
-    echo -e "${YELLOW}>> Memeriksa runtime Node.js...${NC}"
-    local NODE_BIN
-    NODE_BIN=$(get_node_bin)
-
-    if [ -z "$NODE_BIN" ]; then
-        echo -e "${YELLOW}⚠️ Node.js tidak terdeteksi. Mencoba menginstal Node.js di Termux...${NC}"
-        pkg update -y 2>/dev/null || true
-        pkg install -y nodejs || pkg install -y nodejs-lts || true
-        NODE_BIN=$(get_node_bin)
-    fi
-
-    if [ -z "$NODE_BIN" ]; then
-        echo -e "${RED}✗ Error: Node.js belum terpasang! Web Panel tidak dapat dijalankan.${NC}"
-        echo -e "${YELLOW}Solusi: Jalankan 'pkg install nodejs -y' di Termux lalu coba lagi.${NC}"
-        return 1
-    fi
-
-    echo -e "${YELLOW}>> Menjalankan Web Dashboard Panel (Port 8080)...${NC}"
-    pkill -f "node.*/panel/server\.js" 2>/dev/null || true
-    pkill -f "node server.js" 2>/dev/null || true
+    pkill -f "sshd -p 2222" 2>/dev/null || true
+    sshd -p 2222 2>/dev/null || true
     sleep 0.5
+
+    if is_port_active 2222; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  ssh         ${DIM}port 2222 (menjalankan ulang)${NC}"
+    fi
+}
+
+stop_ssh() {
+    pkill -f "sshd -p 2222" 2>/dev/null || true
+    pkill -9 -f "sshd" 2>/dev/null || true
+    echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  ssh         ${DIM}stopped${NC}"
+}
+
+start_vps() { start_ssh "$@"; }
+stop_vps() { stop_ssh "$@"; }
+
+# -----------------------------------------------------------------------------
+# 2. KONTROL WEB DASHBOARD PANEL (Port 8080)
+# -----------------------------------------------------------------------------
+start_panel() {
+    if is_port_active "${PANEL_PORT:-8080}"; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
+        return 0
+    fi
 
     local SERVER_JS="$SERVER_DIR/panel/server.js"
     [ ! -f "$SERVER_JS" ] && SERVER_JS="$DIR/panel/server.js"
     [ ! -f "$SERVER_JS" ] && SERVER_JS="$DIR/server.js"
 
     if [ ! -f "$SERVER_JS" ]; then
-        echo -e "${RED}✗ Error: File server.js tidak ditemukan di direktori $SERVER_DIR/panel atau $DIR!${NC}"
+        echo -e "  ${CYAN}│${NC}  ${RED}✗${NC}  panel       ${DIM}server.js tidak ditemukan${NC}"
         return 1
     fi
 
-    nohup "$NODE_BIN" "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
-    PANEL_PID=$!
-    sleep 1.2
-
-    if kill -0 "$PANEL_PID" 2>/dev/null; then
-        echo -e "${GREEN}✓ Web Panel aktif di background (PID: $PANEL_PID).${NC}"
-    else
-        echo -e "${RED}✗ Gagal menjalankan Web Panel. Cek log di: $PANEL_LOG${NC}"
-        if [ -f "$PANEL_LOG" ]; then
-            echo -e "${RED}Isi Log Terakhir:${NC}"
-            tail -n 10 "$PANEL_LOG"
+    if command -v pm2 >/dev/null 2>&1; then
+        if pm2 describe panel >/dev/null 2>&1; then
+            pm2 restart panel >/dev/null 2>&1
+        else
+            pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=96" --max-memory-restart 120M >/dev/null 2>&1
+            pm2 save >/dev/null 2>&1 || true
         fi
-        return 1
+    else
+        pkill -f "node.*/panel/server\.js" 2>/dev/null || true
+        pkill -f "node server.js" 2>/dev/null || true
+        nohup node "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        disown $! 2>/dev/null || true
     fi
+    echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
 }
 
 stop_panel() {
-    echo -e "${YELLOW}>> Menghentikan Web Panel...${NC}"
+    if command -v pm2 >/dev/null 2>&1; then
+        pm2 stop panel >/dev/null 2>&1 || true
+    fi
     pkill -f "node.*/panel/server\.js" 2>/dev/null || true
     pkill -f "node server.js" 2>/dev/null || true
-    echo -e "${GREEN}✓ Web Panel dihentikan.${NC}"
+    echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  panel       ${DIM}stopped${NC}"
 }
 
 # -----------------------------------------------------------------------------
-# 3. START ALL, STOP ALL, & STATUS
+# 3. KONTROL CLOUDFLARE PUBLIC TUNNEL
+# -----------------------------------------------------------------------------
+ensure_cloudflare_tunnel() {
+    local CF_BIN=""
+    if command -v cloudflared >/dev/null 2>&1; then
+        CF_BIN="cloudflared"
+    elif [ -x "$PREFIX/bin/cloudflared" ]; then
+        CF_BIN="$PREFIX/bin/cloudflared"
+    elif [ -x "/data/data/com.termux/files/usr/bin/cloudflared" ]; then
+        CF_BIN="/data/data/com.termux/files/usr/bin/cloudflared"
+    fi
+
+    if [ -z "$CF_BIN" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}cloudflared belum terpasang${NC}"
+        return 0
+    fi
+
+    if pgrep -x cloudflared >/dev/null 2>&1; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
+        return 0
+    fi
+
+    nohup "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
+    disown $! 2>/dev/null || true
+
+    # Polling URL selama 2-3 detik agar langsung siap ditampilkan di terminal
+    local URL=""
+    for i in 1 2 3 4 5 6; do
+        if [ -f "$TUNNEL_FILE" ]; then
+            URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
+            [ -n "$URL" ] && break
+        fi
+        if [ -f "$TUNNEL_LOG" ]; then
+            URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
+            if [ -n "$URL" ]; then
+                echo "$URL" > "$TUNNEL_FILE" 2>/dev/null || true
+                break
+            fi
+        fi
+        sleep 0.5
+    done
+
+    echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
+}
+
+stop_tunnel() {
+    pkill -f "cloudflared tunnel" 2>/dev/null || true
+    pkill -x cloudflared 2>/dev/null || true
+    echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}stopped${NC}"
+}
+
+# -----------------------------------------------------------------------------
+# 4. START ALL, STOP ALL, & STATUS
 # -----------------------------------------------------------------------------
 start_all() {
+    if [ "$_LENZNODE_STARTING" = "1" ]; then
+        return 0
+    fi
+    export _LENZNODE_STARTING=1
+    export _LENZNODE_RUNNING=1
+
+    local LOCK_FILE="$LOG_DIR/.start.lock"
+    local LAST_START_FILE="$LOG_DIR/.last_start"
+    local NOW=$(date +%s 2>/dev/null || echo 0)
+
+    # Concurrency guard
+    if [ -f "$LOCK_FILE" ]; then
+        local RUNNING_PID=$(cat "$LOCK_FILE" 2>/dev/null)
+        if [ -n "$RUNNING_PID" ] && kill -0 "$RUNNING_PID" 2>/dev/null && [ "$RUNNING_PID" != "$$" ]; then
+            local FILE_MTIME=$(date -r "$LOCK_FILE" +%s 2>/dev/null || echo 0)
+            local AGE=$((NOW - FILE_MTIME))
+            if [ "$AGE" -le 60 ] && [ "$AGE" -ge 0 ]; then
+                echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  LenzNode sedang berjalan oleh PID ${RUNNING_PID}."
+                unset _LENZNODE_STARTING
+                return 0
+            fi
+        fi
+        rm -f "$LOCK_FILE" 2>/dev/null || true
+    fi
+
+    # Debounce guard
+    if [ "$1" != "force" ] && [ -f "$LAST_START_FILE" ]; then
+        local LAST_TIME=$(cat "$LAST_START_FILE" 2>/dev/null || echo 0)
+        local DIFF=$((NOW - LAST_TIME))
+        if [ "$DIFF" -ge 0 ] && [ "$DIFF" -lt 4 ]; then
+            unset _LENZNODE_STARTING
+            return 0
+        fi
+    fi
+
+    echo "$$" > "$LOCK_FILE"
+    echo "$NOW" > "$LAST_START_FILE"
+    trap 'rm -f "$LOG_DIR/.start.lock" 2>/dev/null || true' EXIT INT TERM
+
     command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || true
 
     echo ""
-    echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│                 🚀 LENZ MINI SERVER & VPS                   │${NC}"
-    echo -e "${CYAN}│              Memulai Seluruh Layanan Server...              │${NC}"
-    echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
-    echo ""
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
 
-    start_vps
     start_panel
+    start_ssh
+    ensure_cloudflare_tunnel
 
-    local LOCAL_IP
     LOCAL_IP=$(get_local_ip)
+    TUNNEL_URL=""
+    if [ -f "$TUNNEL_FILE" ]; then
+        TUNNEL_URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
+    fi
+    if [ -z "$TUNNEL_URL" ] && [ -f "$TUNNEL_LOG" ]; then
+        TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
+    fi
 
-    echo ""
-    echo -e "${GREEN}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${GREEN}│  ✅ SELURUH LAYANAN SERVER BERHASIL DIAKTIFKAN!             │${NC}"
-    echo -e "${GREEN}├─────────────────────────────────────────────────────────────┤${NC}"
-    echo -e "   🌐 ${CYAN}Web Dashboard Panel (Buka di Browser HP / Laptop):${NC}"
-    echo -e "      ➜ Alamat   : ${YELLOW}http://${LOCAL_IP}:${PANEL_PORT}${NC}"
-    echo -e "      ➜ Username : ${YELLOW}${PANEL_USER}${NC}"
-    echo -e "      ➜ Password : ${YELLOW}${PANEL_PASS}${NC}"
-    echo -e ""
-    echo -e "   🖥️ ${CYAN}Ubuntu VPS Console (Akses SSH):${NC}"
-    echo -e "      ➜ Perintah : ${YELLOW}ssh root@${LOCAL_IP} -p 2222${NC}"
-    echo -e "      ➜ Password : ${YELLOW}ubuntu123${NC}"
-    echo -e "${GREEN}└─────────────────────────────────────────────────────────────┘${NC}"
-    echo ""
-    echo -e "${BLUE}💡 Panduan Penggunaan:${NC}"
-    echo -e "   • Buka alamat Web Dashboard di atas untuk kelola file, terminal, & bot."
-    echo -e "   • Server berjalan senyap di background (Termux bebas digunakan)."
-    echo -e "   • Cek status server : ${YELLOW}./start.sh status${NC}"
-    echo -e "   • Pantau log live   : ${YELLOW}./start.sh logs${NC}"
-    echo -e "   • Hentikan server   : ${YELLOW}./start.sh stop${NC}"
-    echo ""
+    echo -e "  ${CYAN}│${NC}"
+    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
+    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+    if [ -n "$TUNNEL_URL" ]; then
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+    fi
+    echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
+
+    rm -f "$LOCK_FILE" 2>/dev/null || true
+    unset _LENZNODE_STARTING
 }
 
 stop_all() {
-    echo -e "${RED}>> Menghentikan semua layanan server...${NC}"
+    rm -f "$LOG_DIR/.start.lock" "$LOG_DIR/.last_start" 2>/dev/null || true
+    echo ""
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
     stop_panel
-    stop_vps
-    echo -e "${GREEN}✓ Seluruh layanan server telah dimatikan.${NC}"
+    stop_ssh
+    stop_tunnel
+    echo -e "  ${CYAN}╰─ Stopped ───────────────────────────────${NC}\n"
 }
 
 status_all() {
-    local LOCAL_IP
+    echo ""
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
     LOCAL_IP=$(get_local_ip)
-
-    echo ""
-    echo -e "${CYAN}┌─────────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│               📊 STATUS LAYANAN LENZ SERVER                 │${NC}"
-    echo -e "${CYAN}├─────────────────────────────────────────────────────────────┤${NC}"
-    if is_port_active 8080; then
-        echo -e "   • Web Dashboard Panel (Port 8080) : ${GREEN}🟢 AKTIF${NC} -> http://${LOCAL_IP}:8080"
+    is_port_active "${PANEL_PORT:-8080}" && echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}" || echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  panel       ${DIM}stopped${NC}"
+    is_port_active 2222 && echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}" || echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  ssh         ${DIM}stopped${NC}"
+    if pgrep -x cloudflared >/dev/null 2>&1; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
     else
-        echo -e "   • Web Dashboard Panel (Port 8080) : ${RED}🔴 NONAKTIF${NC}"
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}stopped${NC}"
     fi
-    if is_port_active 2222; then
-        echo -e "   • Ubuntu VPS SSH      (Port 2222) : ${GREEN}🟢 AKTIF${NC} -> ssh root@${LOCAL_IP} -p 2222"
-    else
-        echo -e "   • Ubuntu VPS SSH      (Port 2222) : ${RED}🔴 NONAKTIF${NC}"
-    fi
-    echo -e "${CYAN}└─────────────────────────────────────────────────────────────┘${NC}"
-    echo ""
-}
 
-show_logs() {
-    if [ -f "$PANEL_LOG" ]; then
-        echo -e "${CYAN}📋 Menampilkan Log Server Live (Tekan Ctrl+C untuk keluar):${NC}"
-        tail -f "$PANEL_LOG"
+    TUNNEL_URL=""
+    if [ -f "$TUNNEL_FILE" ]; then
+        TUNNEL_URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
+    fi
+    if [ -z "$TUNNEL_URL" ] && [ -f "$TUNNEL_LOG" ]; then
+        TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
+    fi
+
+    echo -e "  ${CYAN}│${NC}"
+    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
+    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+    if [ -n "$TUNNEL_URL" ]; then
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+    fi
+    if is_port_active "${PANEL_PORT:-8080}" || is_port_active 2222; then
+        echo -e "  ${CYAN}╰─ Active ────────────────────────────────${NC}\n"
     else
-        echo -e "${YELLOW}Berkas log belum tersedia.${NC}"
+        echo -e "  ${CYAN}╰─ Inactive ──────────────────────────────${NC}\n"
     fi
 }
 
@@ -280,19 +326,31 @@ case "$1" in
     restart)
         stop_all
         sleep 1
-        start_all
+        start_all "force"
         ;;
     status)
         status_all
         ;;
-    logs|log)
-        show_logs
-        ;;
     panel)
         start_panel
         ;;
-    vps)
-        start_vps
+    ssh|vps)
+        start_ssh
+        ;;
+    stop-ssh|stop-vps)
+        stop_ssh
+        ;;
+    tunnel)
+        ensure_cloudflare_tunnel
+        ;;
+    stop-tunnel)
+        stop_tunnel
+        ;;
+    logs)
+        tail -f "$PANEL_LOG"
+        ;;
+    bg|daemon|-d|--bg)
+        start_all "bg"
         ;;
     *)
         start_all

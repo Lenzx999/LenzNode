@@ -116,8 +116,8 @@ chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
 echo -e "${GREEN}✓ Hak akses skrip diperbarui.${NC}"
 
 echo -e "\n${BLUE}[3/3] Memulai ulang panel server...${NC}"
-if command -v pm2 >/dev/null 2>&1 && pm2 describe lenz-panel >/dev/null 2>&1; then
-    pm2 restart lenz-panel
+if command -v pm2 >/dev/null 2>&1 && (pm2 describe panel >/dev/null 2>&1 || pm2 describe lenz-panel >/dev/null 2>&1); then
+    pm2 restart panel 2>/dev/null || pm2 restart lenz-panel
     echo -e "${GREEN}✓ Layanan PM2 lenz-panel berhasil dimuat ulang!${NC}"
 else
     pkill -f "node.*panel/server.js" 2>/dev/null || true
