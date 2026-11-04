@@ -355,6 +355,9 @@ case "$1" in
     stop-tunnel)
         stop_tunnel
         ;;
+    router|9router)
+        bash "$SERVER_DIR/scripts/start-9router.sh" "$2"
+        ;;
     logs)
         tail -f "$PANEL_LOG"
         ;;

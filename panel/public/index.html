@@ -795,6 +795,202 @@
       text-overflow: ellipsis;
     }
 
+    /* Apps Grid & 9Router Styles */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .app-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .app-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+    .app-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .app-card-branding {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .app-card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(59, 130, 246, 0.18) 100%);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      flex-shrink: 0;
+    }
+    .app-card-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+    .app-card-titles h3 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #F8FAFC;
+      letter-spacing: -0.2px;
+    }
+    .app-card-titles p {
+      margin: 2px 0 0 0;
+      font-size: 12px;
+      color: #94A3B8;
+    }
+    .app-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .badge-online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .badge-stopped {
+      background: rgba(148, 163, 184, 0.12);
+      color: #94A3B8;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+    .badge-installing {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60A5FA;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+    .badge-uninstalled {
+      background: rgba(255, 255, 255, 0.05);
+      color: #64748B;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #60A5FA;
+      animation: pulseAnim 1.6s infinite ease-in-out;
+    }
+    .pulse-dot.green {
+      background: #34D399;
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.8);
+    }
+    @keyframes pulseAnim {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .app-card-desc {
+      font-size: 12.5px;
+      color: #94A3B8;
+      line-height: 1.55;
+      margin: 0;
+    }
+    .router-url-box {
+      background: #080D1A;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .router-url-target {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #60A5FA;
+      text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      word-break: break-all;
+      transition: color 0.15s ease;
+    }
+    .router-url-target:hover {
+      color: #93C5FD;
+      text-decoration: underline;
+    }
+    .router-url-target svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 9999px;
+      height: 8px;
+      overflow: hidden;
+      margin: 8px 0 4px 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3B82F6 0%, #10B981 100%);
+      border-radius: 9999px;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+    .app-live-log {
+      background: #040711;
+      border: 1px solid #161F30;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: #94A3B8;
+      max-height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+    .app-success-alert {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      color: #34D399;
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
     /* File Manager — Modern Clean Redesign */
     .fm-container {
       background: #080d1a;
@@ -2007,6 +2203,10 @@
         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
         Logs &amp; PM2
       </button>
+      <button class="tab-btn" onclick="switchTab('tab-apps')">
+        <svg viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="3" rx="1.5"/><rect width="7" height="7" x="14" y="14" rx="1.5"/><rect width="7" height="7" x="3" y="14" rx="1.5"/></svg>
+        Aplikasi
+      </button>
     </nav>
 
     <!-- 1. TAB MONITORING -->
@@ -2485,6 +2685,56 @@
       </div>
     </section>
 
+    <!-- 5. TAB APLIKASI -->
+    <section id="tab-apps" class="tab-content">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <div>
+          <h2 style="font-size:16px;font-weight:700;color:#F8FAFC;margin:0 0 4px 0;letter-spacing:-0.2px;">Pusat Aplikasi (App Center)</h2>
+          <p style="font-size:12px;color:var(--text-muted);margin:0;">Kelola instalasi layanan tambahan dan AI Gateway di LenzNode Server.</p>
+        </div>
+        <button class="btn btn-sm btn-action-blue" onclick="load9RouterStatus(true)">
+          <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+          Segarkan
+        </button>
+      </div>
+
+      <div class="apps-grid">
+        <!-- 9Router Card -->
+        <div class="app-card" id="card-9router">
+          <div class="app-card-header">
+            <div class="app-card-branding">
+              <div class="app-card-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                  <path d="M2 17l10 5 10-5"></path>
+                  <path d="M2 12l10 5 10-5"></path>
+                </svg>
+              </div>
+              <div class="app-card-titles">
+                <h3>9Router</h3>
+                <p>Multi-Model AI Router &amp; Token Saver Gateway</p>
+              </div>
+            </div>
+            <div id="router-status-badge">
+              <span class="app-status-badge badge-uninstalled">Memeriksa...</span>
+            </div>
+          </div>
+
+          <p class="app-card-desc">
+            Hubungkan berbagai AI Coding Tools (Claude Code, Cursor, Codex, Antigravity, Cline) ke 40+ provider AI dengan token saver otomatis dan dashboard interaktif di Port 20128.
+          </p>
+
+          <!-- Alert Container (Sukses / Error) -->
+          <div id="router-alert-container"></div>
+
+          <!-- Dynamic Body (Uninstalled / Installing / Installed) -->
+          <div id="router-body-container" style="display:flex;flex-direction:column;gap:12px;">
+            <div style="font-size:12px;color:var(--text-muted);">Memuat informasi 9Router...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <footer style="text-align:center;padding:24px 16px;border-top:1px solid var(--border-subtle);margin-top:40px;">
       <p style="margin:0;font-size:12px;color:var(--text-dim);font-family:var(--font-sans);">&copy; 2026 LenzNode. Created by Lenz. All rights reserved.</p>
@@ -2728,11 +2978,16 @@
       }[c]));
     }
 
+    let currentTab = 'tab-monitoring';
+
     function switchTab(tabId) {
       if (tabId === 'terminal') tabId = 'tab-terminal';
       if (tabId === 'files') tabId = 'tab-files';
       if (tabId === 'monitoring') tabId = 'tab-monitoring';
       if (tabId === 'services') tabId = 'tab-services';
+      if (tabId === 'apps') tabId = 'tab-apps';
+
+      currentTab = tabId;
 
       document.querySelectorAll('.tab-btn').forEach((btn) => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
@@ -2749,6 +3004,9 @@
       if (tabId === 'tab-services') {
         fetchWebsiteLogs();
         loadPm2Status();
+      }
+      if (tabId === 'tab-apps') {
+        load9RouterStatus();
       }
     }
 
@@ -3917,9 +4175,304 @@
       document.getElementById('pm2-log-section').style.display = 'none';
     }
 
+    // ------------------------------------------------------------------
+    // MANAJEMEN APLIKASI: 9ROUTER AI GATEWAY (Port 20128)
+    // ------------------------------------------------------------------
+    let routerCurrentData = null;
+    let routerInstallPollTimer = null;
+    let routerSuccessShown = false;
+
+    async function load9RouterStatus(manual = false) {
+      try {
+        const res = await api('/api/apps/9router/status');
+        routerCurrentData = res;
+        render9RouterCard(res);
+        if (manual) showToast('Status aplikasi diperbarui', 'info');
+      } catch (e) {
+        console.error('Gagal memuat status 9Router:', e);
+      }
+    }
+
+    function render9RouterCard(data) {
+      const badgeEl = document.getElementById('router-status-badge');
+      const alertContainer = document.getElementById('router-alert-container');
+      const bodyContainer = document.getElementById('router-body-container');
+      if (!badgeEl || !bodyContainer) return;
+
+      const tracker = data.installTracker || {};
+
+      // 1. Sedang Memasang (Installing)
+      if (tracker.active) {
+        badgeEl.innerHTML = `<span class="app-status-badge badge-installing"><span class="pulse-dot"></span> Memasang (${tracker.progress || 0}%)</span>`;
+        alertContainer.innerHTML = '';
+
+        const logsText = (tracker.logs && tracker.logs.length > 0) ? tracker.logs.join('\n') : 'Menyiapkan proses instalasi...';
+
+        bodyContainer.innerHTML = `
+          <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12.5px;font-weight:600;color:#93C5FD;" id="router-install-step-txt">
+                ${escapeHtml(tracker.step || 'Memproses instalasi...')}
+              </span>
+              <span style="font-size:13px;font-weight:700;font-family:var(--font-mono);color:#60A5FA;" id="router-install-pct-txt">
+                ${tracker.progress || 0}%
+              </span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" id="router-install-bar-fill" style="width: ${tracker.progress || 5}%;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+              <span style="font-size:11px;color:#94A3B8;">Log Proses Terminal (Live):</span>
+              <span style="font-size:10.5px;color:#60A5FA;font-family:var(--font-mono);">Port Target: 20128</span>
+            </div>
+            <div class="app-live-log" id="router-install-log-view">${escapeHtml(logsText)}</div>
+          </div>
+          <button class="btn btn-primary" disabled style="opacity:0.7;cursor:wait;gap:8px;">
+            <svg class="loading-spin" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
+            Sedang Memasang 9Router (${tracker.progress || 0}%)...
+          </button>
+        `;
+
+        const logEl = document.getElementById('router-install-log-view');
+        if (logEl) logEl.scrollTop = logEl.scrollHeight;
+
+        if (!routerInstallPollTimer) {
+          routerInstallPollTimer = setInterval(pollRouterInstallProgress, 900);
+        }
+        return;
+      }
+
+      // Hentikan timer poll jika instalasi tidak aktif lagi
+      if (routerInstallPollTimer) {
+        clearInterval(routerInstallPollTimer);
+        routerInstallPollTimer = null;
+      }
+
+      // Alert Sukses / Error
+      if (tracker.success && !routerSuccessShown) {
+        routerSuccessShown = true;
+        alertContainer.innerHTML = `
+          <div class="app-success-alert">
+            <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <div style="flex:1;">
+              <strong>Instalasi Sukses!</strong> 9Router telah terpasang dan siap digunakan pada Port 20128.
+            </div>
+            <button class="btn btn-sm" onclick="dismissRouterAlert()" style="padding:2px 8px;font-size:11px;background:transparent;border-color:rgba(52,211,153,0.3);color:#34D399;">✕</button>
+          </div>
+        `;
+        showToast('9Router berhasil dipasang!', 'success');
+      } else if (tracker.error) {
+        alertContainer.innerHTML = `
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#F87171;font-size:12px;">
+            <div style="flex:1;"><strong>Instalasi Terkendala:</strong> ${escapeHtml(tracker.error)}</div>
+            <button class="btn btn-sm" onclick="dismissRouterAlert()" style="padding:2px 8px;font-size:11px;background:transparent;border-color:rgba(239,68,68,0.3);color:#F87171;">✕</button>
+          </div>
+        `;
+      }
+
+      // 2. Jika Terpasang (Installed)
+      if (data.installed) {
+        const isRunning = !!data.running;
+        const host = window.location.hostname || data.localIp || '127.0.0.1';
+        const port = data.port || 20128;
+        const accessUrl = `http://${host}:${port}`;
+
+        if (isRunning) {
+          badgeEl.innerHTML = `<span class="app-status-badge badge-online"><span class="pulse-dot green"></span> Online (${port})</span>`;
+        } else {
+          badgeEl.innerHTML = `<span class="app-status-badge badge-stopped">Berhenti (Offline)</span>`;
+        }
+
+        bodyContainer.innerHTML = `
+          <div class="router-url-box">
+            <div>
+              <div style="font-size:11px;color:#94A3B8;margin-bottom:3px;font-weight:500;">Alamat IP &amp; URL 9Router (Klik untuk Mengunjungi):</div>
+              <a href="${accessUrl}" target="_blank" rel="noopener" class="router-url-target">
+                <span>${accessUrl}</span>
+                <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <a href="${accessUrl}" target="_blank" rel="noopener" class="btn btn-sm btn-primary" style="text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+                <span>Kunjungi Web</span>
+                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+              </a>
+              <button class="btn btn-sm" onclick="copyRouterUrl('${accessUrl}')">
+                Salin URL
+              </button>
+            </div>
+          </div>
+
+          <div class="meta-chips-grid cols-3" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+            <div class="meta-chip info">Port: <strong>${port}</strong></div>
+            <div class="meta-chip ${isRunning ? 'success' : ''}">Status: <strong>${isRunning ? 'Online 24/7' : 'Berhenti'}</strong></div>
+            <div class="meta-chip purple">Versi: <strong>v${escapeHtml(data.version || '0.5.112')}</strong></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+            ${isRunning ? `
+              <button class="btn btn-sm btn-action-amber" onclick="stop9Router()" style="flex:1;min-width:110px;">
+                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
+                Stop (Hentikan)
+              </button>
+            ` : `
+              <button class="btn btn-sm btn-action-blue" onclick="start9Router()" style="flex:1;min-width:110px;">
+                <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Mulai (Start)
+              </button>
+            `}
+            <button class="btn btn-sm btn-action-blue" onclick="restart9Router()" style="flex:1;min-width:110px;">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
+              Restart
+            </button>
+            <button class="btn btn-sm btn-action-red" onclick="confirmDelete9Router()" style="flex:1;min-width:110px;">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              Delete (Hapus)
+            </button>
+          </div>
+        `;
+      } else {
+        // 3. Jika Belum Terpasang (Uninstalled)
+        badgeEl.innerHTML = `<span class="app-status-badge badge-uninstalled">Belum Terpasang</span>`;
+        bodyContainer.innerHTML = `
+          <div class="meta-chips-grid cols-3" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+            <div class="meta-chip info">Port Default: <strong>20128</strong></div>
+            <div class="meta-chip">Alokasi RAM: <strong>~40-70 MB</strong></div>
+            <div class="meta-chip purple">Lingkungan: <strong>Node.js 18+</strong></div>
+          </div>
+          <button class="btn btn-primary" onclick="install9Router()" style="width:100%;padding:10px 16px;font-size:13.5px;font-weight:600;gap:8px;margin-top:4px;">
+            <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Pasang 9Router (1-Klik)
+          </button>
+        `;
+      }
+    }
+
+    async function pollRouterInstallProgress() {
+      try {
+        const res = await api('/api/apps/9router/install-progress');
+        if (res && res.ok && res.data) {
+          const tracker = res.data;
+          const stepEl = document.getElementById('router-install-step-txt');
+          const pctEl = document.getElementById('router-install-pct-txt');
+          const barEl = document.getElementById('router-install-bar-fill');
+          const logEl = document.getElementById('router-install-log-view');
+
+          if (stepEl) stepEl.textContent = tracker.step || 'Memproses...';
+          if (pctEl) pctEl.textContent = (tracker.progress || 0) + '%';
+          if (barEl) barEl.style.width = (tracker.progress || 5) + '%';
+          if (logEl && tracker.logs) {
+            logEl.textContent = tracker.logs.join('\n');
+            logEl.scrollTop = logEl.scrollHeight;
+          }
+
+          if (!tracker.active) {
+            if (routerInstallPollTimer) {
+              clearInterval(routerInstallPollTimer);
+              routerInstallPollTimer = null;
+            }
+            setTimeout(() => load9RouterStatus(), 800);
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function install9Router() {
+      routerSuccessShown = false;
+      try {
+        showToast('Memulai instalasi 9Router...', 'info');
+        const res = await api('/api/apps/9router/install', { method: 'POST' });
+        if (res && res.ok) {
+          load9RouterStatus();
+          if (!routerInstallPollTimer) {
+            routerInstallPollTimer = setInterval(pollRouterInstallProgress, 900);
+          }
+        } else {
+          showToast(res.message || 'Gagal memulai instalasi', 'error');
+        }
+      } catch (e) {
+        showToast('Gagal menghubungi server: ' + e.message, 'error');
+      }
+    }
+
+    async function start9Router() {
+      try {
+        showToast('Memulai layanan 9Router...', 'info');
+        const res = await api('/api/apps/9router/start', { method: 'POST' });
+        showToast(res.message || '9Router dimulai', res.ok ? 'success' : 'error');
+        load9RouterStatus();
+      } catch (e) {
+        showToast('Gagal menjalankan 9Router: ' + e.message, 'error');
+      }
+    }
+
+    async function stop9Router() {
+      try {
+        showToast('Menghentikan layanan 9Router...', 'info');
+        const res = await api('/api/apps/9router/stop', { method: 'POST' });
+        showToast(res.message || '9Router dihentikan', res.ok ? 'success' : 'error');
+        load9RouterStatus();
+      } catch (e) {
+        showToast('Gagal menghentikan 9Router: ' + e.message, 'error');
+      }
+    }
+
+    async function restart9Router() {
+      try {
+        showToast('Memuat ulang 9Router...', 'info');
+        const res = await api('/api/apps/9router/restart', { method: 'POST' });
+        showToast(res.message || '9Router berhasil dimuat ulang', res.ok ? 'success' : 'error');
+        load9RouterStatus();
+      } catch (e) {
+        showToast('Gagal memuat ulang 9Router: ' + e.message, 'error');
+      }
+    }
+
+    function confirmDelete9Router() {
+      showConceptConfirm({
+        title: 'Hapus 9Router dari Server?',
+        message: 'Layanan 9Router akan dihentikan dan seluruh berkas instalasi di <code>apps/9router</code> akan dihapus bersih dari server. Anda dapat memasangnya kembali kapan saja dengan satu klik.',
+        warningText: 'Tindakan ini akan menghapus paket dan pengaturan lokal 9Router.',
+        actionText: 'Ya, Hapus 9Router',
+        actionColor: 'var(--accent-rose)',
+        onConfirm: () => executeDelete9Router()
+      });
+    }
+
+    async function executeDelete9Router() {
+      try {
+        showToast('Menghapus 9Router dari server...', 'info');
+        const res = await api('/api/apps/9router/delete', { method: 'POST' });
+        showToast(res.message || '9Router berhasil dihapus', res.ok ? 'success' : 'error');
+        routerSuccessShown = false;
+        dismissRouterAlert();
+        load9RouterStatus();
+      } catch (e) {
+        showToast('Gagal menghapus 9Router: ' + e.message, 'error');
+      }
+    }
+
+    function copyRouterUrl(url) {
+      copyToClipboard(url).then(() => {
+        showToast('URL 9Router disalin: ' + url, 'success');
+      }).catch(() => {
+        showToast('Gagal menyalin URL', 'error');
+      });
+    }
+
+    function dismissRouterAlert() {
+      const alertEl = document.getElementById('router-alert-container');
+      if (alertEl) alertEl.innerHTML = '';
+    }
+
     // Auto Init
     updateStats();
     setInterval(updateStats, 4000);
+    setInterval(() => {
+      if (currentTab === 'tab-apps') {
+        load9RouterStatus();
+      }
+    }, 5000);
   </script>
 </body>
 </html>

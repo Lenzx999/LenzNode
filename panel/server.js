@@ -1054,6 +1054,307 @@ function rebootDevice() {
   return { ok: true, message: 'Perintah reboot telah dikirim ke perangkat.' };
 }
 
+// ------------------------------------------------------------------
+// 9ROUTER APP MANAGEMENT (Port 20128)
+// ------------------------------------------------------------------
+const ROUTER_DIR = path.join(BASE_DIR, 'apps', '9router');
+const ROUTER_CLI = path.join(ROUTER_DIR, 'node_modules', '9router', 'cli.js');
+const ROUTER_PID_FILE = path.join(ROUTER_DIR, '9router.pid');
+const ROUTER_LOG_FILE = path.join(LOG_DIR, '9router.log');
+const ROUTER_PORT = 20128;
+
+let routerInstallTracker = {
+  active: false,
+  progress: 0,
+  step: '',
+  logs: [],
+  success: false,
+  error: null,
+  startedAt: null,
+  finishedAt: null
+};
+
+let lastRouterRunningState = false;
+
+function isRouterInstalled() {
+  if (fs.existsSync(ROUTER_CLI)) return true;
+  try {
+    const checkCmd = os.platform() === 'win32' ? 'where 9router' : 'which 9router';
+    execSync(checkCmd + ' 2>/dev/null', { stdio: 'pipe' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function getRouterVersion() {
+  try {
+    const pkgPath = path.join(ROUTER_DIR, 'node_modules', '9router', 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const data = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      if (data && data.version) return data.version;
+    }
+  } catch (e) {}
+  return '0.5.112';
+}
+
+async function checkRouterListeningAsync() {
+  lastRouterRunningState = await isPortListening(ROUTER_PORT);
+  return lastRouterRunningState;
+}
+setInterval(checkRouterListeningAsync, 8000);
+checkRouterListeningAsync();
+
+async function start9RouterService() {
+  if (await checkRouterListeningAsync()) {
+    return { ok: true, message: '9Router sudah aktif berjalan di Port ' + ROUTER_PORT + '.' };
+  }
+  if (!isRouterInstalled()) {
+    return { ok: false, message: '9Router belum terpasang di server. Silakan pasang terlebih dahulu.' };
+  }
+
+  try {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+    if (!fs.existsSync(ROUTER_DIR)) fs.mkdirSync(ROUTER_DIR, { recursive: true });
+
+    const outLog = fs.openSync(ROUTER_LOG_FILE, 'a');
+    const errLog = fs.openSync(ROUTER_LOG_FILE, 'a');
+
+    let execTarget = ROUTER_CLI;
+    let spawnArgs = [
+      '--max-old-space-size=128',
+      '--optimize-for-size',
+      ROUTER_CLI,
+      '--port', String(ROUTER_PORT),
+      '--no-browser'
+    ];
+    let spawnBin = process.execPath;
+
+    if (!fs.existsSync(ROUTER_CLI)) {
+      spawnBin = '9router';
+      spawnArgs = ['--port', String(ROUTER_PORT), '--no-browser'];
+    }
+
+    const child = spawn(spawnBin, spawnArgs, {
+      cwd: fs.existsSync(ROUTER_DIR) ? ROUTER_DIR : BASE_DIR,
+      detached: true,
+      stdio: ['ignore', outLog, errLog],
+      env: Object.assign({}, process.env, {
+        PORT: String(ROUTER_PORT),
+        NO_BROWSER: 'true'
+      })
+    });
+    child.unref();
+
+    try { fs.writeFileSync(ROUTER_PID_FILE, String(child.pid), 'utf8'); } catch (e) {}
+
+    for (let i = 0; i < 15; i++) {
+      await new Promise((r) => setTimeout(r, 600));
+      if (await checkRouterListeningAsync()) {
+        appendServerLog(`9Router berhasil diaktifkan di Port ${ROUTER_PORT} (PID: ${child.pid})`, 'INFO');
+        return { ok: true, message: `9Router aktif di Port ${ROUTER_PORT}.`, pid: child.pid };
+      }
+    }
+
+    return { ok: true, message: `9Router dalam proses inisialisasi (PID: ${child.pid}). Silakan tunggu beberapa detik.`, pid: child.pid };
+  } catch (e) {
+    appendServerLog(`Gagal menjalankan 9Router: ${e.message}`, 'ERROR');
+    return { ok: false, message: 'Gagal menjalankan 9Router: ' + e.message };
+  }
+}
+
+async function stop9RouterService() {
+  try {
+    if (fs.existsSync(ROUTER_PID_FILE)) {
+      try {
+        const pid = parseInt(fs.readFileSync(ROUTER_PID_FILE, 'utf8').trim(), 10);
+        if (pid && !isNaN(pid)) {
+          process.kill(pid, 'SIGTERM');
+          setTimeout(() => {
+            try { process.kill(pid, 'SIGKILL'); } catch (e) {}
+          }, 1500);
+        }
+      } catch (e) {}
+      try { fs.unlinkSync(ROUTER_PID_FILE); } catch (e) {}
+    }
+
+    if (os.platform() !== 'win32') {
+      execSync('pkill -9 -f "custom-server.js" 2>/dev/null || true');
+      execSync('pkill -9 -f "9router" 2>/dev/null || true');
+      execSync('fuser -k ' + ROUTER_PORT + '/tcp 2>/dev/null || true');
+    } else {
+      try {
+        const netstatOutput = execSync(`netstat -ano | findstr :${ROUTER_PORT}`, { stdio: 'pipe' }).toString();
+        const lines = netstatOutput.split('\n');
+        for (const line of lines) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && /^\d+$/.test(pid)) {
+            execSync(`taskkill /F /PID ${pid} 2>nul || exit 0`);
+          }
+        }
+      } catch (e) {}
+    }
+
+    lastRouterRunningState = false;
+    appendServerLog('9Router dihentikan.', 'INFO');
+    return { ok: true, message: '9Router berhasil dihentikan.' };
+  } catch (e) {
+    return { ok: false, message: 'Gagal menghentikan 9Router: ' + e.message };
+  }
+}
+
+async function restart9RouterService() {
+  await stop9RouterService();
+  await new Promise((r) => setTimeout(r, 1200));
+  return await start9RouterService();
+}
+
+async function delete9RouterService() {
+  try {
+    await stop9RouterService();
+    if (fs.existsSync(ROUTER_DIR)) {
+      fs.rmSync(ROUTER_DIR, { recursive: true, force: true });
+    }
+    const appsDir = path.join(BASE_DIR, 'apps');
+    if (!fs.existsSync(appsDir)) fs.mkdirSync(appsDir, { recursive: true });
+    fs.writeFileSync(path.join(appsDir, '.gitkeep'), '', 'utf8');
+
+    routerInstallTracker = {
+      active: false,
+      progress: 0,
+      step: '',
+      logs: [],
+      success: false,
+      error: null,
+      startedAt: null,
+      finishedAt: null
+    };
+
+    lastRouterRunningState = false;
+    appendServerLog('9Router dan berkas aplikasinya berhasil dihapus bersih.', 'INFO');
+    return { ok: true, message: '9Router dan seluruh berkas instalasinya berhasil dihapus.' };
+  } catch (e) {
+    return { ok: false, message: 'Gagal menghapus 9Router: ' + e.message };
+  }
+}
+
+async function start9RouterInstallJob() {
+  if (routerInstallTracker.active) {
+    return { ok: true, message: 'Proses instalasi 9Router sedang berlangsung.' };
+  }
+
+  routerInstallTracker = {
+    active: true,
+    progress: 5,
+    step: 'Mempersiapkan folder instalasi aplikasi...',
+    logs: [`[${formatLogTimestamp()}] [INFO] Memulai instalasi 9Router di server...`],
+    success: false,
+    error: null,
+    startedAt: Date.now(),
+    finishedAt: null
+  };
+
+  (async () => {
+    try {
+      if (!fs.existsSync(ROUTER_DIR)) {
+        fs.mkdirSync(ROUTER_DIR, { recursive: true });
+      }
+      routerInstallTracker.progress = 15;
+      routerInstallTracker.step = 'Menyiapkan package.json aplikasi...';
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] Direktori disiapkan: ${ROUTER_DIR}`);
+
+      const pkgJsonPath = path.join(ROUTER_DIR, 'package.json');
+      if (!fs.existsSync(pkgJsonPath)) {
+        fs.writeFileSync(pkgJsonPath, JSON.stringify({
+          name: 'lenznode-9router',
+          version: '1.0.0',
+          private: true,
+          description: '9Router instance on LenzNode',
+          dependencies: {}
+        }, null, 2), 'utf8');
+      }
+
+      routerInstallTracker.progress = 25;
+      routerInstallTracker.step = 'Mengunduh dan memasang paket 9router via npm...';
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] Menjalankan: npm install 9router@latest --no-audit --no-fund --prefer-online`);
+
+      const npmCmd = os.platform() === 'win32' ? 'npm.cmd' : 'npm';
+      const child = spawn(npmCmd, ['install', '9router@latest', '--no-audit', '--no-fund', '--prefer-online'], {
+        cwd: ROUTER_DIR,
+        env: Object.assign({}, process.env, {
+          NODE_OPTIONS: '--max-old-space-size=128'
+        }),
+        shell: true
+      });
+
+      let currentPct = 25;
+      const progressTimer = setInterval(() => {
+        if (routerInstallTracker.active && currentPct < 85) {
+          currentPct += 3;
+          routerInstallTracker.progress = currentPct;
+        }
+      }, 1000);
+
+      const appendLog = (data) => {
+        const text = data.toString();
+        const lines = text.split('\n').filter((l) => l.trim().length > 0);
+        for (const line of lines) {
+          routerInstallTracker.logs.push(line);
+          if (routerInstallTracker.logs.length > 250) routerInstallTracker.logs.shift();
+        }
+      };
+
+      child.stdout.on('data', appendLog);
+      child.stderr.on('data', appendLog);
+
+      const exitCode = await new Promise((resolve) => {
+        child.on('close', resolve);
+        child.on('error', (err) => {
+          routerInstallTracker.logs.push(`[${formatLogTimestamp()}] [ERROR] ${err.message}`);
+          resolve(1);
+        });
+      });
+
+      clearInterval(progressTimer);
+
+      if (exitCode !== 0) {
+        throw new Error(`npm install selesai dengan kode error ${exitCode}`);
+      }
+
+      routerInstallTracker.progress = 88;
+      routerInstallTracker.step = 'Menyiapkan berkas polyfill & konfigurasi...';
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] Paket 9router berhasil terpasang.`);
+
+      const polyfillScript = `if (typeof globalThis.File === 'undefined') {\n  try { globalThis.File = require('node:buffer').File; } catch (e) {\n    try { globalThis.File = require('buffer').File; } catch (_) {}\n  }\n}\n`;
+      fs.writeFileSync(path.join(ROUTER_DIR, 'polyfill.js'), polyfillScript, 'utf8');
+
+      routerInstallTracker.progress = 92;
+      routerInstallTracker.step = 'Menjalankan background service 9Router di Port 20128...';
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] Mengaktifkan layanan 9Router di latar belakang...`);
+
+      const startResult = await start9RouterService();
+      if (!startResult.ok) {
+        routerInstallTracker.logs.push(`[${formatLogTimestamp()}] [WARN] ${startResult.message}`);
+      }
+
+      routerInstallTracker.progress = 100;
+      routerInstallTracker.step = 'Instalasi sukses! 9Router siap digunakan.';
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] [SUKSES] 9Router berhasil dipasang dan aktif di Port 20128.`);
+      routerInstallTracker.success = true;
+      routerInstallTracker.active = false;
+      routerInstallTracker.finishedAt = Date.now();
+    } catch (err) {
+      routerInstallTracker.active = false;
+      routerInstallTracker.error = err.message;
+      routerInstallTracker.step = 'Instalasi gagal: ' + err.message;
+      routerInstallTracker.logs.push(`[${formatLogTimestamp()}] [ERROR] ${err.message}`);
+    }
+  })();
+
+  return { ok: true, message: 'Proses instalasi 9Router berhasil dimulai.' };
+}
+
 function setupVpsCliHelpers() {
   const home = process.env.HOME || (os.platform() === 'win32' ? os.homedir() : '/data/data/com.termux/files/home');
   const binDir = path.join(home, 'ubuntu-fs', 'usr', 'local', 'bin');
@@ -1880,6 +2181,79 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/vps/restart') {
     const result = await restartVpsService();
+    sendJSON(res, 200, result);
+    return;
+  }
+
+  // ----------------------------------------------------------------
+  // 9ROUTER APP API ENDPOINTS (Port 20128)
+  // ----------------------------------------------------------------
+  if (req.method === 'GET' && pathname === '/api/apps/9router/status') {
+    const isInstalled = isRouterInstalled();
+    const isRunning = await checkRouterListeningAsync();
+    const version = isInstalled ? getRouterVersion() : null;
+    let pid = null;
+    if (fs.existsSync(ROUTER_PID_FILE)) {
+      try { pid = parseInt(fs.readFileSync(ROUTER_PID_FILE, 'utf8').trim(), 10); } catch (e) {}
+    }
+    const ips = getLocalIPs();
+    const localIp = ips.length > 0 ? ips[0].address : '127.0.0.1';
+
+    sendJSON(res, 200, {
+      ok: true,
+      installed: isInstalled,
+      running: isRunning,
+      version: version,
+      port: ROUTER_PORT,
+      pid: pid,
+      localIp: localIp,
+      localUrl: `http://${localIp}:${ROUTER_PORT}`,
+      installTracker: {
+        active: routerInstallTracker.active,
+        progress: routerInstallTracker.progress,
+        step: routerInstallTracker.step,
+        success: routerInstallTracker.success,
+        error: routerInstallTracker.error,
+        logs: routerInstallTracker.logs
+      }
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/apps/9router/install') {
+    const result = await start9RouterInstallJob();
+    sendJSON(res, 200, result);
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/apps/9router/install-progress') {
+    sendJSON(res, 200, {
+      ok: true,
+      data: routerInstallTracker
+    });
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/apps/9router/start') {
+    const result = await start9RouterService();
+    sendJSON(res, 200, result);
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/apps/9router/stop') {
+    const result = await stop9RouterService();
+    sendJSON(res, 200, result);
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/apps/9router/restart') {
+    const result = await restart9RouterService();
+    sendJSON(res, 200, result);
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/apps/9router/delete') {
+    const result = await delete9RouterService();
     sendJSON(res, 200, result);
     return;
   }
