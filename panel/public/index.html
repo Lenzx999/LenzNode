@@ -1964,6 +1964,7 @@
           <span class="spec-badge" style="background:rgba(56,189,248,0.12);color:#38BDF8;border:1px solid rgba(56,189,248,0.25);font-size:10px;padding:1px 6px;border-radius:4px;margin-left:4px;">SERVER</span>
           <div class="brand-badges">
             <span class="status-badge"><span class="status-dot"></span> Online</span>
+            <a id="header-tunnel-link" href="#" target="_blank" rel="noopener" class="status-badge" style="display:none; text-decoration:none; background:rgba(56,189,248,0.12); color:#38BDF8; border-color:rgba(56,189,248,0.3); font-size:11px; padding:2px 8px; margin-left:4px;" title="Buka Link Publik Cloudflare Tunnel">🌐 Tunnel Aktif ↗</a>
           </div>
         </div>
       </div>
@@ -3092,34 +3093,46 @@
 
         // Cloudflare Public Domain & Ribbon
         const pubUrl = data.network ? data.network.publicUrl : null;
+        const ribbonPub = document.getElementById('ribbon-public-url');
+        const ribbonVisit = document.getElementById('ribbon-btn-visit');
+        const headerTunnel = document.getElementById('header-tunnel-link');
         const cfText = document.getElementById('cloudflare-url-text');
         const cfOpen = document.getElementById('btn-open-cf');
         const cfBadge = document.getElementById('cloudflare-live-badge');
-        const ribbonPub = document.getElementById('ribbon-public-url');
-        const ribbonVisit = document.getElementById('ribbon-btn-visit');
 
-        if (pubUrl) {
-          cfText.textContent = pubUrl;
-          cfOpen.href = pubUrl;
-          cfOpen.style.display = 'inline-flex';
-          cfBadge.innerHTML = '<span class="status-dot"></span> Terhubung';
-          cfBadge.style.color = 'var(--accent-emerald)';
-
+        if (pubUrl && pubUrl.startsWith('http')) {
           if (ribbonPub) ribbonPub.textContent = pubUrl;
           if (ribbonVisit) {
             ribbonVisit.href = pubUrl;
             ribbonVisit.style.display = 'inline-flex';
           }
+          if (headerTunnel) {
+            headerTunnel.href = pubUrl;
+            headerTunnel.style.display = 'inline-flex';
+          }
+          if (cfText) cfText.textContent = pubUrl;
+          if (cfOpen) {
+            cfOpen.href = pubUrl;
+            cfOpen.style.display = 'inline-flex';
+          }
+          if (cfBadge) {
+            cfBadge.innerHTML = '<span class="status-dot"></span> Terhubung';
+            cfBadge.style.color = 'var(--accent-emerald)';
+          }
         } else {
-          cfText.textContent = 'Menghubungkan domain publik...';
-          cfOpen.style.display = 'none';
-          cfBadge.innerHTML = '<span class="status-dot" style="background:#F59E0B;box-shadow:none;"></span> Menghubungkan';
-          cfBadge.style.color = '#F59E0B';
-
           if (ribbonPub) ribbonPub.textContent = 'Menghubungkan tunnel...';
           if (ribbonVisit) ribbonVisit.style.display = 'none';
+          if (headerTunnel) headerTunnel.style.display = 'none';
+          if (cfText) cfText.textContent = 'Menghubungkan domain publik...';
+          if (cfOpen) cfOpen.style.display = 'none';
+          if (cfBadge) {
+            cfBadge.innerHTML = '<span class="status-dot" style="background:#F59E0B;box-shadow:none;"></span> Menghubungkan';
+            cfBadge.style.color = '#F59E0B';
+          }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Gagal memproses telemetri stats:', e);
+      }
     }
 
     function copySshCommand() {

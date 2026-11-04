@@ -1125,6 +1125,13 @@ echo "✓ Instalasi selesai!"
 // TUNNEL PUBLIK OTOMATIS (Web Port 8080 & VPS SSH Port 2222)
 // ------------------------------------------------------------------
 let currentPublicUrl = null;
+try {
+  const savedTunnelFile = path.join(LOG_DIR, 'tunnel-url.txt');
+  if (fs.existsSync(savedTunnelFile)) {
+    const saved = fs.readFileSync(savedTunnelFile, 'utf8').trim();
+    if (saved.startsWith('http')) currentPublicUrl = saved;
+  }
+} catch (_) {}
 let tunnelProcess = null;
 let tunnelRetryTimer = null;
 let tunnelFailCount = 0;

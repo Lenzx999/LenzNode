@@ -153,31 +153,12 @@ stop_panel() {
 # 3. KONTROL CLOUDFLARE PUBLIC TUNNEL
 # -----------------------------------------------------------------------------
 ensure_cloudflare_tunnel() {
-    local CF_BIN=""
-    if command -v cloudflared >/dev/null 2>&1; then
-        CF_BIN="cloudflared"
-    elif [ -x "$PREFIX/bin/cloudflared" ]; then
-        CF_BIN="$PREFIX/bin/cloudflared"
-    elif [ -x "/data/data/com.termux/files/usr/bin/cloudflared" ]; then
-        CF_BIN="/data/data/com.termux/files/usr/bin/cloudflared"
-    fi
+    local TUNNEL_FILE="$LOG_DIR/tunnel-url.txt"
+    local TUNNEL_LOG="$LOG_DIR/cloudflared.log"
 
-    if [ -z "$CF_BIN" ]; then
-        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}cloudflared belum terpasang${NC}"
-        return 0
-    fi
-
-    if pgrep -x cloudflared >/dev/null 2>&1; then
-        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
-        return 0
-    fi
-
-    nohup "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
-    disown $! 2>/dev/null || true
-
-    # Polling URL selama 2-3 detik agar langsung siap ditampilkan di terminal
+    # Tunggu inisialisasi tunnel dari server panel (hingga 3-4 detik)
     local URL=""
-    for i in 1 2 3 4 5 6; do
+    for i in 1 2 3 4 5 6 7 8; do
         if [ -f "$TUNNEL_FILE" ]; then
             URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
             [ -n "$URL" ] && break
@@ -192,7 +173,27 @@ ensure_cloudflare_tunnel() {
         sleep 0.5
     done
 
-    echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
+    if pgrep -x cloudflared >/dev/null 2>&1 || [ -n "$URL" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
+        return 0
+    fi
+
+    local CF_BIN=""
+    if command -v cloudflared >/dev/null 2>&1; then
+        CF_BIN="cloudflared"
+    elif [ -x "$PREFIX/bin/cloudflared" ]; then
+        CF_BIN="$PREFIX/bin/cloudflared"
+    elif [ -x "/data/data/com.termux/files/usr/bin/cloudflared" ]; then
+        CF_BIN="/data/data/com.termux/files/usr/bin/cloudflared"
+    fi
+
+    if [ -n "$CF_BIN" ]; then
+        nohup "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
+        disown $! 2>/dev/null || true
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}cloudflared belum terpasang${NC}"
+    fi
 }
 
 stop_tunnel() {
