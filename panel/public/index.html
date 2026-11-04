@@ -2688,10 +2688,7 @@
     <!-- 5. TAB APLIKASI -->
     <section id="tab-apps" class="tab-content">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-        <div>
-          <h2 style="font-size:16px;font-weight:700;color:#F8FAFC;margin:0 0 4px 0;letter-spacing:-0.2px;">Pusat Aplikasi (App Center)</h2>
-          <p style="font-size:12px;color:var(--text-muted);margin:0;">Kelola instalasi layanan tambahan dan AI Gateway di LenzNode Server.</p>
-        </div>
+        <h2 style="font-size:16px;font-weight:700;color:#F8FAFC;margin:0;letter-spacing:-0.2px;">App Center</h2>
         <button class="btn btn-sm btn-action-blue" onclick="load9RouterStatus(true)">
           <svg viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg>
           Segarkan
@@ -2714,9 +2711,6 @@
                 <h3>9Router</h3>
                 <p>Multi-Model AI Router &amp; Token Saver Gateway</p>
               </div>
-            </div>
-            <div id="router-status-badge">
-              <span class="app-status-badge badge-uninstalled">Memeriksa...</span>
             </div>
           </div>
 
@@ -4194,17 +4188,15 @@
     }
 
     function render9RouterCard(data) {
-      const badgeEl = document.getElementById('router-status-badge');
       const alertContainer = document.getElementById('router-alert-container');
       const bodyContainer = document.getElementById('router-body-container');
-      if (!badgeEl || !bodyContainer) return;
+      if (!bodyContainer) return;
 
       const tracker = data.installTracker || {};
 
       // 1. Sedang Memasang (Installing)
       if (tracker.active) {
-        badgeEl.innerHTML = `<span class="app-status-badge badge-installing"><span class="pulse-dot"></span> Memasang (${tracker.progress || 0}%)</span>`;
-        alertContainer.innerHTML = '';
+        if (alertContainer) alertContainer.innerHTML = '';
 
         const logsText = (tracker.logs && tracker.logs.length > 0) ? tracker.logs.join('\n') : 'Menyiapkan proses instalasi...';
 
@@ -4229,7 +4221,7 @@
           </div>
           <button class="btn btn-primary" disabled style="opacity:0.7;cursor:wait;gap:8px;">
             <svg class="loading-spin" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>
-            Sedang Memasang 9Router (${tracker.progress || 0}%)...
+            Memasang...
           </button>
         `;
 
@@ -4249,7 +4241,7 @@
       }
 
       // Alert Sukses / Error
-      if (tracker.success && !routerSuccessShown) {
+      if (tracker.success && !routerSuccessShown && alertContainer) {
         routerSuccessShown = true;
         alertContainer.innerHTML = `
           <div class="app-success-alert">
@@ -4261,7 +4253,7 @@
           </div>
         `;
         showToast('9Router berhasil dipasang!', 'success');
-      } else if (tracker.error) {
+      } else if (tracker.error && alertContainer) {
         alertContainer.innerHTML = `
           <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#F87171;font-size:12px;">
             <div style="flex:1;"><strong>Instalasi Terkendala:</strong> ${escapeHtml(tracker.error)}</div>
@@ -4276,12 +4268,6 @@
         const host = window.location.hostname || data.localIp || '127.0.0.1';
         const port = data.port || 20128;
         const accessUrl = `http://${host}:${port}`;
-
-        if (isRunning) {
-          badgeEl.innerHTML = `<span class="app-status-badge badge-online"><span class="pulse-dot green"></span> Online (${port})</span>`;
-        } else {
-          badgeEl.innerHTML = `<span class="app-status-badge badge-stopped">Berhenti (Offline)</span>`;
-        }
 
         bodyContainer.innerHTML = `
           <div class="router-url-box">
@@ -4333,7 +4319,6 @@
         `;
       } else {
         // 3. Jika Belum Terpasang (Uninstalled)
-        badgeEl.innerHTML = `<span class="app-status-badge badge-uninstalled">Belum Terpasang</span>`;
         bodyContainer.innerHTML = `
           <div class="meta-chips-grid cols-3" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
             <div class="meta-chip info">Port Default: <strong>20128</strong></div>
@@ -4342,7 +4327,7 @@
           </div>
           <button class="btn btn-primary" onclick="install9Router()" style="width:100%;padding:10px 16px;font-size:13.5px;font-weight:600;gap:8px;margin-top:4px;">
             <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Pasang 9Router (1-Klik)
+            Pasang
           </button>
         `;
       }
