@@ -568,7 +568,7 @@
     /* Remote Services & Control Cards */
     .remote-ctrl-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr;
       gap: 12px;
       margin-bottom: 16px;
     }
@@ -2274,75 +2274,6 @@
             <button class="btn btn-sm" id="btn-vps-restart" onclick="doVpsAction('restart')">
               <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
               <span>Restart SSH</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Card 2: Kontrol Sistem & Operasional -->
-        <div class="remote-card">
-          <div class="remote-card-header">
-            <div class="remote-card-title">
-              <div class="remote-icon-badge device">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </div>
-              <div>
-                <h3>Kontrol Sistem</h3>
-                <p class="remote-card-subtitle">Layanan Server &amp; Perangkat</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="remote-ssh-box">
-            <div class="remote-ssh-label">
-              <span>Status Sistem</span>
-              <span class="badge-pinggy" style="background: rgba(16, 185, 129, 0.15); color: #34D399; border-color: rgba(16, 185, 129, 0.3);">Online 24/7</span>
-            </div>
-            <div class="meta-chips-grid cols-3">
-              <span class="meta-chip info">🌐 Web: <strong>8080</strong></span>
-              <span class="meta-chip purple">🖥 SSH: <strong>2222</strong></span>
-              <span class="meta-chip success">⚡ CPU: <strong>Aktif</strong></span>
-            </div>
-          </div>
-
-          <div class="remote-controls-grid">
-            <button class="remote-ctrl-btn" onclick="doDeviceAction('wakelock')" title="Kunci CPU agar service tidak sleep di background">
-              <div class="remote-ctrl-icon" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">
-                <svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Wake-Lock</span>
-                <span class="remote-ctrl-desc">Kunci CPU Aktif</span>
-              </div>
-            </button>
-
-            <button class="remote-ctrl-btn" onclick="confirmReboot()" title="Restart smartphone">
-              <div class="remote-ctrl-icon" style="background: rgba(239, 68, 68, 0.15); color: #F87171;">
-                <svg viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Reboot HP</span>
-                <span class="remote-ctrl-desc">Restart Ponsel</span>
-              </div>
-            </button>
-
-            <button class="remote-ctrl-btn" onclick="doRestartPanel()" title="Restart service panel">
-              <div class="remote-ctrl-icon" style="background: rgba(139, 92, 246, 0.15); color: #A78BFA;">
-                <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Restart Panel</span>
-                <span class="remote-ctrl-desc">Restart Layanan</span>
-              </div>
-            </button>
-
-            <button class="remote-ctrl-btn" onclick="switchTab('tab-terminal')" title="Buka terminal command line">
-              <div class="remote-ctrl-icon" style="background: rgba(59, 130, 246, 0.15); color: #60A5FA;">
-                <svg viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-              </div>
-              <div class="remote-ctrl-text">
-                <span class="remote-ctrl-name">Terminal Web</span>
-                <span class="remote-ctrl-desc">Akses CLI</span>
-              </div>
             </button>
           </div>
         </div>
