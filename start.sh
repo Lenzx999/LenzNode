@@ -26,6 +26,9 @@ export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
+# Optimasi Memori Ekstrem untuk Semua Perangkat (RAM Minimal & Hemat Baterai)
+export NODE_OPTIONS="--max-old-space-size=64 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
+
 DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$DIR/panel/server.js" ]; then
     SERVER_DIR="$DIR"
@@ -86,6 +89,11 @@ start_ssh() {
         return 0
     fi
 
+    # Pastikan host key OpenSSH telah digenerate (mencegah error pada instalasi baru)
+    if [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
+        ssh-keygen -A >/dev/null 2>&1 || true
+    fi
+
     pkill -f "sshd -p 2222" 2>/dev/null || true
     sshd -p 2222 2>/dev/null || true
     sleep 0.5
@@ -128,13 +136,13 @@ start_panel() {
         if pm2 describe panel >/dev/null 2>&1; then
             pm2 restart panel >/dev/null 2>&1
         else
-            pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=96" --max-memory-restart 120M >/dev/null 2>&1
+            pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=64 --optimize-for-size --expose-gc" --max-memory-restart 80M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
         pkill -f "node.*/panel/server\.js" 2>/dev/null || true
         pkill -f "node server.js" 2>/dev/null || true
-        nohup node "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        nohup node --max-old-space-size=64 --optimize-for-size --expose-gc "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
     echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
@@ -188,7 +196,7 @@ ensure_cloudflare_tunnel() {
     fi
 
     if [ -n "$CF_BIN" ]; then
-        nohup "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
+        nohup env GOGC=20 GOMEMLIMIT=32MiB "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
         echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
     else

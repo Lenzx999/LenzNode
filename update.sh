@@ -125,7 +125,7 @@ else
     if [ -f "$SERVER_DIR/start.sh" ]; then
         bash "$SERVER_DIR/start.sh" --bg
     else
-        nohup node "$SERVER_DIR/panel/server.js" > "$SERVER_DIR/logs/panel.log" 2>&1 &
+        nohup node --max-old-space-size=64 --optimize-for-size --expose-gc "$SERVER_DIR/panel/server.js" > "$SERVER_DIR/logs/panel.log" 2>&1 &
     fi
     echo -e "${GREEN}✓ Server panel berhasil dimulai ulang!${NC}"
 fi

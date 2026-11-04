@@ -21,6 +21,9 @@ export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
+# Optimasi Memori Ekstrem untuk Semua Perangkat (RAM Minimal & Hemat Baterai)
+export NODE_OPTIONS="--max-old-space-size=64 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
+
 clear
 echo -e "${CYAN}=================================================================="
 echo "    __     ___            __   __   __      ____                         "
@@ -86,9 +89,12 @@ echo -e "${GREEN}✓ Izin penyimpanan & Wake-Lock aktif.${NC}"
 # -----------------------------------------------------------------------------
 # 2. INSTALASI DEPENDENSI TERMUX HOST
 # -----------------------------------------------------------------------------
-echo -e "${YELLOW}[2/5] Memperbarui Paket Termux & Memasang Dependensi...${NC}"
+echo -e "${YELLOW}[2/5] Memperbarui Paket Termux & Memasang Dependensi Ringan...${NC}"
 pkg update -y 2>/dev/null || true
-pkg install -y openssh curl wget zip unzip nano git python ffmpeg libwebp imagemagick tar xz-utils termux-api jq 2>/dev/null || true
+pkg install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || true
+
+# Pastikan host key OpenSSH telah digenerate
+[ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] && ssh-keygen -A >/dev/null 2>&1 || true
 
 # Pastikan termux-api terpasang
 if ! command -v termux-battery-status >/dev/null 2>&1; then

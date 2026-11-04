@@ -243,6 +243,11 @@ function checkAndRotateLogs() {
       }
     }
   } catch (e) {}
+
+  // Pangkas alokasi memori & jalankan garbage collector jika tersedia
+  if (global.gc) {
+    try { global.gc(); } catch (_) {}
+  }
 }
 
 checkAndRotateLogs();
@@ -1177,7 +1182,12 @@ function startPublicTunnel() {
 
   try {
     tunnelProcess = spawn(cfBin, ['tunnel', '--url', `http://127.0.0.1:${PANEL_PORT}`], {
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        GOGC: '20',
+        GOMEMLIMIT: '32MiB',
+      }
     });
 
     let stdoutBuffer = '';
