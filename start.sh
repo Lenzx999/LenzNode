@@ -81,6 +81,62 @@ is_port_active() {
 }
 
 # -----------------------------------------------------------------------------
+# 0. SISTEM AUTO-UPDATE SAAT STARTUP (GitHub Auto-Sync)
+# -----------------------------------------------------------------------------
+check_and_apply_update() {
+    # Cegah loop jika skrip baru saja di-update dan dieksekusi ulang
+    if [ "$_LENZNODE_UPDATED" = "1" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}sistem sudah versi terbaru${NC}"
+        return 0
+    fi
+
+    local GIT_DIR="$SERVER_DIR/.git"
+    local REPO_URL="https://github.com/Lenzx999/LenzNode.git"
+
+    # Jika folder belum terhubung dengan Git, hubungkan otomatis
+    if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
+        (cd "$SERVER_DIR" && git init -q 2>/dev/null && git remote add origin "$REPO_URL" 2>/dev/null) || true
+    fi
+
+    if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
+        # Cek update dengan batas waktu cepat (3 detik) agar tidak hang jika offline
+        if git -C "$SERVER_DIR" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=3 fetch origin main --depth=1 >/dev/null 2>&1; then
+            local LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse HEAD 2>/dev/null)
+            local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse origin/main 2>/dev/null)
+            if [ -n "$LOCAL_HASH" ] && [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+                echo -e "  ${CYAN}│${NC}  ${GREEN}⬆${NC}  update      ${GREEN}versi baru ditemukan! Memperbarui...${NC}"
+
+                # Amankan kredensial akun agar password tidak ter-reset
+                local AUTH_BACKUP=""
+                [ -f "$SERVER_DIR/panel/auth-config.json" ] && AUTH_BACKUP=$(cat "$SERVER_DIR/panel/auth-config.json" 2>/dev/null)
+
+                git -C "$SERVER_DIR" reset --hard origin/main >/dev/null 2>&1 || git -C "$SERVER_DIR" pull origin main >/dev/null 2>&1
+
+                [ -n "$AUTH_BACKUP" ] && echo "$AUTH_BACKUP" > "$SERVER_DIR/panel/auth-config.json" 2>/dev/null || true
+                chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
+
+                # Sinkronkan skrip starter di $HOME jika ada
+                if [ -d "$HOME" ] && [ -f "$SERVER_DIR/start.sh" ] && [ "$SERVER_DIR" != "$HOME" ]; then
+                    cp -f "$SERVER_DIR/start.sh" "$HOME/start.sh" 2>/dev/null && chmod +x "$HOME/start.sh" 2>/dev/null || true
+                fi
+
+                echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}berhasil diperbarui ke versi terbaru!${NC}"
+
+                # Hapus lock & jalankan skrip terbaru secara mulus
+                rm -f "$LOG_DIR/.start.lock" 2>/dev/null || true
+                unset _LENZNODE_STARTING
+                export _LENZNODE_UPDATED=1
+                exec bash "$0" "$@"
+            else
+                echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${DIM}sistem sudah versi terbaru${NC}"
+            fi
+        else
+            echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}offline / lewati pembaruan${NC}"
+        fi
+    fi
+}
+
+# -----------------------------------------------------------------------------
 # 1. KONTROL SSH SERVER (Port 2222) — NATIVE TERMUX (TANPA PROOT)
 # -----------------------------------------------------------------------------
 start_ssh() {
@@ -258,6 +314,8 @@ start_all() {
     echo ""
     echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
 
+    check_and_apply_update "$@"
+
     start_panel
     start_ssh
     ensure_cloudflare_tunnel
@@ -329,6 +387,12 @@ status_all() {
 }
 
 case "$1" in
+    update)
+        echo ""
+        echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Update${NC} ${CYAN}───────────────────────${NC}"
+        check_and_apply_update "force"
+        echo -e "  ${CYAN}╰───────────────────────────────────────────${NC}\n"
+        ;;
     stop)
         stop_all
         ;;

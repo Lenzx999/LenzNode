@@ -39,6 +39,16 @@ echo ""
 SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
 [ -d "$SRC_DIR" ] && BASE_DIR="$SRC_DIR" || BASE_DIR="$HOME/LenzNode"
 
+# Otomatis tarik pembaruan Git jika folder sudah pernah di-clone sebelumnya
+if [ -d "$BASE_DIR/.git" ] && command -v git >/dev/null 2>&1; then
+    echo -e "${YELLOW}>> Mengambil pembaruan berkas terbaru dari GitHub...${NC}"
+    AUTH_BACKUP=""
+    [ -f "$BASE_DIR/panel/auth-config.json" ] && AUTH_BACKUP=$(cat "$BASE_DIR/panel/auth-config.json" 2>/dev/null)
+    git -C "$BASE_DIR" fetch origin main --depth=1 2>/dev/null || true
+    git -C "$BASE_DIR" reset --hard origin/main 2>/dev/null || git -C "$BASE_DIR" pull origin main 2>/dev/null || true
+    [ -n "$AUTH_BACKUP" ] && echo "$AUTH_BACKUP" > "$BASE_DIR/panel/auth-config.json" 2>/dev/null || true
+fi
+
 # -----------------------------------------------------------------------------
 # 0. DETEKSI SISTEM & PERANGKAT
 # -----------------------------------------------------------------------------

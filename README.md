@@ -134,9 +134,13 @@ Setelah server menyala (`bash ~/LenzNode/start.sh` atau `lenznode`), terminal ak
 
 Gunakan script `start.sh` di Termux untuk mengelola server:
 
-* **Menjalankan Server**:
+* **Menjalankan Server** *(Otomatis cek & terapkan pembaruan GitHub)*:
   ```bash
   ./start.sh
+  ```
+* **Memperbarui Sistem (Manual Update)**:
+  ```bash
+  ./start.sh update
   ```
 * **Melihat Status Layanan & Link Tunnel**:
   ```bash
@@ -157,13 +161,18 @@ Gunakan script `start.sh` di Termux untuk mengelola server:
 
 ---
 
-## 🔄 Cara Update ke Versi Terbaru
+## 🔄 Pembaruan Otomatis (Auto-Update)
 
-Jalankan perintah ini di **Web Terminal** atau di aplikasi **Termux**:
-
-```bash
-curl -sL https://raw.githubusercontent.com/Lenzx999/LenzNode/main/update.sh | bash
-```
+1. **Otomatis Saat Server Dinyalakan**:
+   Setiap kali `./start.sh` (atau `lenznode`) dijalankan, sistem secara otomatis mengecek ke GitHub. Jika ada pembaruan kode terbaru, LenzNode akan otomatis mengunduh & memperbarui dirinya sebelum server mulai bekerja. Akun dan konfigurasi Anda tetap aman terlindungi.
+2. **Pembaruan Manual via Perintah**:
+   ```bash
+   ./start.sh update
+   ```
+3. **Pembaruan 1-Baris Universal (Curl)**:
+   ```bash
+   curl -sL https://raw.githubusercontent.com/Lenzx999/LenzNode/main/update.sh | bash
+   ```
 
 ---
 
