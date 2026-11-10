@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Login Server — LenzNode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Apple Pure System Colors (Zero Cold Blue Tint / Obsidian Surfaces) */
+      --bg-base: #000000;
+      --bg-glass-card: rgba(16, 18, 22, 0.78);
+      --bg-glass-input: rgba(10, 12, 15, 0.75);
+      
+      --accent-blue: #0071E3;
+      --accent-blue-hover: #0077ED;
+      --accent-blue-active: #005BB5;
+      --accent-rose: #FF453A;
+      --accent-emerald: #30D158;
+
+      /* High Readability Typography */
+      --text-primary: #FFFFFF;
+      --text-secondary: #E2E8F0;
+      --text-muted: #94A3B8;
+      --text-tertiary: #64748B;
+
+      /* Neutral Specular Borders & Shadows (Zero Glow) */
+      --border-glass: rgba(255, 255, 255, 0.10);
+      --border-glass-focus: #0071E3;
+      --shadow-glass: 0 20px 48px -10px rgba(0, 0, 0, 0.85);
+
+      /* Balanced Nested Border Radii */
+      --radius-card: 24px;
+      --radius-input: 12px;
+      --radius-btn: 10px;
+      --radius-icon: 14px;
+
+      /* Emil Kowalski Spring Curves */
+      --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: #000000 url('/bg-nature.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-secondary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.50);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Glassmorphism Login Container */
+    .login-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 340px;
+      background: rgba(16, 18, 22, 0.78);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-card);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.70);
+      padding: 26px 22px;
+      transition: transform 200ms var(--ease-out);
+    }
+
+    /* Shake Animation for Failed Login */
+    .login-container.shake {
+      animation: loginShake 400ms var(--ease-spring);
+    }
+
+    @keyframes loginShake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-7px); }
+      40%, 80% { transform: translateX(7px); }
+    }
+
+    /* Header Title */
+    .login-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .login-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    /* Form Layout (Single Column) */
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: -0.01em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: color 160ms ease;
+    }
+
+    .input-icon svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .form-input {
+      width: 100%;
+      height: 44px;
+      background: var(--bg-glass-input);
+      border: 1px solid var(--border-glass);
+      border-radius: var(--radius-input);
+      padding: 0 14px 0 42px;
+      font-family: inherit;
+      font-size: 13.5px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .form-input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .form-input:focus {
+      background: #1C1D22;
+      border-color: var(--border-glass-focus);
+      box-shadow: none;
+    }
+
+    .form-input:-webkit-autofill,
+    .form-input:-webkit-autofill:hover, 
+    .form-input:-webkit-autofill:focus {
+      -webkit-text-fill-color: var(--text-primary);
+      -webkit-box-shadow: 0 0 0 1000px #1C1D22 inset !important;
+      transition: background-color 5000s ease-in-out 0s;
+    }
+
+    .form-input:focus + .input-icon,
+    .input-wrapper:focus-within .input-icon {
+      color: var(--accent-blue);
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 10px;
+      background: none;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: color 140ms ease;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .password-toggle-btn svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* Alert Box */
+    .login-alert {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255, 69, 58, 0.12);
+      border: 1px solid rgba(255, 69, 58, 0.28);
+      color: var(--accent-rose);
+      font-size: 12.5px;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .login-alert.show {
+      display: flex;
+    }
+
+    .login-alert svg {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    /* Submit Button (Apple / Emil Kowalski Spring) */
+    .btn-submit {
+      width: 100%;
+      height: 38px;
+      padding: 0 18px;
+      white-space: nowrap;
+      background: var(--accent-blue);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-btn);
+      box-shadow: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 4px;
+      transition: background 160ms ease, transform 160ms var(--ease-spring);
+    }
+
+    .btn-submit:hover {
+      background: var(--accent-blue-hover);
+      box-shadow: none;
+    }
+
+    .btn-submit:active {
+      transform: scale(0.97);
+      background: var(--accent-blue-active);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Loading Spinner */
+    .btn-spinner {
+      display: none;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-submit.loading .btn-spinner {
+      display: inline-block;
+    }
+    .btn-submit.loading .btn-text {
+      opacity: 0.8;
+    }
+
+    /* Responsive for Small Mobile */
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 22px 18px;
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container" id="login-container">
+    <div class="login-header">
+      <h1 class="login-title">LenzNode</h1>
+    </div>
+
+    <form class="login-form" id="login-form" onsubmit="handleLoginSubmit(event)" autocomplete="on">
+      <div class="login-alert" id="login-alert" role="alert">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="login-alert-text">Username atau password salah.</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-user">Username</label>
+        <div class="input-wrapper">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </span>
+          <input
+            id="login-user"
+            class="form-input"
+            type="text"
+            placeholder="Masukkan username"
+            autocomplete="username"
+            spellcheck="false"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="login-pass">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </span>
+          <input
+            id="login-pass"
+            class="form-input"
+            type="password"
+            placeholder="Masukkan password"
+            autocomplete="current-password"
+            spellcheck="false"
+            required
+          />
+          <button type="button" class="password-toggle-btn" id="pass-toggle-btn" onclick="togglePasswordVisibility()" aria-label="Lihat kata sandi">
+            <svg id="pass-eye-icon" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btn-submit">
+        <span class="btn-spinner" id="btn-spinner"></span>
+        <span class="btn-text" id="btn-text">Masuk</span>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    const userEl = document.getElementById('login-user');
+    const passEl = document.getElementById('login-pass');
+    const alertEl = document.getElementById('login-alert');
+    const alertTextEl = document.getElementById('login-alert-text');
+    const submitBtn = document.getElementById('btn-submit');
+    const btnText = document.getElementById('btn-text');
+    const cardEl = document.getElementById('login-container');
+
+    window.addEventListener('DOMContentLoaded', () => {
+      userEl.focus();
+    });
+
+    function togglePasswordVisibility() {
+      const isPassword = passEl.type === 'password';
+      passEl.type = isPassword ? 'text' : 'password';
+      const eyeIcon = document.getElementById('pass-eye-icon');
+      if (isPassword) {
+        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    }
+
+    function showAlert(msg) {
+      alertTextEl.textContent = msg;
+      alertEl.classList.add('show');
+      cardEl.classList.remove('shake');
+      void cardEl.offsetWidth; // Trigger reflow
+      cardEl.classList.add('shake');
+    }
+
+    function hideAlert() {
+      alertEl.classList.remove('show');
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      hideAlert();
+
+      const username = userEl.value.trim();
+      const password = passEl.value.trim();
+
+      if (!username || !password) {
+        showAlert('Harap isi username dan password.');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+      btnText.textContent = 'Memverifikasi...';
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          window.location.replace('/');
+          return;
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove('loading');
+          btnText.textContent = 'Masuk';
+          showAlert(data.message || 'Username atau password salah.');
+          passEl.value = '';
+          passEl.focus();
+        }
+      } catch (err) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+        btnText.textContent = 'Masuk';
+        showAlert('Gagal terhubung ke server. Pastikan jaringan aktif.');
+      }
+    }
+  </script>
+</body>
+</html>
+

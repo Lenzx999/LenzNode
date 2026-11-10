@@ -15,6 +15,7 @@ const os = require('os');
 const { spawn, exec, execSync } = require('child_process');
 const crypto = require('crypto');
 const net = require('net');
+const zlib = require('zlib');
 
 // ------------------------------------------------------------------
 // KONFIGURASI & VARIABEL LINGKUNGAN
@@ -207,6 +208,30 @@ function checkAuth(req) {
   }
 
   return false;
+}
+
+function getAuthUser(req) {
+  const cookies = parseCookies(req);
+  if (cookies.session_token && activeSessions.has(cookies.session_token)) {
+    const s = activeSessions.get(cookies.session_token);
+    if (s && s.user) return s.user;
+  }
+  const authHeader = req.headers['authorization'] || '';
+  if (authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (activeSessions.has(token)) {
+      const s = activeSessions.get(token);
+      if (s && s.user) return s.user;
+    }
+  }
+  if (authHeader.startsWith('Basic ')) {
+    const encoded = authHeader.substring(6).trim();
+    const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+    const idx = decoded.indexOf(':');
+    const user = decoded.slice(0, idx);
+    if (user) return user;
+  }
+  return authConfig.username || 'admin';
 }
 
 function isPortListening(port, host = '127.0.0.1') {
@@ -868,7 +893,18 @@ function getSystemStats() {
       publicUrl: currentPublicUrl,
       tunnelStatus: tunnelProcess ? (currentPublicUrl ? 'connected' : 'connecting') : 'disabled',
     },
-    services: [],
+    services: [
+      { name: 'Web Dashboard Panel', port: PANEL_PORT, status: 'running', type: 'panel' },
+      { name: 'SSH Server (OpenSSH)', port: vpsConfig.port || 2222, status: lastVpsRunningState ? 'running' : 'stopped', type: 'ssh' },
+      { name: 'Cloudflare Tunnel', port: null, status: tunnelProcess ? (currentPublicUrl ? 'running' : 'connecting') : 'stopped', type: 'tunnel', url: currentPublicUrl },
+      { name: '9Router AI Gateway', port: ROUTER_PORT, status: lastRouterRunningState ? 'running' : 'stopped', type: 'app' }
+    ],
+    process: {
+      pid: process.pid,
+      memoryBytes: process.memoryUsage ? process.memoryUsage().rss : 0,
+      uptimeSeconds: Math.floor(process.uptime()),
+      nodeVersion: process.version,
+    },
     vps: Object.assign({}, vpsConfig, {
       running: lastVpsRunningState,
     }),
@@ -1032,12 +1068,19 @@ function triggerVibrate(duration = 400) {
   }
 }
 
-function toggleWakeLock(enable = true) {
+let wakeLockActive = false;
+function toggleWakeLock(enable) {
   try {
+    const newState = enable !== undefined ? (enable === 'on' || enable === true) : !wakeLockActive;
+    wakeLockActive = newState;
     if (os.platform() !== 'win32') {
-      execSync(enable ? 'termux-wake-lock 2>/dev/null || true' : 'termux-wake-unlock 2>/dev/null || true', { timeout: 2000 });
+      execSync(wakeLockActive ? 'termux-wake-lock 2>/dev/null || true' : 'termux-wake-unlock 2>/dev/null || true', { timeout: 2000 });
     }
-    return { ok: true, message: enable ? 'Wake-Lock diaktifkan (HP tidak akan sleep).' : 'Wake-Lock dinonaktifkan.' };
+    return {
+      ok: true,
+      active: wakeLockActive,
+      message: wakeLockActive ? 'Wake-Lock diaktifkan (HP tidak akan sleep).' : 'Wake-Lock dinonaktifkan.'
+    };
   } catch (e) {
     return { ok: false, message: 'Gagal mengatur wake-lock: ' + e.message };
   }
@@ -1715,10 +1758,17 @@ function listDirectory(dirPath) {
 }
 
 function handleStreamingUpload(req, targetDir, callback) {
+  let callbackCalled = false;
+  const done = (err, files) => {
+    if (callbackCalled) return;
+    callbackCalled = true;
+    callback(err, files);
+  };
+
   const contentType = req.headers['content-type'] || '';
   const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
   if (!boundaryMatch) {
-    return callback(new Error('Boundary multipart tidak ditemukan'));
+    return done(new Error('Boundary multipart tidak ditemukan'));
   }
 
   const boundary = boundaryMatch[1] || boundaryMatch[2];
@@ -1731,104 +1781,119 @@ function handleStreamingUpload(req, targetDir, callback) {
   const streamPromises = [];
 
   req.on('data', (chunk) => {
-    buffer = Buffer.concat([buffer, chunk]);
+    try {
+      buffer = Buffer.concat([buffer, chunk]);
 
-    let running = true;
-    while (running) {
-      if (state === 'WAIT_BOUNDARY') {
-        const bIdx = buffer.indexOf(boundaryBuffer);
-        if (bIdx === -1) {
-          running = false;
-          break;
-        }
-        buffer = buffer.slice(bIdx + boundaryBuffer.length);
-        state = 'WAIT_HEADER';
-      } else if (state === 'WAIT_HEADER') {
-        if (buffer.length >= 2 && buffer[0] === 45 && buffer[1] === 45) {
-          running = false;
-          break;
-        }
-
-        const headerEndIdx = buffer.indexOf(Buffer.from('\r\n\r\n'));
-        if (headerEndIdx === -1) {
-          running = false;
-          break;
-        }
-
-        const headerStr = buffer.slice(0, headerEndIdx).toString('utf8');
-        buffer = buffer.slice(headerEndIdx + 4);
-
-        const filenameMatch = headerStr.match(/filename="([^"]+)"/i);
-        if (filenameMatch) {
-          const rawRel = filenameMatch[1].replace(/\\/g, '/');
-          const cleanRel = path.normalize(rawRel).replace(/^(\.\.[\/\\])+/, '').replace(/^[\/\\]+/, '');
-          const destPath = path.resolve(targetDir, cleanRel);
-
-          if (!destPath.startsWith(path.resolve(targetDir))) {
-            throw new Error('Akses direktori tidak sah');
+      let running = true;
+      while (running) {
+        if (state === 'WAIT_BOUNDARY') {
+          const bIdx = buffer.indexOf(boundaryBuffer);
+          if (bIdx === -1) {
+            running = false;
+            break;
           }
-
-          const destDir = path.dirname(destPath);
-          if (!fs.existsSync(destDir)) {
-            fs.mkdirSync(destDir, { recursive: true });
-          }
-
-          const ws = fs.createWriteStream(destPath);
-          streamPromises.push(new Promise((resolve, reject) => {
-            ws.on('finish', resolve);
-            ws.on('error', reject);
-          }));
-          currentFileStream = ws;
-          uploadedFiles.push(cleanRel);
-          state = 'READ_FILE_DATA';
-        } else {
-          state = 'READ_FIELD_DATA';
-        }
-      } else if (state === 'READ_FILE_DATA') {
-        const nextBIdx = buffer.indexOf(boundaryBuffer);
-        if (nextBIdx === -1) {
-          if (buffer.length > boundaryBuffer.length + 4) {
-            const flushLen = buffer.length - (boundaryBuffer.length + 4);
-            const chunkToWrite = buffer.slice(0, flushLen);
-            currentFileStream.write(chunkToWrite);
-            buffer = buffer.slice(flushLen);
-          }
-          running = false;
-        } else {
-          let fileDataEnd = nextBIdx;
-          if (fileDataEnd >= 2 && buffer[fileDataEnd - 2] === 13 && buffer[fileDataEnd - 1] === 10) {
-            fileDataEnd -= 2;
-          }
-          const finalChunk = buffer.slice(0, fileDataEnd);
-          currentFileStream.end(finalChunk);
-          currentFileStream = null;
-
-          buffer = buffer.slice(nextBIdx + boundaryBuffer.length);
+          buffer = buffer.slice(bIdx + boundaryBuffer.length);
           state = 'WAIT_HEADER';
-        }
-      } else if (state === 'READ_FIELD_DATA') {
-        const nextBIdx = buffer.indexOf(boundaryBuffer);
-        if (nextBIdx === -1) {
-          buffer = Buffer.alloc(0);
-          running = false;
-        } else {
-          buffer = buffer.slice(nextBIdx + boundaryBuffer.length);
-          state = 'WAIT_HEADER';
+        } else if (state === 'WAIT_HEADER') {
+          if (buffer.length >= 2 && buffer[0] === 45 && buffer[1] === 45) {
+            running = false;
+            break;
+          }
+
+          const headerEndIdx = buffer.indexOf(Buffer.from('\r\n\r\n'));
+          if (headerEndIdx === -1) {
+            running = false;
+            break;
+          }
+
+          const headerStr = buffer.slice(0, headerEndIdx).toString('utf8');
+          buffer = buffer.slice(headerEndIdx + 4);
+
+          const filenameMatch = headerStr.match(/filename="([^"]+)"/i);
+          if (filenameMatch) {
+            const rawRel = filenameMatch[1].replace(/\\/g, '/');
+            const cleanRel = path.normalize(rawRel).replace(/^(\.\.[\/\\])+/, '').replace(/^[\/\\]+/, '');
+            const destPath = path.resolve(targetDir, cleanRel);
+
+            if (!destPath.startsWith(path.resolve(targetDir))) {
+              throw new Error('Akses direktori tidak sah');
+            }
+
+            const destDir = path.dirname(destPath);
+            if (!fs.existsSync(destDir)) {
+              fs.mkdirSync(destDir, { recursive: true });
+            }
+
+            const ws = fs.createWriteStream(destPath);
+            streamPromises.push(new Promise((resolve, reject) => {
+              ws.on('finish', resolve);
+              ws.on('error', (err) => {
+                try { ws.destroy(); } catch (_) {}
+                reject(err);
+              });
+            }));
+            currentFileStream = ws;
+            uploadedFiles.push(cleanRel);
+            state = 'READ_FILE_DATA';
+          } else {
+            state = 'READ_FIELD_DATA';
+          }
+        } else if (state === 'READ_FILE_DATA') {
+          const nextBIdx = buffer.indexOf(boundaryBuffer);
+          if (nextBIdx === -1) {
+            if (buffer.length > boundaryBuffer.length + 4) {
+              const flushLen = buffer.length - (boundaryBuffer.length + 4);
+              const chunkToWrite = buffer.slice(0, flushLen);
+              currentFileStream.write(chunkToWrite);
+              buffer = buffer.slice(flushLen);
+            }
+            running = false;
+          } else {
+            let fileDataEnd = nextBIdx;
+            if (fileDataEnd >= 2 && buffer[fileDataEnd - 2] === 13 && buffer[fileDataEnd - 1] === 10) {
+              fileDataEnd -= 2;
+            }
+            const finalChunk = buffer.slice(0, fileDataEnd);
+            currentFileStream.end(finalChunk);
+            currentFileStream = null;
+
+            buffer = buffer.slice(nextBIdx + boundaryBuffer.length);
+            state = 'WAIT_HEADER';
+          }
+        } else if (state === 'READ_FIELD_DATA') {
+          const nextBIdx = buffer.indexOf(boundaryBuffer);
+          if (nextBIdx === -1) {
+            buffer = Buffer.alloc(0);
+            running = false;
+          } else {
+            buffer = buffer.slice(nextBIdx + boundaryBuffer.length);
+            state = 'WAIT_HEADER';
+          }
         }
       }
+    } catch (err) {
+      if (currentFileStream) {
+        try { currentFileStream.destroy(); } catch (_) {}
+        currentFileStream = null;
+      }
+      done(err);
     }
   });
 
   req.on('end', () => {
-    if (currentFileStream) currentFileStream.end();
+    if (currentFileStream) {
+      try { currentFileStream.end(); } catch (_) {}
+    }
     Promise.all(streamPromises)
-      .then(() => callback(null, uploadedFiles))
-      .catch(callback);
+      .then(() => done(null, uploadedFiles))
+      .catch((err) => done(err));
   });
 
   req.on('error', (err) => {
-    if (currentFileStream) currentFileStream.end();
-    callback(err);
+    if (currentFileStream) {
+      try { currentFileStream.destroy(); } catch (_) {}
+    }
+    done(err);
   });
 }
 
@@ -1841,20 +1906,30 @@ function sendJSON(res, status, obj) {
   res.end(body);
 }
 
-function parseJSONBody(req) {
+function parseJSONBody(req, limit = 5 * 1024 * 1024) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (c) => (body += c));
+    let size = 0;
+    req.on('data', (c) => {
+      size += c.length;
+      if (size > limit) {
+        req.destroy();
+        reject(new Error('Payload JSON terlalu besar (maksimal 5MB)'));
+        return;
+      }
+      body += c;
+    });
     req.on('end', () => {
       try {
-        resolve(body ? JSON.parse(body) : {});
+        resolve(body && body.trim() ? JSON.parse(body) : {});
       } catch (e) {
-        reject(new Error('Format JSON tidak valid'));
+        reject(new Error('Format JSON tidak valid: ' + e.message));
       }
     });
     req.on('error', reject);
   });
 }
+const parseBody = parseJSONBody;
 
 function getPm2Status() {
   let isInstalled = false;
@@ -1971,7 +2046,11 @@ const server = http.createServer(async (req, res) => {
   // Public Endpoints
   if (req.method === 'GET' && pathname === '/api/auth/status') {
     const isAuth = checkAuth(req);
-    sendJSON(res, 200, { authenticated: isAuth });
+    sendJSON(res, 200, {
+      authenticated: isAuth,
+      username: isAuth ? getAuthUser(req) : null,
+      serverTime: new Date().toISOString()
+    });
     return;
   }
 
@@ -2012,27 +2091,109 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/auth/logout') {
     const cookies = parseCookies(req);
     if (cookies.session_token) deleteSession(cookies.session_token);
-    res.setHeader('Set-Cookie', 'session_token=; Path=/; HttpOnly; Max-Age=0');
+    const authHeader = req.headers['authorization'] || '';
+    if (authHeader.startsWith('Bearer ')) {
+      deleteSession(authHeader.substring(7).trim());
+    }
+    res.setHeader('Set-Cookie', 'session_token=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
     sendJSON(res, 200, { ok: true, message: 'Logout berhasil.' });
     return;
   }
 
-  // Serve UI Frontend
+  // Helper kompresi HTTP respon statis (Gzip / Deflate)
+  function sendCompressedResponse(req, res, statusCode, contentType, contentBuffer, cacheControl) {
+    const headers = {
+      'Content-Type': contentType,
+      'Cache-Control': cacheControl || 'no-cache',
+      'Vary': 'Accept-Encoding',
+      'X-Content-Type-Options': 'nosniff'
+    };
+
+    const buf = Buffer.isBuffer(contentBuffer) ? contentBuffer : Buffer.from(contentBuffer, 'utf8');
+    const acceptEncoding = req.headers['accept-encoding'] || '';
+
+    if (/\bgzip\b/.test(acceptEncoding)) {
+      headers['Content-Encoding'] = 'gzip';
+      zlib.gzip(buf, { level: 6 }, (err, gzipped) => {
+        if (err) {
+          res.writeHead(statusCode, headers);
+          return res.end(buf);
+        }
+        headers['Content-Length'] = gzipped.length;
+        res.writeHead(statusCode, headers);
+        res.end(gzipped);
+      });
+    } else if (/\bdeflate\b/.test(acceptEncoding)) {
+      headers['Content-Encoding'] = 'deflate';
+      zlib.deflate(buf, (err, deflated) => {
+        if (err) {
+          res.writeHead(statusCode, headers);
+          return res.end(buf);
+        }
+        headers['Content-Length'] = deflated.length;
+        res.writeHead(statusCode, headers);
+        res.end(deflated);
+      });
+    } else {
+      headers['Content-Length'] = buf.length;
+      res.writeHead(statusCode, headers);
+      res.end(buf);
+    }
+  }
+
+  // Serve Separate Login Page
+  if (req.method === 'GET' && (pathname === '/login' || pathname === '/login.html')) {
+    if (checkAuth(req)) {
+      res.writeHead(302, { 'Location': '/' });
+      res.end();
+      return;
+    }
+    const loginPath = path.join(__dirname, 'public', 'login.html');
+    fs.readFile(loginPath, (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'Content-Type': 'text/plain' });
+        res.end('Gagal membaca login.html');
+        return;
+      }
+      sendCompressedResponse(req, res, 200, 'text/html; charset=utf-8', data, 'no-cache, no-store, must-revalidate, max-age=0');
+    });
+    return;
+  }
+
+  // Serve Background Nature Wallpaper
+  if ((req.method === 'GET' || req.method === 'HEAD') && (pathname === '/bg-nature.jpg' || pathname === '/bg.jpg')) {
+    const bgPath = path.join(__dirname, 'public', 'bg-nature.jpg');
+    fs.readFile(bgPath, (err, data) => {
+      if (err) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not Found');
+        return;
+      }
+      res.writeHead(200, {
+        'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800',
+        'Content-Length': data.length
+      });
+      res.end(data);
+    });
+    return;
+  }
+
+  // Serve Main Dashboard UI Frontend (Protected)
   if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
+    if (!checkAuth(req)) {
+      res.writeHead(302, { 'Location': '/login' });
+      res.end();
+      return;
+    }
     const indexPath = path.join(__dirname, 'public', 'index.html');
-    fs.readFile(indexPath, 'utf8', (err, data) => {
+    fs.readFile(indexPath, (err, data) => {
       if (err) {
         res.writeHead(500, { 'Content-Type': 'text/plain' });
         res.end('Gagal membaca index.html');
         return;
       }
-      res.writeHead(200, {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      });
-      res.end(data);
+      sendCompressedResponse(req, res, 200, 'text/html; charset=utf-8', data, 'no-cache, no-store, must-revalidate, max-age=0');
     });
     return;
   }
@@ -2119,6 +2280,51 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Live Logs Streaming / File Tailing (SSE)
+  if (req.method === 'GET' && (pathname === '/api/logs/stream' || pathname === '/api/logs/tail')) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Content-Type-Options': 'nosniff',
+    });
+
+    const initialLogs = getWebsiteLogs(120);
+    res.write(`data: ${JSON.stringify({ type: 'init', logs: initialLogs })}\n\n`);
+
+    const logPath = path.join(LOG_DIR, 'panel.log');
+    let lastSize = fs.existsSync(logPath) ? fs.statSync(logPath).size : 0;
+
+    const tailTimer = setInterval(() => {
+      if (res.destroyed || res.writableEnded) {
+        clearInterval(tailTimer);
+        return;
+      }
+      try {
+        if (!fs.existsSync(logPath)) return;
+        const curSize = fs.statSync(logPath).size;
+        if (curSize > lastSize) {
+          const stream = fs.createReadStream(logPath, { start: lastSize, end: curSize });
+          let chunk = '';
+          stream.on('data', (d) => { chunk += d.toString('utf8'); });
+          stream.on('end', () => {
+            if (chunk && !res.destroyed && !res.writableEnded) {
+              res.write(`data: ${JSON.stringify({ type: 'append', logs: chunk })}\n\n`);
+            }
+          });
+          lastSize = curSize;
+        } else if (curSize < lastSize) {
+          lastSize = curSize;
+        }
+      } catch (_) {}
+    }, 1500);
+
+    req.on('close', () => {
+      clearInterval(tailTimer);
+    });
+    return;
+  }
+
   // PM2 Management
   if (req.method === 'GET' && pathname === '/api/pm2/status') {
     sendJSON(res, 200, getPm2Status());
@@ -2132,28 +2338,25 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/api/pm2/action') {
-    let body = '';
-    req.on('data', (c) => (body += c));
-    req.on('end', () => {
-      try {
-        const data = JSON.parse(body || '{}');
-        const action = data.action;
-        const target = (data.name || 'all').replace(/[^a-zA-Z0-9_.-]/g, '');
-        if (['restart', 'stop', 'start', 'delete'].indexOf(action) === -1) {
-          sendJSON(res, 400, { ok: false, message: 'Aksi PM2 tidak valid.' });
-          return;
-        }
-        exec(`pm2 ${action} "${target}" 2>&1`, { timeout: 5000 }, (err, stdout) => {
-          if (err) {
-            sendJSON(res, 500, { ok: false, message: 'Gagal memproses aksi PM2: ' + (stdout || err.message) });
-          } else {
-            sendJSON(res, 200, { ok: true, message: `Berhasil menjalankan pm2 ${action} ${target}`, output: stdout });
-          }
-        });
-      } catch (e) {
-        sendJSON(res, 400, { ok: false, message: 'Payload tidak valid.' });
+    try {
+      const data = await parseJSONBody(req);
+      const action = (data.action || '').trim().toLowerCase();
+      const target = (data.name || 'all').replace(/[^a-zA-Z0-9_.-]/g, '');
+      if (['restart', 'stop', 'start', 'delete'].indexOf(action) === -1) {
+        sendJSON(res, 200, { ok: false, message: 'Aksi PM2 tidak valid. Pilih: restart, stop, start, atau delete.' });
+        return;
       }
-    });
+      exec(`pm2 ${action} "${target}" 2>&1`, { timeout: 8000 }, (err, stdout) => {
+        if (err) {
+          const errMsg = stdout ? stdout.trim() : err.message;
+          sendJSON(res, 200, { ok: false, message: 'Gagal memproses PM2 ' + action + ': ' + errMsg });
+        } else {
+          sendJSON(res, 200, { ok: true, message: `Berhasil menjalankan pm2 ${action} ${target}`, output: stdout });
+        }
+      });
+    } catch (e) {
+      sendJSON(res, 200, { ok: false, message: 'Payload tidak valid: ' + e.message });
+    }
     return;
   }
 
@@ -2283,22 +2486,22 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/device/torch') {
     let body = {};
-    try { body = await parseBody(req); } catch (e) {}
+    try { body = await parseJSONBody(req); } catch (e) {}
     sendJSON(res, 200, controlTorch(body.state));
     return;
   }
 
   if (req.method === 'POST' && pathname === '/api/device/vibrate') {
     let body = {};
-    try { body = await parseBody(req); } catch (e) {}
+    try { body = await parseJSONBody(req); } catch (e) {}
     sendJSON(res, 200, triggerVibrate(body.duration || 400));
     return;
   }
 
   if (req.method === 'POST' && pathname === '/api/device/wakelock') {
     let body = {};
-    try { body = await parseBody(req); } catch (e) {}
-    sendJSON(res, 200, toggleWakeLock(body.enable !== undefined ? body.enable : true));
+    try { body = await parseJSONBody(req); } catch (e) {}
+    sendJSON(res, 200, toggleWakeLock(body.enable));
     return;
   }
 
@@ -2314,7 +2517,12 @@ const server = http.createServer(async (req, res) => {
       const data = listDirectory(qPath);
       sendJSON(res, 200, { ok: true, data });
     } catch (e) {
-      sendJSON(res, 400, { ok: false, message: e.message });
+      try {
+        const fallbackData = listDirectory(DEFAULT_ROOT_DIR);
+        sendJSON(res, 200, { ok: true, data: fallbackData, warning: e.message });
+      } catch (errFallback) {
+        sendJSON(res, 200, { ok: false, message: e.message });
+      }
     }
     return;
   }
@@ -2322,47 +2530,58 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'GET' && pathname === '/api/files/download') {
     const filePath = parsedUrl.searchParams.get('path');
     if (!filePath || !fs.existsSync(filePath)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('File tidak ditemukan');
       return;
     }
 
-    const stat = fs.statSync(filePath);
-    if (stat.isDirectory()) {
-      const folderName = path.basename(filePath);
-      const parentDir = path.dirname(filePath);
+    try {
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+        const folderName = path.basename(filePath);
+        const parentDir = path.dirname(filePath);
 
+        res.writeHead(200, {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
+        });
+
+        const zipProc = spawn('zip', ['-r', '-', folderName], { cwd: parentDir });
+        zipProc.stdout.pipe(res);
+        req.on('close', () => {
+          try { zipProc.kill(); } catch (_) {}
+        });
+        return;
+      }
+
+      const filename = path.basename(filePath);
       res.writeHead(200, {
-        'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${encodeURIComponent(folderName)}.zip"`,
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': stat.size,
+        'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
       });
-
-      const zipProc = spawn('zip', ['-r', '-', folderName], { cwd: parentDir });
-      zipProc.stdout.pipe(res);
-      req.on('close', () => zipProc.kill());
-      return;
+      fs.createReadStream(filePath).pipe(res);
+    } catch (err) {
+      if (!res.headersSent) {
+        sendJSON(res, 200, { ok: false, message: 'Gagal mengunduh file: ' + err.message });
+      } else {
+        res.end();
+      }
     }
-
-    const filename = path.basename(filePath);
-    res.writeHead(200, {
-      'Content-Type': 'application/octet-stream',
-      'Content-Length': stat.size,
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(filename)}"`,
-    });
-    fs.createReadStream(filePath).pipe(res);
     return;
   }
 
   if (req.method === 'POST' && pathname === '/api/files/upload') {
-    const targetDir = resolveSafePath(parsedUrl.searchParams.get('dir'));
+    const rawDir = parsedUrl.searchParams.get('dir');
+    const targetDir = resolveSafePath(rawDir);
     if (!fs.existsSync(targetDir)) {
-      sendJSON(res, 400, { ok: false, message: 'Direktori tujuan tidak ada.' });
+      sendJSON(res, 200, { ok: false, message: 'Direktori tujuan tidak ditemukan di server.' });
       return;
     }
 
     handleStreamingUpload(req, targetDir, (err, uploadedFiles) => {
       if (err) {
-        sendJSON(res, 500, { ok: false, message: 'Upload gagal: ' + err.message });
+        sendJSON(res, 200, { ok: false, message: 'Upload gagal: ' + err.message });
       } else {
         sendJSON(res, 200, { ok: true, message: `Berhasil mengupload ${uploadedFiles.length} file & folder.`, files: uploadedFiles });
       }
@@ -2371,9 +2590,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (req.method === 'POST' && pathname === '/api/files/unzip') {
-    const filePath = resolveSafePath(parsedUrl.searchParams.get('path'));
+    const rawPath = parsedUrl.searchParams.get('path');
+    if (!rawPath) {
+      sendJSON(res, 200, { ok: false, message: 'Parameter path ZIP tidak diberikan.' });
+      return;
+    }
+    const filePath = resolveSafePath(rawPath);
     if (!fs.existsSync(filePath)) {
-      sendJSON(res, 404, { ok: false, message: 'File ZIP tidak ditemukan.' });
+      sendJSON(res, 200, { ok: false, message: 'File ZIP tidak ditemukan.' });
       return;
     }
 
@@ -2385,7 +2609,7 @@ const server = http.createServer(async (req, res) => {
 
     exec(unzipCmd, { timeout: 60000 }, (err, stdout, stderr) => {
       if (err) {
-        sendJSON(res, 500, { ok: false, message: 'Ekstrak gagal: ' + (stderr || err.message) });
+        sendJSON(res, 200, { ok: false, message: 'Ekstrak gagal: ' + (stderr || err.message) });
       } else {
         sendJSON(res, 200, { ok: true, message: 'File ZIP berhasil diekstrak!' });
       }
@@ -2396,11 +2620,21 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/mkdir') {
     try {
       const body = await parseJSONBody(req);
-      const targetDir = path.join(resolveSafePath(body.parentPath), body.name);
+      const name = (body.name || '').trim();
+      if (!name) {
+        sendJSON(res, 200, { ok: false, message: 'Nama folder tidak boleh kosong.' });
+        return;
+      }
+      const cleanName = path.basename(name);
+      const targetDir = path.join(resolveSafePath(body.parentPath), cleanName);
+      if (fs.existsSync(targetDir)) {
+        sendJSON(res, 200, { ok: false, message: 'Folder dengan nama tersebut sudah ada.' });
+        return;
+      }
       fs.mkdirSync(targetDir, { recursive: true });
       sendJSON(res, 200, { ok: true, message: 'Folder berhasil dibuat.' });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal membuat folder: ' + e.message });
     }
     return;
   }
@@ -2408,13 +2642,21 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/create') {
     try {
       const body = await parseJSONBody(req);
-      const targetFile = path.join(resolveSafePath(body.parentPath), body.name);
-      if (!fs.existsSync(targetFile)) {
-        fs.writeFileSync(targetFile, '', 'utf8');
+      const name = (body.name || '').trim();
+      if (!name) {
+        sendJSON(res, 200, { ok: false, message: 'Nama file tidak boleh kosong.' });
+        return;
       }
+      const cleanName = path.basename(name);
+      const targetFile = path.join(resolveSafePath(body.parentPath), cleanName);
+      if (fs.existsSync(targetFile)) {
+        sendJSON(res, 200, { ok: false, message: 'File dengan nama tersebut sudah ada.' });
+        return;
+      }
+      fs.writeFileSync(targetFile, '', 'utf8');
       sendJSON(res, 200, { ok: true, message: 'File berhasil dibuat.' });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal membuat file: ' + e.message });
     }
     return;
   }
@@ -2422,6 +2664,10 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/delete') {
     try {
       const body = await parseJSONBody(req);
+      if (!body.path) {
+        sendJSON(res, 200, { ok: false, message: 'Path berkas tidak ditentukan.' });
+        return;
+      }
       const target = resolveSafePath(body.path);
       if (fs.existsSync(target)) {
         const stat = fs.statSync(target);
@@ -2430,10 +2676,12 @@ const server = http.createServer(async (req, res) => {
         } else {
           fs.unlinkSync(target);
         }
+        sendJSON(res, 200, { ok: true, message: 'Berhasil dihapus.' });
+      } else {
+        sendJSON(res, 200, { ok: false, message: 'Berkas atau folder tidak ditemukan.' });
       }
-      sendJSON(res, 200, { ok: true, message: 'Berhasil dihapus.' });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal menghapus: ' + e.message });
     }
     return;
   }
@@ -2441,12 +2689,29 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/rename') {
     try {
       const body = await parseJSONBody(req);
+      if (!body.oldPath) {
+        sendJSON(res, 200, { ok: false, message: 'Path asal tidak ditentukan.' });
+        return;
+      }
       const oldPath = resolveSafePath(body.oldPath);
-      const newPath = path.join(path.dirname(oldPath), body.newName);
+      const cleanName = path.basename((body.newName || '').trim());
+      if (!cleanName) {
+        sendJSON(res, 200, { ok: false, message: 'Nama baru tidak boleh kosong.' });
+        return;
+      }
+      if (!fs.existsSync(oldPath)) {
+        sendJSON(res, 200, { ok: false, message: 'File atau folder asal tidak ditemukan.' });
+        return;
+      }
+      const newPath = path.join(path.dirname(oldPath), cleanName);
+      if (fs.existsSync(newPath)) {
+        sendJSON(res, 200, { ok: false, message: 'File atau folder dengan nama baru sudah ada.' });
+        return;
+      }
       fs.renameSync(oldPath, newPath);
       sendJSON(res, 200, { ok: true, message: 'Nama berhasil diubah.' });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal mengubah nama: ' + e.message });
     }
     return;
   }
@@ -2454,20 +2719,28 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/content') {
     try {
       const body = await parseJSONBody(req);
+      if (!body.path) {
+        sendJSON(res, 200, { ok: false, message: 'Path berkas tidak ditentukan.' });
+        return;
+      }
       const target = resolveSafePath(body.path);
       if (!fs.existsSync(target)) {
-        sendJSON(res, 404, { ok: false, message: 'File tidak ditemukan.' });
+        sendJSON(res, 200, { ok: false, message: 'File tidak ditemukan.' });
         return;
       }
       const stat = fs.statSync(target);
+      if (stat.isDirectory()) {
+        sendJSON(res, 200, { ok: false, message: 'Target adalah direktori, bukan file teks.' });
+        return;
+      }
       if (stat.size > 2 * 1024 * 1024) {
-        sendJSON(res, 400, { ok: false, message: 'File terlalu besar untuk diedit langsung di web (> 2MB).' });
+        sendJSON(res, 200, { ok: false, message: 'File terlalu besar untuk diedit langsung di web (> 2MB).' });
         return;
       }
       const content = fs.readFileSync(target, 'utf8');
       sendJSON(res, 200, { ok: true, content });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal membaca isi file: ' + e.message });
     }
     return;
   }
@@ -2475,11 +2748,15 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/files/save') {
     try {
       const body = await parseJSONBody(req);
+      if (!body.path) {
+        sendJSON(res, 200, { ok: false, message: 'Path berkas tidak ditentukan.' });
+        return;
+      }
       const target = resolveSafePath(body.path);
       fs.writeFileSync(target, body.content || '', 'utf8');
       sendJSON(res, 200, { ok: true, message: 'File berhasil disimpan.' });
     } catch (e) {
-      sendJSON(res, 500, { ok: false, message: e.message });
+      sendJSON(res, 200, { ok: false, message: 'Gagal menyimpan file: ' + e.message });
     }
     return;
   }
@@ -2545,7 +2822,28 @@ const server = http.createServer(async (req, res) => {
 
       activeTerminalJobs.set(jobId, { child, pid: child.pid });
 
-      res.write(JSON.stringify({ type: 'init', jobId, pid: child.pid }) + '\n');
+      const safeWrite = (chunk) => {
+        try {
+          if (!res.destroyed && !res.writableEnded) {
+            res.write(chunk);
+          }
+        } catch (_) {}
+      };
+
+      req.on('close', () => {
+        activeTerminalJobs.delete(jobId);
+        try {
+          if (child && !child.killed) {
+            if (!isWin) {
+              process.kill(-child.pid, 'SIGTERM');
+            } else {
+              child.kill('SIGTERM');
+            }
+          }
+        } catch (_) {}
+      });
+
+      safeWrite(JSON.stringify({ type: 'init', jobId, pid: child.pid }) + '\n');
 
       let pwdBuffer = '';
       const cleanOutput = (text) => {
@@ -2561,13 +2859,13 @@ const server = http.createServer(async (req, res) => {
         if (str.includes(delim)) {
           const parts = str.split(delim);
           if (parts[0]) {
-            res.write(JSON.stringify({ type, data: parts[0] }) + '\n');
+            safeWrite(JSON.stringify({ type, data: parts[0] }) + '\n');
           }
           pwdBuffer += parts.slice(1).join(delim);
         } else if (pwdBuffer) {
           pwdBuffer += str;
         } else {
-          res.write(JSON.stringify({ type, data: str }) + '\n');
+          safeWrite(JSON.stringify({ type, data: str }) + '\n');
         }
       };
 
@@ -2581,21 +2879,21 @@ const server = http.createServer(async (req, res) => {
         if (rawPwd && fs.existsSync(rawPwd)) {
           finalCwd = rawPwd;
         }
-        res.write(JSON.stringify({ type: 'end', exitCode, cwd: finalCwd }) + '\n');
-        res.end();
+        safeWrite(JSON.stringify({ type: 'end', exitCode, cwd: finalCwd }) + '\n');
+        try { if (!res.writableEnded) res.end(); } catch (_) {}
       });
 
       child.on('error', (err) => {
         activeTerminalJobs.delete(jobId);
-        res.write(JSON.stringify({ type: 'err', data: `\n[Error: ${err.message}]\n` }) + '\n');
-        res.write(JSON.stringify({ type: 'end', exitCode: 1, cwd: targetCwd }) + '\n');
-        res.end();
+        safeWrite(JSON.stringify({ type: 'err', data: `\n[Error: ${err.message}]\n` }) + '\n');
+        safeWrite(JSON.stringify({ type: 'end', exitCode: 1, cwd: targetCwd }) + '\n');
+        try { if (!res.writableEnded) res.end(); } catch (_) {}
       });
     } catch (e) {
       if (!res.headersSent) {
         sendJSON(res, 500, { ok: false, message: e.message });
       } else {
-        res.end();
+        try { if (!res.writableEnded) res.end(); } catch (_) {}
       }
     }
     return;
@@ -2728,6 +3026,273 @@ const server = http.createServer(async (req, res) => {
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('404 Not Found');
+});
+
+// ------------------------------------------------------------------
+// NATIVE RFC 6455 WEBSOCKET UPGRADE SERVER (Zero External Dependencies)
+// Mendukung: /ws/terminal, /terminal, /ws, /ws/stats
+// ------------------------------------------------------------------
+function encodeWsFrame(data) {
+  const payload = Buffer.from(typeof data === 'string' ? data : JSON.stringify(data), 'utf8');
+  const len = payload.length;
+  let header;
+  if (len < 126) {
+    header = Buffer.alloc(2);
+    header[0] = 0x81; // FIN + text opcode
+    header[1] = len;
+  } else if (len <= 0xFFFF) {
+    header = Buffer.alloc(4);
+    header[0] = 0x81;
+    header[1] = 126;
+    header.writeUInt16BE(len, 2);
+  } else {
+    header = Buffer.alloc(10);
+    header[0] = 0x81;
+    header[1] = 127;
+    header.writeBigUInt64BE(BigInt(len), 2);
+  }
+  return Buffer.concat([header, payload]);
+}
+
+function decodeWsFrames(buffer) {
+  const frames = [];
+  let offset = 0;
+  while (offset < buffer.length) {
+    if (buffer.length - offset < 2) break;
+    const byte1 = buffer[offset];
+    const byte2 = buffer[offset + 1];
+    const opcode = byte1 & 0x0F;
+    const isMasked = (byte2 & 0x80) !== 0;
+    let payloadLen = byte2 & 0x7F;
+    let headerSize = 2;
+
+    if (payloadLen === 126) {
+      if (buffer.length - offset < 4) break;
+      payloadLen = buffer.readUInt16BE(offset + 2);
+      headerSize = 4;
+    } else if (payloadLen === 127) {
+      if (buffer.length - offset < 10) break;
+      payloadLen = Number(buffer.readBigUInt64BE(offset + 2));
+      headerSize = 10;
+    }
+
+    const maskSize = isMasked ? 4 : 0;
+    if (buffer.length - offset < headerSize + maskSize + payloadLen) break;
+
+    let mask = null;
+    if (isMasked) {
+      mask = buffer.slice(offset + headerSize, offset + headerSize + 4);
+    }
+
+    const dataStart = offset + headerSize + maskSize;
+    const payload = Buffer.alloc(payloadLen);
+    for (let i = 0; i < payloadLen; i++) {
+      payload[i] = isMasked ? (buffer[dataStart + i] ^ mask[i % 4]) : buffer[dataStart + i];
+    }
+
+    frames.push({ opcode, payload });
+    offset = dataStart + payloadLen;
+  }
+  return { frames, rest: buffer.slice(offset) };
+}
+
+server.on('upgrade', (req, socket, head) => {
+  try {
+    const parsedUrl = new URL(req.url, `http://${req.headers.host || '127.0.0.1'}`);
+    const pathname = parsedUrl.pathname;
+
+    let isAuth = checkAuth(req);
+    const tokenQuery = parsedUrl.searchParams.get('token');
+    if (!isAuth && tokenQuery && isSessionValid(tokenQuery)) {
+      isAuth = true;
+    }
+
+    if (!isAuth) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nUnauthorized WebSocket');
+      socket.destroy();
+      return;
+    }
+
+    const wsKey = req.headers['sec-websocket-key'];
+    if (!wsKey) {
+      socket.write('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n');
+      socket.destroy();
+      return;
+    }
+
+    const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+    const acceptKey = crypto.createHash('sha1').update(wsKey + GUID).digest('base64');
+    const headers = [
+      'HTTP/1.1 101 Switching Protocols',
+      'Upgrade: websocket',
+      'Connection: Upgrade',
+      `Sec-WebSocket-Accept: ${acceptKey}`
+    ];
+    socket.write(headers.join('\r\n') + '\r\n\r\n');
+
+    activeSockets.add(socket);
+    socket.on('close', () => activeSockets.delete(socket));
+    socket.on('error', () => {
+      try { socket.destroy(); } catch (_) {}
+    });
+
+    const sendWs = (msg) => {
+      try {
+        if (!socket.destroyed && socket.writable) {
+          socket.write(encodeWsFrame(msg));
+        }
+      } catch (_) {}
+    };
+
+    // WebSocket: Live Monitoring Stats (/ws/stats)
+    if (pathname === '/ws/stats') {
+      sendWs({ type: 'stats', data: getSystemStats() });
+      const statsTimer = setInterval(() => {
+        if (socket.destroyed) {
+          clearInterval(statsTimer);
+          return;
+        }
+        sendWs({ type: 'stats', data: getSystemStats() });
+      }, 2000);
+      socket.on('close', () => clearInterval(statsTimer));
+      return;
+    }
+
+    // WebSocket: Terminal Interactive Session (/ws/terminal, /terminal, /ws)
+    const termuxHome = os.platform() === 'win32' ? BASE_DIR : (process.env.HOME || '/data/data/com.termux/files/home');
+    let currentCwd = termuxHome;
+    let activeWsChild = null;
+
+    sendWs({ type: 'init', message: 'LenzNode Web Terminal WebSocket Connected', cwd: currentCwd });
+
+    let rawBuffer = head && head.length > 0 ? Buffer.from(head) : Buffer.alloc(0);
+
+    socket.on('data', (chunk) => {
+      try {
+        rawBuffer = Buffer.concat([rawBuffer, chunk]);
+        const { frames, rest } = decodeWsFrames(rawBuffer);
+        rawBuffer = rest;
+
+        for (const frame of frames) {
+          if (frame.opcode === 8) { // Close
+            try { socket.end(Buffer.from([0x88, 0x00])); } catch (_) {}
+            return;
+          }
+          if (frame.opcode === 9) { // Ping
+            try {
+              const pong = Buffer.concat([Buffer.from([0x8A, frame.payload.length]), frame.payload]);
+              socket.write(pong);
+            } catch (_) {}
+            continue;
+          }
+          if (frame.opcode === 1) { // Text
+            const text = frame.payload.toString('utf8').trim();
+            if (!text) continue;
+
+            let command = text;
+            let reqCwd = currentCwd;
+
+            try {
+              if (text.startsWith('{') && text.endsWith('}')) {
+                const parsed = JSON.parse(text);
+                if (parsed.action === 'kill' || parsed.action === 'sigint') {
+                  if (activeWsChild) {
+                    try {
+                      if (os.platform() !== 'win32') process.kill(-activeWsChild.pid, 'SIGINT');
+                      else activeWsChild.kill('SIGINT');
+                    } catch (_) {}
+                  }
+                  continue;
+                }
+                if (parsed.action === 'input' && parsed.data !== undefined) {
+                  if (activeWsChild && activeWsChild.stdin && !activeWsChild.stdin.destroyed) {
+                    activeWsChild.stdin.write(parsed.data + '\n');
+                  }
+                  continue;
+                }
+                if (parsed.command) command = parsed.command;
+                if (parsed.cwd) reqCwd = parsed.cwd;
+              }
+            } catch (_) {}
+
+            if (reqCwd === '~' || reqCwd.startsWith('~/')) {
+              reqCwd = path.join(termuxHome, reqCwd === '~' ? '' : reqCwd.substring(2));
+            }
+            if (fs.existsSync(reqCwd)) currentCwd = reqCwd;
+
+            const isWin = os.platform() === 'win32';
+            const termuxBash = '/data/data/com.termux/files/usr/bin/bash';
+            const shell = isWin ? 'cmd.exe' : (fs.existsSync(termuxBash) ? termuxBash : (process.env.SHELL || 'bash'));
+            const delim = '___TERM_PWD___';
+
+            const script = isWin
+              ? `${command} & echo ${delim}%CD%`
+              : `${command}\necho "${delim}$PWD"`;
+            const shellArgs = isWin ? ['/c', script] : ['-c', script];
+
+            const termEnv = Object.assign({}, process.env, {
+              PYTHONUNBUFFERED: '1',
+              FORCE_COLOR: '1',
+              TERM: 'xterm-256color',
+              DEBIAN_FRONTEND: 'noninteractive'
+            });
+
+            const child = spawn(shell, shellArgs, {
+              cwd: currentCwd,
+              env: termEnv,
+              detached: !isWin
+            });
+            activeWsChild = child;
+
+            sendWs({ type: 'start', command, pid: child.pid, cwd: currentCwd });
+
+            let pwdBuf = '';
+            child.stdout.on('data', (d) => {
+              const str = d.toString('utf8');
+              if (str.includes(delim)) {
+                const parts = str.split(delim);
+                if (parts[0]) sendWs({ type: 'out', data: parts[0] });
+                pwdBuf += parts.slice(1).join(delim);
+              } else if (pwdBuf) {
+                pwdBuf += str;
+              } else {
+                sendWs({ type: 'out', data: str });
+              }
+            });
+
+            child.stderr.on('data', (d) => {
+              sendWs({ type: 'err', data: d.toString('utf8') });
+            });
+
+            child.on('close', (exitCode) => {
+              activeWsChild = null;
+              const rawPwd = pwdBuf.trim().split('\n')[0];
+              if (rawPwd && fs.existsSync(rawPwd)) currentCwd = rawPwd;
+              sendWs({ type: 'end', exitCode, cwd: currentCwd });
+            });
+
+            child.on('error', (err) => {
+              activeWsChild = null;
+              sendWs({ type: 'err', data: `[Error: ${err.message}]\n` });
+              sendWs({ type: 'end', exitCode: 1, cwd: currentCwd });
+            });
+          }
+        }
+      } catch (_) {}
+    });
+
+    socket.on('close', () => {
+      if (activeWsChild) {
+        try {
+          if (os.platform() !== 'win32') process.kill(-activeWsChild.pid, 'SIGTERM');
+          else activeWsChild.kill('SIGTERM');
+        } catch (_) {}
+        activeWsChild = null;
+      }
+    });
+  } catch (err) {
+    try { socket.destroy(); } catch (_) {}
+  }
 });
 
 // ------------------------------------------------------------------
