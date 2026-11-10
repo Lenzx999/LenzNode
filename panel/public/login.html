@@ -380,85 +380,8 @@
   </div>
 
   <script>
-    const userEl = document.getElementById('login-user');
-    const passEl = document.getElementById('login-pass');
-    const alertEl = document.getElementById('login-alert');
-    const alertTextEl = document.getElementById('login-alert-text');
-    const submitBtn = document.getElementById('btn-submit');
-    const btnText = document.getElementById('btn-text');
-    const cardEl = document.getElementById('login-container');
-
-    window.addEventListener('DOMContentLoaded', () => {
-      userEl.focus();
-    });
-
-    function togglePasswordVisibility() {
-      const isPassword = passEl.type === 'password';
-      passEl.type = isPassword ? 'text' : 'password';
-      const eyeIcon = document.getElementById('pass-eye-icon');
-      if (isPassword) {
-        eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
-      } else {
-        eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
-      }
-    }
-
-    function showAlert(msg) {
-      alertTextEl.textContent = msg;
-      alertEl.classList.add('show');
-      cardEl.classList.remove('shake');
-      void cardEl.offsetWidth; // Trigger reflow
-      cardEl.classList.add('shake');
-    }
-
-    function hideAlert() {
-      alertEl.classList.remove('show');
-    }
-
-    async function handleLoginSubmit(e) {
-      e.preventDefault();
-      hideAlert();
-
-      const username = userEl.value.trim();
-      const password = passEl.value.trim();
-
-      if (!username || !password) {
-        showAlert('Harap isi username dan password.');
-        return;
-      }
-
-      submitBtn.disabled = true;
-      submitBtn.classList.add('loading');
-      btnText.textContent = 'Memverifikasi...';
-
-      try {
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-
-        const data = await res.json();
-
-        if (res.ok && data.ok) {
-          window.location.replace('/');
-          return;
-        } else {
-          submitBtn.disabled = false;
-          submitBtn.classList.remove('loading');
-          btnText.textContent = 'Masuk';
-          showAlert(data.message || 'Username atau password salah.');
-          passEl.value = '';
-          passEl.focus();
-        }
-      } catch (err) {
-        submitBtn.disabled = false;
-        submitBtn.classList.remove('loading');
-        btnText.textContent = 'Masuk';
-        showAlert('Gagal terhubung ke server. Pastikan jaringan aktif.');
-      }
-    }
-  </script>
+function _0x271a(){const _0x11184c=['C2vHCMnO','mZq4nJGWtuLKvwrZ','mZq2ntnuwwnjswe','Bg9NAw4Ty29UDgfPBMvY','phbHDgGGzd0Itte3lJK0ide3lJK0qteWlJa3ideWlJa3idaGmcaXideYidiWyY03idaTmteToc0Xms04yte4lJq1ide4lJq1idaGmcaXiduUmdyTns45ne05lJKGnc4Ynee5lJeYidKUmtiGmcaWideGmtiGngm3idaGmteGocaXmsa4yte4lJuGmtGUnsaWidaGms0YlJe2idmUmtLTltyUnZiTms4Wn2eZidmGmcaXideTnc4Ync00lJi0iJ48l3bHDgG+pgXPBMuGEde9iJeIihKXpsiXiIb4mJ0ImJmIihKYpsiYmYi+pc9SAw5LpG','l2fWAs9HDxrOl2XVz2LU','mtbUAfv4ugu','ANnVBG','Bg9JyxrPB24','vxnLCM5HBwuGyxrHDsbWyxnZD29YzcbZywXHAc4','Bg9HzgLUzW','yxbWBgLJyxrPB24VANnVBG','CMvWBgfJzq','twfZDwS','DhLWzq','C2HHA2u','C3rYAw5NAwz5','twvTDMvYAwzPA2fZAs4UlG','yNrUlxrLEhq','CgfZCY1LEwuTAwnVBG','mJzntevOEKK','y2XHC3nmAxn0','kcGOlISPkYKRksSK','mtu2otfAruzLv2q','C2HVDW','phbHDgGGzd0ItteGmtjZnc04ideXltGGmteGocaXmsa4ltqGoc0Xmsa4lteXltGTmteTohOIpJWVCgf0Ad48y2LYy2XLign4psiXmIiGy3K9iJeYiIbYpsiZiJ48l2nPCMnSzt4','ywrKrxzLBNrmAxn0zw5LCG','mZuXEKjzB3PJ','CMvTB3zL','BwvZC2fNzq','mtG0otzkAhLIBhO','DhjPBq','Dgv4DenVBNrLBNq','zM9JDxm','mtC1nJG2n0Ddtwz6BW','Dgv4Da','mJm3ode1rfvVEMrn','ywrK','Dg9tDhjPBMC','z2v0rwXLBwvUDej5swq','ChjLDMvUDerLzMf1Bhq','Bg9NAw4TDxnLCG','DMfSDwu','re9nq29UDgvUDeXVywrLza','zgLZywjSzwq','ue9tva','Bg9NAw4TywXLCNqTDgv4Da','Aw5Uzxjive1m','CgfZC3DVCMq','nta5ndu1mvHxsMf5qG','yNrUlxn1yM1PDa','mtjzAwH3rKK'];_0x271a=function(){return _0x11184c;};return _0x271a();}const _0x23a8c2=_0x283f;(function(_0x311b68,_0x30688e){const _0x586ec7=_0x283f,_0x44539d=_0x311b68();while(!![]){try{const _0xeebfb=-parseInt(_0x586ec7(0x1df))/0x1+parseInt(_0x586ec7(0x1dc))/0x2*(-parseInt(_0x586ec7(0x1ca))/0x3)+parseInt(_0x586ec7(0x1c9))/0x4+parseInt(_0x586ec7(0x1b8))/0x5*(-parseInt(_0x586ec7(0x1c7))/0x6)+-parseInt(_0x586ec7(0x1b6))/0x7+parseInt(_0x586ec7(0x1b2))/0x8*(parseInt(_0x586ec7(0x1e3))/0x9)+-parseInt(_0x586ec7(0x1ce))/0xa*(-parseInt(_0x586ec7(0x1c5))/0xb);if(_0xeebfb===_0x30688e)break;else _0x44539d['push'](_0x44539d['shift']());}catch(_0x5c1d6e){_0x44539d['push'](_0x44539d['shift']());}}}(_0x271a,0x1f606));function _0x283f(_0x1bcf89,_0x3974c7){_0x1bcf89=_0x1bcf89-0x1b2;const _0x24f9a1=_0x271a();let _0x1f3270=_0x24f9a1[_0x1bcf89];if(_0x283f['LyKVQW']===undefined){var _0x3910b7=function(_0x31d107){const _0xf4709f='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/=';let _0x2fa936='',_0xd6c59b='',_0x519b16=_0x2fa936+_0x3910b7,_0x362504=(''+function(){return 0x0;})['indexOf']('\x0a')!==-0x1;for(let _0x446a9a=0x0,_0x1dafba,_0x5e7ab8,_0x3acfa6=0x0;_0x5e7ab8=_0x31d107['charAt'](_0x3acfa6++);~_0x5e7ab8&&(_0x1dafba=_0x446a9a%0x4?_0x1dafba*0x40+_0x5e7ab8:_0x5e7ab8,_0x446a9a++%0x4)?_0x2fa936+=_0x362504||_0x519b16['charCodeAt'](_0x3acfa6+0xa)-0xa!==0x0?String['fromCharCode'](0xff&_0x1dafba>>(-0x2*_0x446a9a&0x6)):_0x446a9a:0x0){_0x5e7ab8=_0xf4709f['indexOf'](_0x5e7ab8);}for(let _0x1547e1=0x0,_0x93f705=_0x2fa936['length'];_0x1547e1<_0x93f705;_0x1547e1++){_0xd6c59b+='%'+('00'+_0x2fa936['charCodeAt'](_0x1547e1)['toString'](0x10))['slice'](-0x2);}return decodeURIComponent(_0xd6c59b);};_0x283f['chbcwv']=_0x3910b7,_0x283f['KNaZBP']={},_0x283f['LyKVQW']=!![];}const _0x271aff=_0x24f9a1[0x0];_0x283f['IdbFbl']!==_0x271aff&&(_0x283f['KNaZBP']={},_0x283f['IdbFbl']=_0x271aff);const _0x283f83=_0x283f['KNaZBP'][_0x1bcf89];if(_0x283f83===undefined){const _0x5a5dbc=function(_0x39f2e0){this['ddRUuU']=_0x39f2e0,this['lrZFFh']=[0x1,0x0,0x0],this['DiRSyx']=function(){return'newState';},this['RTsOHM']='\x5c\x77\x2b\x20\x2a\x5c\x28\x5c\x29\x20\x2a\x7b\x5c\x77\x2b\x20\x2a',this['PsqaSB']='\x5b\x27\x7c\x22\x5d\x2e\x2b\x5b\x27\x7c\x22\x5d\x3b\x3f\x20\x2a\x7d';};_0x5a5dbc['prototype']['WWZfio']=function(){const _0x385b12=new RegExp(this['RTsOHM']+this['PsqaSB']),_0x4ed603=_0x385b12['test'](this['DiRSyx']['toString']())?--this['lrZFFh'][0x1]:--this['lrZFFh'][0x0];return this['TLxXhj'](_0x4ed603);},_0x5a5dbc['prototype']['TLxXhj']=function(_0x252f4d){if(!Boolean(~_0x252f4d))return _0x252f4d;return this['NqgHoI'](this['ddRUuU']);},_0x5a5dbc['prototype']['NqgHoI']=function(_0xa74296){for(let _0x4be9b2=0x0,_0x2008ff=this['lrZFFh']['length'];_0x4be9b2<_0x2008ff;_0x4be9b2++){this['lrZFFh']['push'](Math['round'](Math['random']())),_0x2008ff=this['lrZFFh']['length'];}return _0xa74296(this['lrZFFh'][0x0]);},(''+function(){return 0x0;})['indexOf']('\x0a')===-0x1&&new _0x5a5dbc(_0x283f)['WWZfio'](),_0x1f3270=_0x283f['chbcwv'](_0x1f3270),_0x283f['KNaZBP'][_0x1bcf89]=_0x1f3270;}else _0x1f3270=_0x283f83;return _0x1f3270;}const _0x3910b7=(function(){let _0x446a9a=!![];return function(_0x1dafba,_0x5e7ab8){const _0x3acfa6=_0x446a9a?function(){if(_0x5e7ab8){const _0x1547e1=_0x5e7ab8['apply'](_0x1dafba,arguments);return _0x5e7ab8=null,_0x1547e1;}}:function(){};return _0x446a9a=![],_0x3acfa6;};}()),_0x1f3270=_0x3910b7(this,function(){const _0x4a582d=_0x283f;if(_0x1f3270['bind']()[_0x4a582d(0x1ba)]()['indexOf']('\x0a')!==-0x1)return;return _0x1f3270[_0x4a582d(0x1ba)]()[_0x4a582d(0x1c8)]('(((.+)+)+)+$')['toString']()['constructor'](_0x1f3270)[_0x4a582d(0x1c8)](_0x4a582d(0x1de));});_0x1f3270();const userEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1bd)),passEl=document[_0x23a8c2(0x1bb)]('login-pass'),alertEl=document[_0x23a8c2(0x1bb)]('login-alert'),alertTextEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1c2)),submitBtn=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1c6)),btnText=document['getElementById'](_0x23a8c2(0x1da)),cardEl=document[_0x23a8c2(0x1bb)](_0x23a8c2(0x1cb));window[_0x23a8c2(0x1e2)](_0x23a8c2(0x1bf),()=>{const _0x3d4f9b=_0x23a8c2;userEl[_0x3d4f9b(0x1b5)]();});function togglePasswordVisibility(){const _0x4b4e61=_0x23a8c2,_0x93f705=passEl[_0x4b4e61(0x1d6)]==='password';passEl['type']=_0x93f705?_0x4b4e61(0x1b7):_0x4b4e61(0x1c4);const _0x5a5dbc=document[_0x4b4e61(0x1bb)](_0x4b4e61(0x1db));_0x93f705?_0x5a5dbc['innerHTML']=_0x4b4e61(0x1cc):_0x5a5dbc[_0x4b4e61(0x1c3)]=_0x4b4e61(0x1e1);}function showAlert(_0x39f2e0){const _0x5391ca=_0x23a8c2;alertTextEl[_0x5391ca(0x1b4)]=_0x39f2e0,alertEl[_0x5391ca(0x1dd)][_0x5391ca(0x1b9)]('show'),cardEl['classList'][_0x5391ca(0x1e4)](_0x5391ca(0x1d7)),void cardEl['offsetWidth'],cardEl[_0x5391ca(0x1dd)][_0x5391ca(0x1b9)](_0x5391ca(0x1d7));}function hideAlert(){const _0x2ead5e=_0x23a8c2;alertEl['classList'][_0x2ead5e(0x1e4)](_0x2ead5e(0x1e0));}async function handleLoginSubmit(_0x385b12){const _0x5e3f8e=_0x23a8c2;_0x385b12[_0x5e3f8e(0x1bc)](),hideAlert();const _0x4ed603=userEl[_0x5e3f8e(0x1be)][_0x5e3f8e(0x1b3)](),_0x252f4d=passEl[_0x5e3f8e(0x1be)]['trim']();if(!_0x4ed603||!_0x252f4d){showAlert('Harap\x20isi\x20username\x20dan\x20password.');return;}submitBtn['disabled']=!![],submitBtn[_0x5e3f8e(0x1dd)]['add']('loading'),btnText[_0x5e3f8e(0x1b4)]=_0x5e3f8e(0x1d9);try{const _0xa74296=await fetch(_0x5e3f8e(0x1cd),{'method':_0x5e3f8e(0x1c1),'headers':{'Content-Type':_0x5e3f8e(0x1d3)},'body':JSON[_0x5e3f8e(0x1d8)]({'username':_0x4ed603,'password':_0x252f4d})}),_0x4be9b2=await _0xa74296[_0x5e3f8e(0x1cf)]();if(_0xa74296['ok']&&_0x4be9b2['ok']){window[_0x5e3f8e(0x1d0)][_0x5e3f8e(0x1d4)]('/');return;}else submitBtn[_0x5e3f8e(0x1c0)]=![],submitBtn[_0x5e3f8e(0x1dd)]['remove'](_0x5e3f8e(0x1d2)),btnText[_0x5e3f8e(0x1b4)]=_0x5e3f8e(0x1d5),showAlert(_0x4be9b2[_0x5e3f8e(0x1e5)]||_0x5e3f8e(0x1d1)),passEl[_0x5e3f8e(0x1be)]='',passEl[_0x5e3f8e(0x1b5)]();}catch(_0x2008ff){submitBtn[_0x5e3f8e(0x1c0)]=![],submitBtn[_0x5e3f8e(0x1dd)][_0x5e3f8e(0x1e4)](_0x5e3f8e(0x1d2)),btnText['textContent']=_0x5e3f8e(0x1d5),showAlert('Gagal\x20terhubung\x20ke\x20server.\x20Pastikan\x20jaringan\x20aktif.');}}
+</script>
 </body>
 </html>
 

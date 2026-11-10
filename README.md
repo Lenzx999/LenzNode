@@ -107,7 +107,11 @@ Saat server berjalan (`bash ~/LenzNode/start.sh` atau perintah `lenznode`), term
 Gunakan perintah cepat berikut di Termux:
 
 ```bash
-./start.sh          # Menjalankan server (otomatis cek update)
+./start.sh          # Menjalankan server (Pilihan Interaktif: Dual Mode)
+                    # [1] Lokal Saja (Wi-Fi / LAN, Hemat Kuota & RAM)
+                    # [2] Dengan Public Tunnel Cloudflare Online 24/7
+./start.sh --local  # Menjalankan langsung mode lokal tanpa menu
+./start.sh --tunnel # Menjalankan langsung dengan tunnel Cloudflare
 ./start.sh status   # Mengecek status layanan & link tunnel
 ./start.sh stop     # Menghentikan server
 ./start.sh restart  # Memulai ulang server

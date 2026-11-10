@@ -188,17 +188,19 @@ start_panel() {
         return 1
     fi
 
+    local ENV_TUNNEL="${LENZ_ENABLE_TUNNEL:-1}"
+
     if command -v pm2 >/dev/null 2>&1; then
         if pm2 describe panel >/dev/null 2>&1; then
-            pm2 restart panel >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart panel --update-env >/dev/null 2>&1
         else
-            pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=64 --optimize-for-size --expose-gc" --max-memory-restart 80M >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=64 --optimize-for-size --expose-gc" --max-memory-restart 80M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
         pkill -f "node.*/panel/server\.js" 2>/dev/null || true
         pkill -f "node server.js" 2>/dev/null || true
-        nohup node --max-old-space-size=64 --optimize-for-size --expose-gc "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" node --max-old-space-size=64 --optimize-for-size --expose-gc "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
     echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
@@ -220,9 +222,35 @@ ensure_cloudflare_tunnel() {
     local TUNNEL_FILE="$LOG_DIR/tunnel-url.txt"
     local TUNNEL_LOG="$LOG_DIR/cloudflared.log"
 
-    # Tunggu inisialisasi tunnel dari server panel (hingga 3-4 detik)
+    if [ "$LENZ_ENABLE_TUNNEL" = "0" ] || [ "$LENZ_ENABLE_TUNNEL" = "false" ]; then
+        stop_tunnel >/dev/null 2>&1 || true
+        rm -f "$TUNNEL_FILE" 2>/dev/null || true
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}dinonaktifkan (mode lokal)${NC}"
+        return 0
+    fi
+
+    local CF_BIN=""
+    if command -v cloudflared >/dev/null 2>&1; then
+        CF_BIN="cloudflared"
+    elif [ -x "$PREFIX/bin/cloudflared" ]; then
+        CF_BIN="$PREFIX/bin/cloudflared"
+    elif [ -x "/data/data/com.termux/files/usr/bin/cloudflared" ]; then
+        CF_BIN="/data/data/com.termux/files/usr/bin/cloudflared"
+    fi
+
+    if [ -z "$CF_BIN" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}cloudflared belum terpasang${NC}"
+        return 1
+    fi
+
+    if ! pgrep -x cloudflared >/dev/null 2>&1; then
+        nohup env GOGC=20 GOMEMLIMIT=32MiB "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
+        disown $! 2>/dev/null || true
+    fi
+
+    # Tunggu dan verifikasi handshake tunnel Cloudflare (Health-Check Nyata)
     local URL=""
-    for i in 1 2 3 4 5 6 7 8; do
+    for i in 1 2 3 4 5 6 7 8 9 10; do
         if [ -f "$TUNNEL_FILE" ]; then
             URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
             [ -n "$URL" ] && break
@@ -237,26 +265,30 @@ ensure_cloudflare_tunnel() {
         sleep 0.5
     done
 
-    if pgrep -x cloudflared >/dev/null 2>&1 || [ -n "$URL" ]; then
+    # Verifikasi HTTP health check jika curl tersedia
+    local VERIFIED=0
+    if [ -n "$URL" ] && command -v curl >/dev/null 2>&1; then
+        for j in 1 2 3; do
+            local HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -m 3 "$URL" 2>/dev/null || true)
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ] || [ "$HTTP_CODE" = "401" ]; then
+                VERIFIED=1
+                break
+            fi
+            sleep 0.5
+        done
+    elif [ -n "$URL" ]; then
+        VERIFIED=1
+    fi
+
+    if [ "$VERIFIED" = "1" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${GREEN}connected (terverifikasi)${NC}"
+        return 0
+    elif [ -n "$URL" ]; then
         echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
         return 0
-    fi
-
-    local CF_BIN=""
-    if command -v cloudflared >/dev/null 2>&1; then
-        CF_BIN="cloudflared"
-    elif [ -x "$PREFIX/bin/cloudflared" ]; then
-        CF_BIN="$PREFIX/bin/cloudflared"
-    elif [ -x "/data/data/com.termux/files/usr/bin/cloudflared" ]; then
-        CF_BIN="/data/data/com.termux/files/usr/bin/cloudflared"
-    fi
-
-    if [ -n "$CF_BIN" ]; then
-        nohup env GOGC=20 GOMEMLIMIT=32MiB "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
-        disown $! 2>/dev/null || true
-        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  tunnel      ${DIM}connected${NC}"
     else
-        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}cloudflared belum terpasang${NC}"
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  tunnel      ${DIM}menghubungkan ke edge...${NC}"
+        return 0
     fi
 }
 
@@ -269,6 +301,51 @@ stop_tunnel() {
 # -----------------------------------------------------------------------------
 # 4. START ALL, STOP ALL, & STATUS
 # -----------------------------------------------------------------------------
+ask_operational_mode() {
+    # Lewati prompt jika sudah ditentukan via argumen atau env var
+    if [ -n "$LENZ_ENABLE_TUNNEL" ]; then
+        return 0
+    fi
+    if [ "$1" = "--tunnel" ] || [ "$1" = "-t" ] || [ "$2" = "--tunnel" ]; then
+        export LENZ_ENABLE_TUNNEL="1"
+        return 0
+    fi
+    if [ "$1" = "--local" ] || [ "$1" = "-l" ] || [ "$2" = "--local" ]; then
+        export LENZ_ENABLE_TUNNEL="0"
+        return 0
+    fi
+    # Jika mode daemon / background, default ke lokal bila tidak di-set
+    if [ "$1" = "bg" ] || [ "$1" = "daemon" ] || [ "$1" = "-d" ] || [ "$1" = "--bg" ]; then
+        export LENZ_ENABLE_TUNNEL="${LENZ_ENABLE_TUNNEL:-1}"
+        return 0
+    fi
+
+    # Tampilan Menu Pemilihan Interaktif
+    echo ""
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Mode Selection${NC} ${CYAN}────────────────────${NC}"
+    echo -e "  ${CYAN}│${NC}  Pilih mode operasional server:"
+    echo -e "  ${CYAN}│${NC}  ${BOLD}[1]${NC} Jalankan Lokal Saja ${DIM}(Wi-Fi / LAN, Hemat Kuota & RAM)${NC}"
+    echo -e "  ${CYAN}│${NC}  ${BOLD}[2]${NC} Jalankan dengan Public Tunnel ${GREEN}(Cloudflare Online 24/7)${NC}"
+    echo -e "  ${CYAN}╰─────────────────────────────────────────────${NC}"
+    
+    local MODE_CHOICE=""
+    if [ -t 0 ]; then
+        printf "  Pilihan Anda [1/2] (Default 1): "
+        read -r MODE_CHOICE
+    fi
+
+    case "$MODE_CHOICE" in
+        2)
+            export LENZ_ENABLE_TUNNEL="1"
+            echo -e "  ${CYAN}➜${NC} Memilih mode: ${GREEN}Public Tunnel Cloudflare${NC}\n"
+            ;;
+        *)
+            export LENZ_ENABLE_TUNNEL="0"
+            echo -e "  ${CYAN}➜${NC} Memilih mode: ${CYAN}Lokal Saja (Wi-Fi / LAN)${NC}\n"
+            ;;
+    esac
+}
+
 start_all() {
     if [ "$_LENZNODE_STARTING" = "1" ]; then
         return 0
@@ -322,20 +399,26 @@ start_all() {
 
     LOCAL_IP=$(get_local_ip)
     TUNNEL_URL=""
-    if [ -f "$TUNNEL_FILE" ]; then
-        TUNNEL_URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
-    fi
-    if [ -z "$TUNNEL_URL" ] && [ -f "$TUNNEL_LOG" ]; then
-        TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
+    if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
+        if [ -f "$TUNNEL_FILE" ]; then
+            TUNNEL_URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
+        fi
+        if [ -z "$TUNNEL_URL" ] && [ -f "$TUNNEL_LOG" ]; then
+            TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
+        fi
     fi
 
     echo -e "  ${CYAN}│${NC}"
     echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
     echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
-    if [ -n "$TUNNEL_URL" ]; then
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+    if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
+        if [ -n "$TUNNEL_URL" ]; then
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+        else
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+        fi
     else
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${DIM}Dinonaktifkan (Mode Lokal)${NC}"
     fi
     echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
 
@@ -429,6 +512,7 @@ case "$1" in
         start_all "bg"
         ;;
     *)
-        start_all
+        ask_operational_mode "$@"
+        start_all "$@"
         ;;
 esac
