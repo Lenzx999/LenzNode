@@ -100,47 +100,67 @@ echo -e "${GREEN}✓ Izin penyimpanan & Wake-Lock aktif.${NC}"
 # 2. INSTALASI DEPENDENSI TERMUX HOST
 # -----------------------------------------------------------------------------
 echo -e "${YELLOW}[2/5] Memperbarui Paket Termux & Memasang Dependensi Ringan...${NC}"
-pkg update -y 2>/dev/null || true
-pkg install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || true
 
-# Pastikan host key OpenSSH telah digenerate
+# 2.1 Periksa Mirror APT Termux jika belum dikonfigurasi
+if [ -d "$PREFIX/etc/apt" ] && [ ! -s "$PREFIX/etc/apt/sources.list" ]; then
+    echo "deb https://packages.termux.dev/apt/termux-main stable main" > "$PREFIX/etc/apt/sources.list" 2>/dev/null || true
+fi
+
+# 2.2 Sinkronisasi Paket & Perbaikan Dynamic Linker (Mencegah error symbol SSL_set_quic_tls di Android 16)
+export DEBIAN_FRONTEND=noninteractive
+dpkg --configure -a 2>/dev/null || true
+apt-get update -y 2>/dev/null || pkg update -y 2>/dev/null || true
+apt-get --fix-broken install -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
+apt-get full-upgrade -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || pkg upgrade -y 2>/dev/null || true
+
+# 2.3 Pasang Paket Utama
+pkg install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || apt-get install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || true
+
+# 2.4 Verifikasi Kesiapan curl & libcurl (Auto-Reinstall jika terjadi symbol mismatch)
+if ! curl --version >/dev/null 2>&1; then
+    echo -e ">> Menyesuaikan pustaka libcurl & openssl..."
+    apt-get install --reinstall -y openssl libcurl curl 2>/dev/null || pkg install -y openssl libcurl curl 2>/dev/null || true
+fi
+
+# 2.5 Pastikan host key OpenSSH telah digenerate
 [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] && ssh-keygen -A >/dev/null 2>&1 || true
 
-# Pastikan termux-api terpasang (CLI)
+# 2.6 Pastikan termux-api terpasang (CLI)
 if ! command -v termux-battery-status >/dev/null 2>&1; then
     pkg install -y termux-api 2>/dev/null || true
 fi
 
-# Pastikan Node.js terpasang
+# 2.7 Pastikan Node.js terpasang
 if ! command -v node >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/node" ]; then
     echo ">> Memasang Node.js..."
-    pkg install -y nodejs || pkg install -y nodejs-lts || true
+    pkg install -y nodejs || pkg install -y nodejs-lts || apt-get install -y nodejs || apt-get install -y nodejs-lts || true
 fi
 
-# PM2 untuk supervisi proses
+# 2.8 PM2 untuk supervisi proses
 if ! command -v pm2 >/dev/null 2>&1 || ! pm2 -v >/dev/null 2>&1; then
     echo ">> Memasang PM2..."
     npm install -g pm2 2>/dev/null || npm install -g pm2@5.1.2 --force 2>/dev/null || true
 fi
 
-# Cloudflared Tunnel untuk Link Akses Publik Otomatis
+# 2.9 Cloudflared Tunnel untuk Link Akses Publik Otomatis
 if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
     echo ">> Menyiapkan Cloudflared Tunnel..."
-    pkg install -y cloudflared 2>/dev/null || true
+    pkg install -y cloudflared 2>/dev/null || apt-get install -y cloudflared 2>/dev/null || true
     if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
         mkdir -p "$PREFIX/bin"
-        curl -L -o "$PREFIX/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" 2>/dev/null || wget -O "$PREFIX/bin/cloudflared" "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" 2>/dev/null || true
-        chmod +x "$PREFIX/bin/cloudflared" 2>/dev/null || true
+        local CF_URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}"
+        if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
+            curl -sL -o "$PREFIX/bin/cloudflared" "$CF_URL" 2>/dev/null || true
+        fi
+        if [ ! -s "$PREFIX/bin/cloudflared" ] && command -v wget >/dev/null 2>&1; then
+            rm -f "$PREFIX/bin/cloudflared" 2>/dev/null || true
+            wget -q -O "$PREFIX/bin/cloudflared" "$CF_URL" 2>/dev/null || true
+        fi
+        [ -f "$PREFIX/bin/cloudflared" ] && chmod +x "$PREFIX/bin/cloudflared" 2>/dev/null || true
     fi
 fi
 
-# Telemetri Baterai & Daya Android (Didukung langsung via Kernel sysfs & CLI termux-api)
-# Untuk Android 14-16, sistem sensor LenzNode otomatis memetakan tegangan/arus/suhu tanpa mewajibkan APK debug tambahan
-if ! command -v termux-battery-status >/dev/null 2>&1; then
-    pkg install -y termux-api 2>/dev/null || true
-fi
-
-NODE_VER="$(node -v 2>/dev/null || "$PREFIX/bin/node" -v 2>/dev/null || echo 'OK')"
+NODE_VER="$(node -v 2>/dev/null || "$PREFIX/bin/node" -v 2>/dev/null || echo 'Belum terpasang')"
 echo -e "${GREEN}✓ Termux siap (Node: $NODE_VER, OpenSSH: 2222)${NC}"
 
 # -----------------------------------------------------------------------------
@@ -149,11 +169,14 @@ echo -e "${GREEN}✓ Termux siap (Node: $NODE_VER, OpenSSH: 2222)${NC}"
 echo -e "${YELLOW}[3/5] Menyiapkan Struktur Folder Server di $BASE_DIR...${NC}"
 mkdir -p "$BASE_DIR/logs" "$BASE_DIR/panel" "$BASE_DIR/apps" "$BASE_DIR/scripts"
 
-[ -d "$SRC_DIR/panel" ] && cp -r "$SRC_DIR/panel/"* "$BASE_DIR/panel/" 2>/dev/null || true
-[ -d "$SRC_DIR/apps" ] && cp -r "$SRC_DIR/apps/"* "$BASE_DIR/apps/" 2>/dev/null || true
-[ -d "$SRC_DIR/scripts" ] && cp -r "$SRC_DIR/scripts/"* "$BASE_DIR/scripts/" 2>/dev/null || true
-[ -f "$SRC_DIR/start.sh" ] && cp "$SRC_DIR/start.sh" "$HOME/start.sh" && cp "$SRC_DIR/start.sh" "$BASE_DIR/start.sh" && chmod +x "$HOME/start.sh" "$BASE_DIR/start.sh"
-[ -f "$SRC_DIR/update.sh" ] && cp "$SRC_DIR/update.sh" "$BASE_DIR/update.sh" && chmod +x "$BASE_DIR/update.sh" 2>/dev/null || true
+if [ "$SRC_DIR" != "$BASE_DIR" ]; then
+    [ -d "$SRC_DIR/panel" ] && cp -r "$SRC_DIR/panel/"* "$BASE_DIR/panel/" 2>/dev/null || true
+    [ -d "$SRC_DIR/apps" ] && cp -r "$SRC_DIR/apps/"* "$BASE_DIR/apps/" 2>/dev/null || true
+    [ -d "$SRC_DIR/scripts" ] && cp -r "$SRC_DIR/scripts/"* "$BASE_DIR/scripts/" 2>/dev/null || true
+    [ -f "$SRC_DIR/start.sh" ] && cp -f "$SRC_DIR/start.sh" "$BASE_DIR/start.sh" && chmod +x "$BASE_DIR/start.sh"
+    [ -f "$SRC_DIR/update.sh" ] && cp -f "$SRC_DIR/update.sh" "$BASE_DIR/update.sh" && chmod +x "$BASE_DIR/update.sh" 2>/dev/null || true
+fi
+[ -f "$BASE_DIR/start.sh" ] && cp -f "$BASE_DIR/start.sh" "$HOME/start.sh" 2>/dev/null && chmod +x "$HOME/start.sh" || true
 
 # -----------------------------------------------------------------------------
 # 4. PASANG CLI TOOLS & AUTOSTART BOOT

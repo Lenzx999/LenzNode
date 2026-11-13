@@ -66,13 +66,18 @@ Transformasikan smartphone Android (**Android 5.0 s/d 16+**, ARM32/ARM64/x86_64)
 Buka aplikasi **Termux**, lalu jalankan perintah berikut:
 
 ```bash
-pkg update -y && pkg install git -y
+pkg update -y && pkg upgrade -y && pkg install -y git
 git clone https://github.com/Lenzx999/LenzNode.git
 cd LenzNode
 bash install.sh
 ```
 
-> **Catatan Termux**: Gunakan aplikasi Termux dari **F-Droid** atau GitHub Releases resmi. Untuk Android 5 & 6, gunakan rilis khusus Termux `apt-android-5`. Hindari Termux dari Google Play Store karena sudah tidak aktif.
+> **Tips Kompatibilitas Android 14–16 & Solusi Pustaka Termux**:
+> Jika Termux Anda menampilkan pesan `CANNOT LINK EXECUTABLE "curl"` (*cannot locate symbol SSL_set_quic_tls...*) atau `No mirror or mirror group selected`, jalankan perintah sinkronisasi sistem berikut:
+> ```bash
+> apt update && apt full-upgrade -y
+> ```
+> Gunakan aplikasi Termux resmi dari **F-Droid** atau GitHub Releases (bukan dari Google Play Store yang sudah usang).
 
 ---
 

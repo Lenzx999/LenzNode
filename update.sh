@@ -44,57 +44,66 @@ fi
 
 echo -e "\n${BLUE}[1/3] Memeriksa status repositori & mengambil pembaruan...${NC}"
 
+# Periksa dan perbaiki jika pustaka curl/git di Termux mengalami linking error
+if [ -d "/data/data/com.termux" ]; then
+    if (command -v curl >/dev/null 2>&1 && ! curl --version >/dev/null 2>&1) || (command -v git >/dev/null 2>&1 && ! git --version >/dev/null 2>&1); then
+        echo -e "${YELLOW}>> Menyesuaikan dependensi sistem Termux...${NC}"
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y 2>/dev/null || true
+        apt-get --fix-broken install -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || true
+        apt-get full-upgrade -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || pkg upgrade -y 2>/dev/null || true
+    fi
+fi
+
 UPDATED=false
 
 # Metode 1: Jika sudah ada folder .git
-if [ -d "$SERVER_DIR/.git" ] && command -v git >/dev/null 2>&1; then
+if [ -d "$SERVER_DIR/.git" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
     echo -e "${CYAN}>> Mengupdate melalui Git repository...${NC}"
     git remote set-url origin "$REPO_URL" 2>/dev/null || git remote add origin "$REPO_URL" 2>/dev/null || true
-    git fetch --all --prune 2>/dev/null || true
-    git reset --hard origin/main 2>/dev/null || git pull origin main 2>/dev/null || git pull 2>/dev/null || true
-    UPDATED=true
+    if git -C "$SERVER_DIR" fetch --all --prune 2>/dev/null; then
+        git -C "$SERVER_DIR" reset --hard origin/main 2>/dev/null || git -C "$SERVER_DIR" pull origin main 2>/dev/null || true
+        UPDATED=true
+    fi
 fi
 
 # Metode 2: Jika belum ada .git tapi paket git terpasang (ubah instalasi ZIP ke Git otomatis)
-if [ "$UPDATED" = false ] && command -v git >/dev/null 2>&1; then
+if [ "$UPDATED" = false ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
     echo -e "${CYAN}>> Menginisialisasi koneksi Git repository...${NC}"
     git init -q 2>/dev/null || true
     git remote add origin "$REPO_URL" 2>/dev/null || git remote set-url origin "$REPO_URL" 2>/dev/null || true
-    git fetch --depth=1 origin main 2>/dev/null || true
-    git reset --hard origin/main 2>/dev/null || true
-    UPDATED=true
+    if git fetch --depth=1 origin main 2>/dev/null; then
+        git reset --hard origin/main 2>/dev/null || true
+        UPDATED=true
+    fi
 fi
 
-# Metode 3: Jika tidak ada Git (Download ZIP langsung dari GitHub via curl/wget)
+# Metode 3: Jika tidak ada Git atau Git gagal (Download ZIP langsung via wget / curl)
 if [ "$UPDATED" = false ]; then
-    echo -e "${YELLOW}>> Git tidak ditemukan. Mengunduh paket update langsung via ZIP...${NC}"
+    echo -e "${YELLOW}>> Mengunduh paket update langsung via ZIP...${NC}"
     TEMP_ZIP="$HOME/lenz_update_temp.zip"
     rm -f "$TEMP_ZIP" 2>/dev/null || true
 
-    if command -v curl >/dev/null 2>&1; then
-        curl -sL "$ZIP_URL" -o "$TEMP_ZIP"
-    elif command -v wget >/dev/null 2>&1; then
-        wget -q "$ZIP_URL" -O "$TEMP_ZIP"
+    if command -v wget >/dev/null 2>&1; then
+        wget -q "$ZIP_URL" -O "$TEMP_ZIP" 2>/dev/null || true
+    fi
+    if [ ! -s "$TEMP_ZIP" ] && command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
+        curl -sL "$ZIP_URL" -o "$TEMP_ZIP" 2>/dev/null || true
     fi
 
     if [ -f "$TEMP_ZIP" ] && [ -s "$TEMP_ZIP" ]; then
         if command -v unzip >/dev/null 2>&1; then
             unzip -q -o "$TEMP_ZIP" -d "$HOME" 2>/dev/null || true
-            if [ -d "$HOME/LenzNode-main" ]; then
-                cp -rf "$HOME/LenzNode-main/"* "$SERVER_DIR/" 2>/dev/null || true
-                cp -rf "$HOME/LenzNode-main/."* "$SERVER_DIR/" 2>/dev/null || true
-                rm -rf "$HOME/LenzNode-main" "$TEMP_ZIP" 2>/dev/null || true
-                UPDATED=true
-            fi
         else
-            pkg install unzip -y 2>/dev/null || true
+            pkg install unzip -y 2>/dev/null || apt-get install -y unzip 2>/dev/null || true
             unzip -q -o "$TEMP_ZIP" -d "$HOME" 2>/dev/null || true
-            if [ -d "$HOME/LenzNode-main" ]; then
-                cp -rf "$HOME/LenzNode-main/"* "$SERVER_DIR/" 2>/dev/null || true
-                cp -rf "$HOME/LenzNode-main/."* "$SERVER_DIR/" 2>/dev/null || true
-                rm -rf "$HOME/LenzNode-main" "$TEMP_ZIP" 2>/dev/null || true
-                UPDATED=true
-            fi
+        fi
+
+        if [ -d "$HOME/LenzNode-main" ]; then
+            cp -rf "$HOME/LenzNode-main/"* "$SERVER_DIR/" 2>/dev/null || true
+            cp -rf "$HOME/LenzNode-main/."* "$SERVER_DIR/" 2>/dev/null || true
+            rm -rf "$HOME/LenzNode-main" "$TEMP_ZIP" 2>/dev/null || true
+            UPDATED=true
         fi
     fi
 fi

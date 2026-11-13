@@ -92,6 +92,30 @@ is_port_active() {
 # -----------------------------------------------------------------------------
 # 0. SISTEM AUTO-UPDATE SAAT STARTUP (GitHub Auto-Sync)
 # -----------------------------------------------------------------------------
+repair_termux_libs() {
+    # Periksa apakah curl atau git mengalami linking symbol error di Termux
+    local NEED_REPAIR=0
+    if command -v curl >/dev/null 2>&1; then
+        if ! curl --version >/dev/null 2>&1; then
+            NEED_REPAIR=1
+        fi
+    fi
+    if command -v git >/dev/null 2>&1; then
+        if ! git --version >/dev/null 2>&1; then
+            NEED_REPAIR=1
+        fi
+    fi
+
+    if [ "$NEED_REPAIR" = "1" ] && [ -d "/data/data/com.termux" ]; then
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  update      ${YELLOW}memperbaiki dependensi Termux (curl/ssl)...${NC}"
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y >/dev/null 2>&1 || true
+        apt-get --fix-broken install -y -o Dpkg::Options::="--force-confnew" >/dev/null 2>&1 || true
+        apt-get full-upgrade -y -o Dpkg::Options::="--force-confnew" >/dev/null 2>&1 || pkg upgrade -y >/dev/null 2>&1 || true
+        apt-get install --reinstall -y openssl libcurl curl git >/dev/null 2>&1 || true
+    fi
+}
+
 check_and_apply_update() {
     # Cegah loop jika skrip baru saja di-update dan dieksekusi ulang
     if [ "$_LENZNODE_UPDATED" = "1" ]; then
@@ -99,17 +123,19 @@ check_and_apply_update() {
         return 0
     fi
 
+    repair_termux_libs
+
     local GIT_DIR="$SERVER_DIR/.git"
     local REPO_URL="https://github.com/Lenzx999/LenzNode.git"
 
     # Jika folder belum terhubung dengan Git, hubungkan otomatis
-    if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
+    if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
         (cd "$SERVER_DIR" && git init -q 2>/dev/null && git remote add origin "$REPO_URL" 2>/dev/null) || true
     fi
 
-    if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1; then
-        # Cek update dengan batas waktu cepat (3 detik) agar tidak hang jika offline
-        if git -C "$SERVER_DIR" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=3 fetch origin main --depth=1 >/dev/null 2>&1; then
+    if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
+        # Cek update dengan batas waktu cepat (4 detik) agar tidak hang jika offline
+        if git -C "$SERVER_DIR" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=4 fetch origin main --depth=1 >/dev/null 2>&1; then
             local LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse HEAD 2>/dev/null)
             local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse origin/main 2>/dev/null)
             if [ -n "$LOCAL_HASH" ] && [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
@@ -138,10 +164,21 @@ check_and_apply_update() {
                 exec bash "$0" "$@"
             else
                 echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${DIM}sistem sudah versi terbaru${NC}"
+                return 0
             fi
-        else
-            echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}offline / lewati pembaruan${NC}"
         fi
+    fi
+
+    # Fallback jika update dipicu secara manual ('./start.sh update') namun git fetch gagal
+    if [ "$1" = "force" ]; then
+        if [ -f "$SERVER_DIR/update.sh" ]; then
+            echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  update      ${YELLOW}menjalankan pembaruan via update.sh...${NC}"
+            bash "$SERVER_DIR/update.sh"
+            return 0
+        fi
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}gagal memeriksa pembaruan (offline / jaringan sibuk)${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}offline / lewati pembaruan${NC}"
     fi
 }
 
