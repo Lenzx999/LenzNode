@@ -61,23 +61,83 @@ Transformasikan smartphone Android (**Android 5.0 s/d 16+**, ARM32/ARM64/x86_64)
 
 ---
 
-## Panduan Instalasi (1 Perintah)
+## Panduan Instalasi yang Benar & Antisipasi Masalah
 
-Buka aplikasi **Termux**, lalu jalankan perintah berikut:
+Untuk memastikan LenzNode terpasang dengan sempurna tanpa kendala pustaka di semua versi Android (**Android 5 s/d 16+**), ikuti panduan berikut:
+
+### Langkah 1: Persiapan Aplikasi Termux (Paling Krusial)
+
+* **Wajib**: Gunakan aplikasi Termux resmi dari **[F-Droid](https://f-droid.org/packages/com.termux/)** atau **[GitHub Releases termux-app](https://github.com/termux/termux-app/releases)**.
+* **Perhatian Khusus**: DILARANG memasang Termux dari Google Play Store karena sudah tidak dikelola sejak tahun 2020 dan server repositorinya sudah tidak aktif, sehingga dapat menyebabkan error kegagalan instalasi paket.
+
+---
+
+### Langkah 2: Perintah Instalasi
+
+Buka aplikasi **Termux**, lalu pilih salah satu cara berikut:
+
+#### Cara A: Salin-Tempel 1 Baris Perintah (Direkomendasikan & Otomatis)
+
+Salin seluruh perintah di bawah ini, tempel di Termux, lalu tekan **Enter**:
 
 ```bash
-pkg update -y && pkg upgrade -y && pkg install -y git
-git clone https://github.com/Lenzx999/LenzNode.git
-cd LenzNode
-bash install.sh
+apt update && apt full-upgrade -y && pkg install git -y && rm -rf LenzNode && git clone https://github.com/Lenzx999/LenzNode.git && cd LenzNode && bash install.sh
 ```
 
-> **Tips Kompatibilitas Android 14–16 & Solusi Pustaka Termux**:
-> Jika Termux Anda menampilkan pesan `CANNOT LINK EXECUTABLE "curl"` (*cannot locate symbol SSL_set_quic_tls...*) atau `No mirror or mirror group selected`, jalankan perintah sinkronisasi sistem berikut:
-> ```bash
-> apt update && apt full-upgrade -y
-> ```
-> Gunakan aplikasi Termux resmi dari **F-Droid** atau GitHub Releases (bukan dari Google Play Store yang sudah usang).
+---
+
+#### Cara B: Langkah Demi Langkah (Manual)
+
+Jika ingin menjalankan satu per satu secara teratur:
+
+1. **Sinkronkan dan perbarui seluruh sistem Termux** *(mencegah error linking curl/openssl)*:
+   ```bash
+   apt update && apt full-upgrade -y
+   ```
+2. **Pasang Git**:
+   ```bash
+   pkg install git -y
+   ```
+3. **Unduh repositori LenzNode**:
+   ```bash
+   git clone https://github.com/Lenzx999/LenzNode.git
+   ```
+4. **Masuk ke folder dan jalankan installer**:
+   ```bash
+   cd LenzNode
+   bash install.sh
+   ```
+
+---
+
+### Langkah 3: Petunjuk Selama Proses Instalasi Berjalan
+
+* **Pertanyaan Konfigurasi Termux**: Jika muncul dialog teks bertuliskan `default action is to keep your current version [Y/n]` atau pilihan file konfigurasi, cukup tekan tombol **Enter** pada keyboard HP untuk melanjutkan dengan opsi default yang aman.
+* **Izin Akses Penyimpanan**: Jika layar HP memunculkan permintaan izin penyimpanan Android (*Storage Permission*), pilih **Izinkan** (*Allow*).
+* **Selesai**: Setelah instalasi tuntas, LenzNode akan langsung aktif secara otomatis di latar belakang dan terminal akan menampilkan alamat IP lokal serta tautan publik Cloudflare Tunnel.
+
+---
+
+### Panduan Solusi & Antisipasi Kendala Umum (FAQ)
+
+* **Kendala 1**: Muncul pesan `CANNOT LINK EXECUTABLE "curl": cannot locate symbol "SSL_set_quic_tls_early_data_enabled"`
+  * **Penyebab**: Terjadi ketidaksinkronan versi pustaka *libcurl* dan *openssl* bawaan sistem Termux (sering terjadi pada Android 14–16).
+  * **Solusi Cepat**: Cukup jalankan perintah berikut di Termux:
+    ```bash
+    apt update && apt full-upgrade -y
+    ```
+    Setelah itu, jalankan kembali `bash install.sh`.
+
+* **Kendala 2**: Muncul peringatan `No mirror or mirror group selected`
+  * **Penyebab**: Repositori mirror default Termux belum terpilih di perangkat.
+  * **Solusi**: Ketik perintah `termux-change-repo`, pilih **Main repository**, centang **Mirrors by Grimler** atau **Mirrors by Cloudflare**, lalu pilih **OK**. Setelah selesai, jalankan kembali `apt update`.
+
+* **Kendala 3**: Ingin memperbarui LenzNode yang sudah pernah terpasang
+  * **Solusi**: Masuk ke folder LenzNode dan jalankan perintah update:
+    ```bash
+    cd ~/LenzNode && ./start.sh update
+    ```
+    *(Atau cukup ketik `lenznode update` dari direktori mana saja)*.
 
 ---
 
