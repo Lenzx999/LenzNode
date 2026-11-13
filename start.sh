@@ -53,14 +53,23 @@ export PANEL_PORT="8080"
 
 get_local_ip() {
     local ip=""
-    if command -v node >/dev/null 2>&1; then
-        ip=$(node -e "const os=require('os'),i=os.networkInterfaces();let r='';for(const k in i){for(const x of i[k]){if(x.family==='IPv4'&&!x.internal){r=x.address;break;}}if(r)break;}console.log(r);" 2>/dev/null)
-    fi
-    if [ -z "$ip" ] && command -v ip >/dev/null 2>&1; then
+    # 1. Deteksi dinamis via routing kernel aktif (paling akurat saat online Wi-Fi / Data)
+    if command -v ip >/dev/null 2>&1; then
         ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
     fi
+    # 2. Deteksi dinamis via Node.js interface scanner
+    if [ -z "$ip" ] && command -v node >/dev/null 2>&1; then
+        ip=$(node -e "const os=require('os'),i=os.networkInterfaces();let r='',fallback='';for(const k in i){for(const x of i[k]){if(x.family==='IPv4'&&!x.internal){if(k.startsWith('wlan')||k.startsWith('eth')||k.startsWith('ap')||k.startsWith('rndis')){r=x.address;break;}if(!fallback)fallback=x.address;}}if(r)break;}console.log(r||fallback);" 2>/dev/null)
+    fi
+    # 3. Fallback ifconfig multi-interface (wlan0, eth0, ap0, rndis0)
     if [ -z "$ip" ] && command -v ifconfig >/dev/null 2>&1; then
-        ip=$(ifconfig wlan0 2>/dev/null | grep 'inet ' | awk '{print $2}' | sed 's/addr://')
+        for iface in wlan0 eth0 ap0 rndis0 rmnet_data0; do
+            local cand=$(ifconfig "$iface" 2>/dev/null | grep 'inet ' | awk '{print $2}' | sed 's/addr://')
+            if [ -n "$cand" ] && [ "$cand" != "127.0.0.1" ]; then
+                ip="$cand"
+                break
+            fi
+        done
     fi
     [ -z "$ip" ] && ip="127.0.0.1"
     echo "$ip"
@@ -194,16 +203,31 @@ start_panel() {
         if pm2 describe panel >/dev/null 2>&1; then
             LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart panel --update-env >/dev/null 2>&1
         else
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=64 --optimize-for-size --expose-gc" --max-memory-restart 80M >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=128 --optimize-for-size --expose-gc" --max-memory-restart 120M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
         pkill -f "node.*/panel/server\.js" 2>/dev/null || true
         pkill -f "node server.js" 2>/dev/null || true
-        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" node --max-old-space-size=64 --optimize-for-size --expose-gc "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" node --max-old-space-size=128 --optimize-for-size --expose-gc "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
-    echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
+
+    # Probe aktif: Pastikan port 8080 benar-benar hidup dan merespons
+    local PANEL_OK=0
+    for p in 1 2 3 4 5 6; do
+        if is_port_active "${PANEL_PORT:-8080}"; then
+            PANEL_OK=1
+            break
+        fi
+        sleep 0.5
+    done
+
+    if [ "$PANEL_OK" = "1" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  panel       ${YELLOW}memulai (port ${PANEL_PORT:-8080})...${NC}"
+    fi
 }
 
 stop_panel() {
@@ -229,6 +253,9 @@ ensure_cloudflare_tunnel() {
         return 0
     fi
 
+    # Bersihkan cache tunnel lama saat start baru agar link tidak statis/kadaluwarsa
+    rm -f "$TUNNEL_FILE" 2>/dev/null || true
+
     local CF_BIN=""
     if command -v cloudflared >/dev/null 2>&1; then
         CF_BIN="cloudflared"
@@ -244,13 +271,14 @@ ensure_cloudflare_tunnel() {
     fi
 
     if ! pgrep -x cloudflared >/dev/null 2>&1; then
+        rm -f "$TUNNEL_LOG" 2>/dev/null || true
         nohup env GOGC=20 GOMEMLIMIT=32MiB "$CF_BIN" tunnel --url "http://127.0.0.1:${PANEL_PORT:-8080}" > "$TUNNEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
 
     # Tunggu dan verifikasi handshake tunnel Cloudflare (Health-Check Nyata)
     local URL=""
-    for i in 1 2 3 4 5 6 7 8 9 10; do
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
         if [ -f "$TUNNEL_FILE" ]; then
             URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
             [ -n "$URL" ] && break
@@ -392,6 +420,9 @@ start_all() {
     echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
 
     check_and_apply_update "$@"
+
+    # Bersihkan file URL tunnel lama saat start baru agar link tidak statis
+    rm -f "$LOG_DIR/tunnel-url.txt" 2>/dev/null || true
 
     start_panel
     start_ssh

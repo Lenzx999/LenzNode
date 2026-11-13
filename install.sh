@@ -106,7 +106,7 @@ pkg install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2
 # Pastikan host key OpenSSH telah digenerate
 [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] && ssh-keygen -A >/dev/null 2>&1 || true
 
-# Pastikan termux-api terpasang
+# Pastikan termux-api terpasang (CLI)
 if ! command -v termux-battery-status >/dev/null 2>&1; then
     pkg install -y termux-api 2>/dev/null || true
 fi
@@ -134,15 +134,10 @@ if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" 
     fi
 fi
 
-# Auto-Setup Termux:API Companion APK (Untuk Telemetri Baterai & Daya Android 10-16)
-if ! pm list packages 2>/dev/null | grep -q "com.termux.api"; then
-    echo -e ">> Menyiapkan Termux:API Companion APK (Baterai Android 10-16)..."
-    API_APK="$HOME/termux-api.apk"
-    curl -sL "https://github.com/termux/termux-api/releases/download/v0.51.0/termux-api_v0.51.0+github-debug.apk" -o "$API_APK" 2>/dev/null || wget -q "https://github.com/termux/termux-api/releases/download/v0.51.0/termux-api_v0.51.0+github-debug.apk" -O "$API_APK" 2>/dev/null || true
-    if [ -f "$API_APK" ]; then
-        command -v termux-open >/dev/null 2>&1 && termux-open "$API_APK" 2>/dev/null || true
-        echo -e "${GREEN}✓ Installer Termux:API dibuka (silakan klik Pasang/Install di layar HP jika muncul)${NC}"
-    fi
+# Telemetri Baterai & Daya Android (Didukung langsung via Kernel sysfs & CLI termux-api)
+# Untuk Android 14-16, sistem sensor LenzNode otomatis memetakan tegangan/arus/suhu tanpa mewajibkan APK debug tambahan
+if ! command -v termux-battery-status >/dev/null 2>&1; then
+    pkg install -y termux-api 2>/dev/null || true
 fi
 
 NODE_VER="$(node -v 2>/dev/null || "$PREFIX/bin/node" -v 2>/dev/null || echo 'OK')"

@@ -76,15 +76,56 @@ bash install.sh
 
 ---
 
+## Cara Menjalankan Server (Lokal & Publik)
+
+Setelah instalasi selesai, Anda dapat menjalankan server kapan saja menggunakan skrip kontrol atau alias global `lenznode`:
+
+```bash
+# Menjalankan server (Pilihan Interaktif: Dual Mode)
+./start.sh
+# atau cukup ketik:
+lenznode
+```
+
+Saat dijalankan, Anda akan diberikan 2 opsi mode operasional:
+* **[1] Lokal Saja (Wi-Fi / LAN)**: Sangat hemat RAM dan kuota internet. Cocok untuk digunakan di rumah/kantor dalam satu jaringan Wi-Fi.
+* **[2] Public Tunnel (Cloudflare 24/7)**: Otomatis menghubungkan server ke Cloudflare Edge secara dinamis. Anda akan mendapatkan URL publik (`https://xxxx.trycloudflare.com`) yang bisa diakses dari mana saja tanpa perlu setting port forwarding modem.
+
+### Perintah Langsung (Shorthand Commands)
+```bash
+./start.sh --local    # Langsung jalankan mode lokal (tanpa menu prompt)
+./start.sh --tunnel   # Langsung jalankan dengan public tunnel Cloudflare
+./start.sh status     # Cek status layanan (Panel, SSH, Tunnel, IP aktif)
+./start.sh stop       # Hentikan semua proses server
+./start.sh restart    # Mulai ulang server
+./start.sh logs       # Pantau log live server
+./start.sh update     # Update otomatis source code ke rilis terbaru GitHub
+```
+
+---
+
+## Menjaga Server Tetap Aktif 24/7 di Latar Belakang
+
+LenzNode telah dirancang agar **otomatis tetap menyala** di latar belakang selama aplikasi Termux dibuka, bahkan saat layar HP dimatikan:
+
+1. **Wake-Lock Otomatis**: Skrip `start.sh` secara otomatis mengaktifkan fitur `termux-wake-lock` Android agar CPU tidak mengalami *deep sleep*.
+2. **Matikan Penghemat Baterai Android (Wajib)**:
+   * Buka *Pengaturan HP* > *Aplikasi* > *Termux* > *Baterai / Penggunaan Daya*.
+   * Pilih **"Tidak Dibatasi" / "Jangan Optimalkan Baterai"** (*Unrestricted / Don't optimize*).
+3. **Kunci Aplikasi Termux di Recent Apps**:
+   * Buka menu *Recent Apps* (tampilan aplikasi yang berjalan), lalu tekan ikon gembok (*Lock*) pada aplikasi Termux agar tidak ditutup otomatis oleh pembersih RAM bawaan HP.
+
+---
+
 ## Akses Dashboard & SSH
 
-Saat server berjalan (`bash ~/LenzNode/start.sh` atau perintah `lenznode`), terminal akan menampilkan informasi alamat akses:
+Saat server berjalan (`./start.sh` atau perintah `lenznode`), terminal akan menampilkan informasi alamat akses yang **100% dinamis dan realtime**:
 
 ```text
   ╭─ LenzNode ──────────────────────────────
   │  ●  panel       port 8080
   │  ●  ssh         port 2222
-  │  ●  tunnel      connected
+  │  ●  tunnel      connected (terverifikasi)
   │
   │  ➜  Local:    http://127.0.0.1:8080/
   │  ➜  Network:  http://192.168.1.15:8080/
@@ -92,9 +133,9 @@ Saat server berjalan (`bash ~/LenzNode/start.sh` atau perintah `lenznode`), term
   ╰─ Ready ─────────────────────────────────
 ```
 
-* **Web Dashboard**: Buka browser di URL lokal `http://<IP-HP>:8080` atau URL Publik Cloudflare.
+* **Web Dashboard**: Buka browser di perangkat Anda (atau HP/Laptop lain dalam satu Wi-Fi) di URL `Network` atau melalui tautan `Public`.
   * **User default**: `admin`
-  * **Password default**: `admin123` *(Dapat diganti pada menu Settings)*
+  * **Password default**: `admin123` *(Dapat diganti pada menu Settings di Web Dashboard)*
 * **SSH Remote Console**:
   ```bash
   ssh <user-termux>@<IP-HP> -p 2222
@@ -102,22 +143,12 @@ Saat server berjalan (`bash ~/LenzNode/start.sh` atau perintah `lenznode`), term
 
 ---
 
-## Perintah Kontrol (`start.sh`)
+## Kompatibilitas Lintas Perangkat (Multi-Platform)
 
-Gunakan perintah cepat berikut di Termux:
-
-```bash
-./start.sh          # Menjalankan server (Pilihan Interaktif: Dual Mode)
-                    # [1] Lokal Saja (Wi-Fi / LAN, Hemat Kuota & RAM)
-                    # [2] Dengan Public Tunnel Cloudflare Online 24/7
-./start.sh --local  # Menjalankan langsung mode lokal tanpa menu
-./start.sh --tunnel # Menjalankan langsung dengan tunnel Cloudflare
-./start.sh status   # Mengecek status layanan & link tunnel
-./start.sh stop     # Menghentikan server
-./start.sh restart  # Memulai ulang server
-./start.sh logs     # Memantau log live
-./start.sh update   # Memperbarui source code dari GitHub
-```
+LenzNode tidak hanya optimal di Android Termux, tetapi juga kompatibel dengan berbagai lingkungan Linux dan Windows:
+* **Smartphone Android**: Android 5.0 s/d 16+ (Termux Native, Non-Root).
+* **Set-Top-Box (STB)**: Armbian, Alpine Linux, Debian/Ubuntu Server (HG680-P, B760H, dll).
+* **Komputer / Laptop**: Linux (Ubuntu/Debian/Arch) dan Windows (via Node.js).
 
 ---
 
