@@ -27,7 +27,7 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # Optimasi Memori Ekstrem untuk Semua Perangkat (RAM Minimal & Hemat Baterai)
-export NODE_OPTIONS="--max-old-space-size=64 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
+export NODE_OPTIONS="--max-old-space-size=128 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "$DIR/panel/server.js" ]; then
@@ -77,14 +77,20 @@ get_local_ip() {
 
 is_port_active() {
     local port="$1"
+    # 1. Probe via Node.js net connection (Paling akurat & universal di Android 5-16+ non-root)
+    if command -v node >/dev/null 2>&1; then
+        node -e "const net=require('net'),s=net.connect(${port},'127.0.0.1',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));" >/dev/null 2>&1 && return 0
+    fi
+    # 2. Probe via curl
+    if command -v curl >/dev/null 2>&1; then
+        curl -s -m 1 "http://127.0.0.1:${port}/" >/dev/null 2>&1 && return 0
+    fi
+    # 3. Fallback netstat & ss (khusus device root / Linux standard)
     if command -v netstat >/dev/null 2>&1; then
         netstat -tuln 2>/dev/null | grep -q ":${port}[[:space:]]" && return 0
     fi
     if command -v ss >/dev/null 2>&1; then
         ss -tuln 2>/dev/null | grep -q ":${port}[[:space:]]" && return 0
-    fi
-    if command -v curl >/dev/null 2>&1; then
-        curl -s -m 1 "http://127.0.0.1:${port}/" >/dev/null 2>&1 && return 0
     fi
     return 1
 }
@@ -250,9 +256,9 @@ start_panel() {
         disown $! 2>/dev/null || true
     fi
 
-    # Probe aktif: Pastikan port 8080 benar-benar hidup dan merespons
+    # Probe aktif: Pastikan port benar-benar hidup dan merespons (hingga 12 detik)
     local PANEL_OK=0
-    for p in 1 2 3 4 5 6; do
+    for p in $(seq 1 24); do
         if is_port_active "${PANEL_PORT:-8080}"; then
             PANEL_OK=1
             break
@@ -262,8 +268,14 @@ start_panel() {
 
     if [ "$PANEL_OK" = "1" ]; then
         echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  panel       ${DIM}port ${PANEL_PORT:-8080}${NC}"
+        return 0
     else
-        echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  panel       ${YELLOW}memulai (port ${PANEL_PORT:-8080})...${NC}"
+        echo -e "  ${CYAN}│${NC}  ${RED}✗${NC}  panel       ${RED}gagal merespons di port ${PANEL_PORT:-8080}!${NC}"
+        if [ -f "$PANEL_LOG" ]; then
+            echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  Log error terakhir:"
+            tail -n 5 "$PANEL_LOG" 2>/dev/null | sed "s/^/  ${CYAN}│${NC}     /" || true
+        fi
+        return 1
     fi
 }
 
@@ -318,7 +330,7 @@ ensure_cloudflare_tunnel() {
     for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
         if [ -f "$TUNNEL_FILE" ]; then
             URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
-            [ -n "$URL" ] && break
+            [ -n "$URL" ] && [ "$URL" != "https://dashboard.pinggy.io" ] && break
         fi
         if [ -f "$TUNNEL_LOG" ]; then
             URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
@@ -461,7 +473,8 @@ start_all() {
     # Bersihkan file URL tunnel lama saat start baru agar link tidak statis
     rm -f "$LOG_DIR/tunnel-url.txt" 2>/dev/null || true
 
-    start_panel
+    local PANEL_RES=0
+    start_panel || PANEL_RES=1
     start_ssh
     ensure_cloudflare_tunnel
 
@@ -470,6 +483,7 @@ start_all() {
     if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
         if [ -f "$TUNNEL_FILE" ]; then
             TUNNEL_URL=$(cat "$TUNNEL_FILE" 2>/dev/null | tr -d ' \r\n')
+            [ "$TUNNEL_URL" = "https://dashboard.pinggy.io" ] && TUNNEL_URL=""
         fi
         if [ -z "$TUNNEL_URL" ] && [ -f "$TUNNEL_LOG" ]; then
             TUNNEL_URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -n 1)
@@ -477,18 +491,24 @@ start_all() {
     fi
 
     echo -e "  ${CYAN}│${NC}"
-    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
-    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
-    if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
-        if [ -n "$TUNNEL_URL" ]; then
-            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+    if [ "$PANEL_RES" = "0" ]; then
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+        if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
+            if [ -n "$TUNNEL_URL" ]; then
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+            else
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+            fi
         else
-            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${DIM}Dinonaktifkan (Mode Lokal)${NC}"
         fi
+        echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
     else
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${DIM}Dinonaktifkan (Mode Lokal)${NC}"
+        echo -e "  ${CYAN}│${NC}  ${RED}PERHATIAN:${NC} Web dashboard belum aktif."
+        echo -e "  ${CYAN}│${NC}  Silakan jalankan '${BOLD}./start.sh logs${NC}' untuk memeriksa kendala sistem."
+        echo -e "  ${CYAN}╰─ Gagal Memulai ─────────────────────────${NC}\n"
     fi
-    echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
 
     rm -f "$LOCK_FILE" 2>/dev/null || true
     unset _LENZNODE_STARTING

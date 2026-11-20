@@ -145,6 +145,7 @@ fi
 # 2.9 Cloudflared Tunnel untuk Link Akses Publik Otomatis
 if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
     echo ">> Menyiapkan Cloudflared Tunnel..."
+    pkg install -y tur-repo 2>/dev/null || true
     pkg install -y cloudflared 2>/dev/null || apt-get install -y cloudflared 2>/dev/null || true
     if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
         mkdir -p "$PREFIX/bin"
