@@ -243,10 +243,12 @@ start_panel() {
     local ENV_TUNNEL="${LENZ_ENABLE_TUNNEL:-1}"
 
     if command -v pm2 >/dev/null 2>&1; then
-        if pm2 describe panel >/dev/null 2>&1; then
+        if pm2 describe lenznode >/dev/null 2>&1; then
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart lenznode --update-env >/dev/null 2>&1
+        elif pm2 describe panel >/dev/null 2>&1 && [ ! -d "$HOME/panel" ]; then
             LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart panel --update-env >/dev/null 2>&1
         else
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "panel" --node-args="--max-old-space-size=128 --optimize-for-size --expose-gc" --max-memory-restart 120M >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "lenznode" --node-args="--max-old-space-size=128 --optimize-for-size --expose-gc" --max-memory-restart 120M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
@@ -281,7 +283,7 @@ start_panel() {
 
 stop_panel() {
     if command -v pm2 >/dev/null 2>&1; then
-        pm2 stop panel >/dev/null 2>&1 || true
+        pm2 stop lenznode >/dev/null 2>&1 || pm2 stop panel >/dev/null 2>&1 || true
     fi
     pkill -f "node.*/panel/server\.js" 2>/dev/null || true
     pkill -f "node server.js" 2>/dev/null || true
