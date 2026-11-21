@@ -1,8 +1,8 @@
 # LenzNode — Mini Server & OpenSSH (Native Termux Edition)
 
-Transformasikan smartphone Android (**Android 5.0 s/d 16+**, ARM32/ARM64/x86_64) menjadi **Mini Server Linux & OpenSSH** hemat daya, ringan, dan siap pakai 24/7.
+Transformasikan smartphone Android (**Android 7.0 s/d 16+**, serta Android 5/6 legacy) menjadi **Mini Server Linux & OpenSSH** hemat daya, ringan, dan siap pakai 24/7.
 
-> **Arsitektur Native Termux**: Berjalan tanpa PRootDistro (hemat RAM hanya ~30–50 MB, tanpa overhead CPU, hemat penyimpanan 2 GB, dan bebas risiko bootloop).
+> **Arsitektur Native Termux**: Berjalan langsung di atas Termux tanpa PRootDistro (hemat RAM hanya ~35–55 MB, tanpa overhead CPU emulation, hemat penyimpanan 2 GB, dan bebas risiko bootloop).
 
 ---
 
@@ -12,13 +12,13 @@ Transformasikan smartphone Android (**Android 5.0 s/d 16+**, ARM32/ARM64/x86_64)
   * Antarmuka modern dengan dukungan tema gelap (*dark mode*) dan terang (*frosted glass*).
   * Kompresi otomatis HTTP (Gzip/Deflate) untuk transfer data cepat dan hemat kuota.
   * Keamanan autentikasi berbasis sesi dengan proteksi anti-brute force.
-* **Monitoring Daya & Baterai (Android 5 – 16+)**
+* **Monitoring Daya & Baterai (Realtime Telemetri)**
   * Deteksi telemetri pengisian daya real-time: **Watt (Daya)**, **Tegangan (Volt)**, **Arus (Ampere)**, dan **Suhu Baterai**.
   * Multi-Tier Scanner: Sysfs, Termux:API, dan Dynamic CPU Modeler (akurat di Android 14/15/16 tanpa root).
 * **Monitoring Spesifikasi & Metrik Sistem**
   * Pantau beban CPU %, penggunaan RAM, sisa kapasitas storage, uptime sistem, serta sensor suhu SoC.
 * **Akses Publik Bebas Blokir (Cloudflare Tunnel)**
-  * Terhubung otomatis ke Cloudflare Tunnel untuk akses jarak jauh dari luar jaringan Wi-Fi tanpa port forwarding.
+  * Terhubung otomatis ke Cloudflare Tunnel untuk akses jarak jauh dari luar jaringan Wi-Fi tanpa port forwarding modem.
   * URL publik tunnel otomatis ditampilkan langsung di terminal saat server pertama kali dijalankan.
 * **Web File Manager**
   * Akses direktori penyimpanan Termux (`~`) dan penyimpanan internal Android (`/sdcard`).
@@ -48,16 +48,18 @@ Transformasikan smartphone Android (**Android 5.0 s/d 16+**, ARM32/ARM64/x86_64)
 
 ---
 
-## Kebutuhan Sistem & Kompatibilitas
+## Kebutuhan Sistem & Kompatibilitas Realistis
 
-| Parameter | Spesifikasi Minimal | Rekomendasi |
-| :--- | :--- | :--- |
-| **Sistem Operasi** | Android 5.0 (Lollipop / SDK 21) | Android 7.0 s/d 16+ |
-| **Arsitektur CPU** | ARM32 (`armhf`), x86 | ARM64 (`aarch64`), x86_64 |
-| **Kebutuhan RAM** | 512 MB fisik | 1 GB – 2 GB+ |
-| **Ruang Penyimpanan** | Minimal 250 MB | 1 GB+ |
-| **Akses Root** | Tidak Perlu (Non-Root) | Non-Root (HP Root tetap didukung) |
-| **Pemakaian RAM Idle** | ~35 MB – 55 MB | Sangat hemat baterai |
+Tabel di bawah adalah fakta teknis pengujian di perangkat riil (bukan gimik):
+
+| Parameter | Spesifikasi Minimal | Rekomendasi | Catatan Realistis & Kompatibilitas |
+| :--- | :--- | :--- | :--- |
+| **Sistem Operasi** | Android 7.0 (Nougat / SDK 24) | Android 8.0 s/d 16+ | **Android 7+**: 100% *Plug-and-Play* via Termux F-Droid.<br>**Android 5 & 6**: Butuh APK Termux Legacy (v0.73) & Node.js v12. |
+| **Arsitektur CPU** | ARM32 (`armhf`), x86 | ARM64 (`aarch64`), x86_64 | **ARM64**: Mendukung penuh Panel, SSH, dan Cloudflared resmi.<br>**ARM32**: Panel & SSH 100% lancar, Cloudflared menggunakan binary standalone. |
+| **Kebutuhan RAM** | 512 MB fisik | 1 GB – 2 GB+ | **RAM 512 MB**: Gunakan **Mode [1] Lokal** (Sisa RAM HP aman dari LMK Android).<br>**RAM 1 GB+**: Bebas memilih **Mode [1] Lokal** atau **Mode [2] Tunnel**. |
+| **Ruang Penyimpanan** | Minimal 250 MB | 1 GB+ | Cukup untuk dependensi Termux, Node.js, OpenSSH, dan file log. |
+| **Akses Root** | Tidak Perlu (Non-Root) | Non-Root | **100% berjalan tanpa root**. Jika HP di-root, fungsi tetap berjalan normal. |
+| **Aplikasi Termux** | Termux F-Droid / GitHub | Versi 0.118+ | **Wajib F-Droid / GitHub**. Dilarang menggunakan Termux dari Play Store karena repo lamanya sudah mati. |
 
 ---
 
@@ -187,18 +189,21 @@ LenzNode telah dirancang agar **otomatis tetap menyala** di latar belakang selam
 Saat server berjalan (`./start.sh` atau perintah `lenznode`), terminal akan menampilkan informasi alamat akses yang **100% dinamis dan realtime**:
 
 ```text
-  ╭─ LenzNode ──────────────────────────────
+  ╭─ LenzNode ��─────────────────────────────
   │  ●  panel       port 8080
   │  ●  ssh         port 2222
   │  ●  tunnel      connected (terverifikasi)
   │
-  │  ➜  Local:    http://127.0.0.1:8080/
-  │  ➜  Network:  http://192.168.1.15:8080/
-  │  ➜  Public:   https://xxxx-xxxx.trycloudflare.com
+  │  ➜  Local (HP ini)        : http://127.0.0.1:8080/
+  │  ➜  Network (Wi-Fi/LAN)   : http://192.168.1.15:8080/
+  │  ➜  Public (Internet Luar): https://xxxx-xxxx.trycloudflare.com
   ╰─ Ready ─────────────────────────────────
 ```
 
-* **Web Dashboard**: Buka browser di perangkat Anda (atau HP/Laptop lain dalam satu Wi-Fi) di URL `Network` atau melalui tautan `Public`.
+* **Web Dashboard**:
+  * **Dari HP itu sendiri**: Akses melalui alamat `Local (HP ini)`.
+  * **Dari Laptop / HP Lain dalam satu Wi-Fi**: Akses melalui alamat `Network (Wi-Fi/LAN)`.
+  * **Dari Luar Rumah / Internet Seluler**: Akses melalui tautan `Public (Internet Luar)`.
   * **User default**: `admin`
   * **Password default**: `admin123` *(Dapat diganti pada menu Settings di Web Dashboard)*
 * **SSH Remote Console**:
