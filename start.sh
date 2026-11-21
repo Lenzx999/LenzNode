@@ -148,7 +148,8 @@ check_and_apply_update() {
 
     # Cegah loop jika skrip baru saja di-update dan dieksekusi ulang
     if [ "$_LENZNODE_UPDATED" = "1" ]; then
-        echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}sistem sudah versi terbaru${NC}"
+        local CUR_COMMIT=$(git -C "$SERVER_DIR" rev-parse --short HEAD 2>/dev/null || echo "latest")
+        echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}sistem sudah versi terbaru (${CUR_COMMIT})${NC}"
         return 0
     fi
 
@@ -156,67 +157,72 @@ check_and_apply_update() {
 
     local GIT_DIR="$SERVER_DIR/.git"
     local REPO_URL="https://github.com/Lenzx999/LenzNode.git"
+    local CUR_VERSION="2.1.0"
+    [ -f "$SERVER_DIR/version.json" ] && CUR_VERSION=$(grep -oE '"version":\s*"[^"]+"' "$SERVER_DIR/version.json" 2>/dev/null | cut -d'"' -f4)
 
     # Jika folder belum terhubung dengan Git, hubungkan otomatis
     if [ ! -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
         (cd "$SERVER_DIR" && git init -q 2>/dev/null && git remote add origin "$REPO_URL" 2>/dev/null) || true
     fi
 
+    local LOCAL_HASH=""
     if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
-        # Cek update dengan batas waktu wajar (15 detik) agar tidak putus di jaringan seluler/Wi-Fi
+        LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse --short HEAD 2>/dev/null || true)
+
+        # Cek update secara dinamis ke origin/main dengan batas waktu wajar 15 detik
         if git -C "$SERVER_DIR" -c http.lowSpeedLimit=500 -c http.lowSpeedTime=15 fetch origin main --depth=1 >/dev/null 2>&1; then
-            local LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse HEAD 2>/dev/null)
-            local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse origin/main 2>/dev/null)
-            if [ -n "$LOCAL_HASH" ] && [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
-                echo -e "  ${CYAN}│${NC}  ${GREEN}⬆${NC}  update      ${GREEN}versi baru ditemukan! Memperbarui...${NC}"
+            local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse --short origin/main 2>/dev/null || true)
 
-                # Amankan kredensial akun agar password tidak ter-reset
-                local AUTH_BACKUP=""
-                [ -f "$SERVER_DIR/panel/auth-config.json" ] && AUTH_BACKUP=$(cat "$SERVER_DIR/panel/auth-config.json" 2>/dev/null)
-
-                git -C "$SERVER_DIR" reset --hard origin/main >/dev/null 2>&1 || git -C "$SERVER_DIR" pull origin main >/dev/null 2>&1
-
-                [ -n "$AUTH_BACKUP" ] && echo "$AUTH_BACKUP" > "$SERVER_DIR/panel/auth-config.json" 2>/dev/null || true
-                chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
-
-                # Sinkronkan skrip starter di $HOME jika ada
-                if [ -d "$HOME" ] && [ -f "$SERVER_DIR/start.sh" ] && [ "$SERVER_DIR" != "$HOME" ]; then
-                    cp -f "$SERVER_DIR/start.sh" "$HOME/start.sh" 2>/dev/null && chmod +x "$HOME/start.sh" 2>/dev/null || true
-                fi
-
-                echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}berhasil diperbarui ke versi terbaru!${NC}"
-
-                # Jika dipanggil manual via './start.sh update', reload service jika sedang aktif lalu selesai
+            # Jika ada perbedaan versi antara repositori lokal dan remote di GitHub
+            if [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
+                # Skenario A: Pengguna menjalankan manual './start.sh update' -> Langsung terapkan pembaruan
                 if [ "$IS_MANUAL_TRIGGER" = "1" ]; then
+                    echo -e "  ${CYAN}│${NC}  ${GREEN}⬆${NC}  update      ${GREEN}mengunduh rilis terbaru (${LOCAL_HASH:-awal} ➜ ${REMOTE_HASH})...${NC}"
+
+                    local AUTH_BACKUP=""
+                    [ -f "$SERVER_DIR/panel/auth-config.json" ] && AUTH_BACKUP=$(cat "$SERVER_DIR/panel/auth-config.json" 2>/dev/null)
+
+                    git -C "$SERVER_DIR" reset --hard origin/main >/dev/null 2>&1 || git -C "$SERVER_DIR" pull origin main >/dev/null 2>&1
+
+                    [ -n "$AUTH_BACKUP" ] && echo "$AUTH_BACKUP" > "$SERVER_DIR/panel/auth-config.json" 2>/dev/null || true
+                    chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
+
+                    if [ -d "$HOME" ] && [ -f "$SERVER_DIR/start.sh" ] && [ "$SERVER_DIR" != "$HOME" ]; then
+                        cp -f "$SERVER_DIR/start.sh" "$HOME/start.sh" 2>/dev/null && chmod +x "$HOME/start.sh" 2>/dev/null || true
+                    fi
+
+                    echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}berhasil diperbarui ke versi terbaru (${REMOTE_HASH})!${NC}"
+
                     if command -v pm2 >/dev/null 2>&1 && pm2 describe lenznode >/dev/null 2>&1; then
                         pm2 restart lenznode >/dev/null 2>&1 || true
                         echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  service     ${GREEN}layanan PM2 lenznode berhasil dimuat ulang${NC}"
                     fi
                     return 0
+                else
+                    # Skenario B: Pengguna menjalankan startup normal './start.sh' -> Berikan notifikasi dinamis & saran update
+                    echo -e "  ${CYAN}│${NC}  ${YELLOW}⬆${NC}  update      ${YELLOW}${BOLD}TERSEDIA PEMBARUAN!${NC} (${LOCAL_HASH:-lama} ➜ ${GREEN}${REMOTE_HASH}${NC})"
+                    echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}              Ketik '${BOLD}./start.sh update${NC}' untuk memperbarui sistem."
+                    [ -f "$PANEL_LOG" ] && echo "[$(date '+%H.%M.%S' 2>/dev/null || echo '00:00:00')] [UPDATE] Pembaruan terdeteksi di GitHub (${LOCAL_HASH:-lama} -> ${REMOTE_HASH}). Ketik ./start.sh update untuk memperbarui." >> "$PANEL_LOG" 2>/dev/null || true
+                    return 0
                 fi
-
-                # Hapus lock & jalankan skrip terbaru secara mulus
-                rm -f "$LOG_DIR/.start.lock" 2>/dev/null || true
-                unset _LENZNODE_STARTING
-                export _LENZNODE_UPDATED=1
-                exec bash "$0" "$@"
-            else
-                echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${DIM}sistem sudah versi terbaru${NC}"
+            elif [ -n "$REMOTE_HASH" ]; then
+                # Jika hash sama persis, tampilkan versi dan hash aktual (BUKAN teks statis)
+                echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${DIM}sistem sudah versi terbaru (v${CUR_VERSION} • ${LOCAL_HASH})${NC}"
                 return 0
             fi
         fi
     fi
 
-    # Fallback jika update dipicu secara manual ('./start.sh update') namun git fetch gagal
+    # Fallback jika update manual gagal karena kendala jaringan
     if [ "$IS_MANUAL_TRIGGER" = "1" ]; then
         if [ -f "$SERVER_DIR/update.sh" ]; then
             echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  update      ${YELLOW}menjalankan pembaruan cadangan via update.sh...${NC}"
             bash "$SERVER_DIR/update.sh"
             return 0
         fi
-        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}gagal memeriksa pembaruan (offline / jaringan sibuk)${NC}"
+        echo -e "  ${CYAN}│${NC}  ${RED}✗${NC}  update      ${RED}gagal memeriksa pembaruan (offline / jaringan sibuk)${NC}"
     else
-        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}offline / lewati pembaruan${NC}"
+        echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  update      ${DIM}offline / lewati pengecekan (versi: ${LOCAL_HASH:-v${CUR_VERSION}})${NC}"
     fi
 }
 
