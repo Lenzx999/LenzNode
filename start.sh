@@ -416,6 +416,106 @@ stop_tunnel() {
 }
 
 # -----------------------------------------------------------------------------
+# 3.5 DETEKSI & MANAJEMEN MODE ROOT (MAGISK / KERNELSU)
+# -----------------------------------------------------------------------------
+ROOT_CONFIG_FILE="$SERVER_DIR/panel/root-config.json"
+
+check_real_root() {
+    # Verifikasi nyata apakah su benar-benar tersedia dan memberikan UID=0
+    if command -v su >/dev/null 2>&1; then
+        local test_uid=$(su -c "id -u" 2>/dev/null | tr -d ' \r\n')
+        if [ "$test_uid" = "0" ]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+apply_root_iptables() {
+    # Pasang iptables port-redirect: Port 80 -> 8080, Port 22 -> 2222
+    if [ "$LENZ_ROOT_MODE" = "1" ] && command -v su >/dev/null 2>&1; then
+        su -c "iptables -t nat -D PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8080 2>/dev/null; iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-ports 8080 2>/dev/null; iptables -t nat -D PREROUTING -p tcp --dport 22 -j REDIRECT --to-ports 2222 2>/dev/null; iptables -t nat -A PREROUTING -p tcp --dport 22 -j REDIRECT --to-ports 2222 2>/dev/null;" 2>/dev/null || true
+    fi
+}
+
+detect_and_configure_root() {
+    local HAS_ROOT=0
+    check_real_root && HAS_ROOT=1
+
+    # Jika argumen eksplisit dipanggil via terminal
+    for arg in "$@"; do
+        if [ "$arg" = "--root" ]; then
+            if [ "$HAS_ROOT" = "1" ]; then
+                echo '{"enabled": true}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+                export LENZ_ROOT_MODE="1"
+                apply_root_iptables
+                return 0
+            else
+                echo '{"enabled": false}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+                export LENZ_ROOT_MODE="0"
+                return 0
+            fi
+        elif [ "$arg" = "--non-root" ]; then
+            echo '{"enabled": false}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+            export LENZ_ROOT_MODE="0"
+            return 0
+        fi
+    done
+
+    # Jika konfigurasi sudah pernah disimpan sebelumnya
+    if [ -f "$ROOT_CONFIG_FILE" ]; then
+        local saved_val=$(grep -oE '"enabled":\s*(true|false)' "$ROOT_CONFIG_FILE" 2>/dev/null | grep -oE '(true|false)')
+        if [ "$saved_val" = "true" ]; then
+            if [ "$HAS_ROOT" = "1" ]; then
+                export LENZ_ROOT_MODE="1"
+                apply_root_iptables
+                return 0
+            else
+                export LENZ_ROOT_MODE="0"
+                return 0
+            fi
+        else
+            export LENZ_ROOT_MODE="0"
+            return 0
+        fi
+    fi
+
+    # Jika HP BUKAN ROOT: Jangan tanyakan apa-apa! Langsung non-root aman.
+    if [ "$HAS_ROOT" = "0" ]; then
+        echo '{"enabled": false}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+        export LENZ_ROOT_MODE="0"
+        return 0
+    fi
+
+    # Jika HP TERBUKTI ROOT (Hanya muncul sekali saat pertama kali di perangkat root):
+    echo ""
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Root Detection${NC} ${CYAN}────────────────────${NC}"
+    echo -e "  ${CYAN}│${NC}  ${GREEN}✓ Terdeteksi akses Superuser (Magisk / KernelSU)!${NC}"
+    echo -e "  ${CYAN}│${NC}  Fitur Root: Port standar (80 & 22) tanpa nomor port,"
+    echo -e "  ${CYAN}│${NC}  baca sensor baterai mendalam, dan Web Terminal Root (#)."
+    echo -e "  ${CYAN}╰─────────────────────────────────────────────${NC}"
+    local ROOT_ANS=""
+    if [ -t 0 ]; then
+        printf "  Aktifkan Mode Root Penuh? [Y/n] (Default Y): "
+        read -r ROOT_ANS
+    fi
+    local LOWER_ROOT=$(echo "$ROOT_ANS" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+    case "$LOWER_ROOT" in
+        n|no|tidak|0|false)
+            echo '{"enabled": false}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+            export LENZ_ROOT_MODE="0"
+            echo -e "  ${CYAN}➜${NC} Memilih: ${CYAN}Mode Non-Root Standar${NC}\n"
+            ;;
+        *)
+            echo '{"enabled": true}' > "$ROOT_CONFIG_FILE" 2>/dev/null || true
+            export LENZ_ROOT_MODE="1"
+            echo -e "  ${CYAN}➜${NC} Memilih: ${GREEN}Mode Root Penuh (Privileged)${NC}\n"
+            apply_root_iptables
+            ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
 # 4. START ALL, STOP ALL, & STATUS
 # -----------------------------------------------------------------------------
 ask_operational_mode() {
@@ -505,6 +605,8 @@ start_all() {
     export _LENZNODE_STARTING=1
     export _LENZNODE_RUNNING=1
 
+    detect_and_configure_root "$@"
+
     local LOCK_FILE="$LOG_DIR/.start.lock"
     local LAST_START_FILE="$LOG_DIR/.last_start"
     local NOW=$(date +%s 2>/dev/null || echo 0)
@@ -567,11 +669,22 @@ start_all() {
 
     echo -e "  ${CYAN}│${NC}"
     if [ "$PANEL_RES" = "0" ]; then
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local (HP ini):${NC}         http://127.0.0.1:${PANEL_PORT:-8080}/"
-        if [ "$LOCAL_IP" != "127.0.0.1" ]; then
-            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+        if [ "$LENZ_ROOT_MODE" = "1" ]; then
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local (HP ini):${NC}         http://127.0.0.1:${PANEL_PORT:-8080}/ ${DIM}(atau http://127.0.0.1/)${NC}"
+            if [ "$LOCAL_IP" != "127.0.0.1" ]; then
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${GREEN}http://${LOCAL_IP}/${NC} ${DIM}(Port 80 Standar & :8080)${NC}"
+            else
+                echo -e "  ${CYAN}│${NC}  ${YELLOW}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${YELLOW}Belum terhubung ke Wi-Fi / Hotspot${NC}"
+            fi
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}SSH Server:${NC}             Port 22 & 2222 ${GREEN}(Root Privileged)${NC}"
         else
-            echo -e "  ${CYAN}│${NC}  ${YELLOW}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${YELLOW}Belum terhubung ke Wi-Fi / Hotspot${NC}"
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local (HP ini):${NC}         http://127.0.0.1:${PANEL_PORT:-8080}/"
+            if [ "$LOCAL_IP" != "127.0.0.1" ]; then
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+            else
+                echo -e "  ${CYAN}│${NC}  ${YELLOW}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${YELLOW}Belum terhubung ke Wi-Fi / Hotspot${NC}"
+            fi
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}SSH Server:${NC}             Port 2222 ${DIM}(Non-Root Standar)${NC}"
         fi
         if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
             if [ -n "$TUNNEL_URL" ]; then
@@ -615,6 +728,9 @@ status_all() {
     else
         echo -e "  ${CYAN}│${NC}  ${GRAY}○${NC}  tunnel      ${DIM}stopped${NC}"
     fi
+    if [ -f "$ROOT_CONFIG_FILE" ] && [ -n "$(grep -oE '"enabled":\s*true' "$ROOT_CONFIG_FILE" 2>/dev/null)" ]; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  root        ${DIM}aktif (Port 80/22 & Root Shell)${NC}"
+    fi
 
     TUNNEL_URL=""
     if [ -f "$TUNNEL_FILE" ]; then
@@ -642,6 +758,16 @@ status_all() {
 }
 
 case "$1" in
+    --root)
+        detect_and_configure_root "--root"
+        echo -e "Mode Root berhasil dikonfigurasi. Jalankan ./start.sh untuk memulai server."
+        exit 0
+        ;;
+    --non-root)
+        detect_and_configure_root "--non-root"
+        echo -e "Mode Non-Root berhasil dikonfigurasi. Jalankan ./start.sh untuk memulai server."
+        exit 0
+        ;;
     report|error|error-log)
         echo ""
         echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Error Report${NC} ${CYAN}──────────────────${NC}"

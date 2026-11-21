@@ -1,6 +1,22 @@
 # LenzNode — Mini Server Android (Termux)
 
-Ubah smartphone Android menjadi **Mini Server Linux & SSH pribadi** yang hemat daya, ringan, dan siap pakai 24 jam.
+Ubah smartphone Android menjadi **Mini Server Linux & SSH pribadi** yang hemat daya, ringan, dan siap pakai 24 jam. Mendukung HP **Non-Root** maupun **Root (Magisk / KernelSU)**.
+
+---
+
+## Preview Tampilan Web Dashboard
+
+| Dashboard Monitoring (Desktop) | Tampilan Mobile |
+| :---: | :---: |
+| ![Dashboard Desktop](screenshots/monitoring.png) | ![Tampilan Mobile](screenshots/mobile_view.png) |
+
+| Web File Manager | Web Terminal & Console |
+| :---: | :---: |
+| ![File Manager](screenshots/file_manager.png) | ![Terminal](screenshots/terminal.png) |
+
+| Server & PM2 Logs |
+| :---: |
+| ![Server Logs](screenshots/logs_pm2.png) |
 
 ---
 
@@ -55,6 +71,8 @@ Setelah server berjalan, buka peramban (*Chrome / Browser*) di HP atau Laptop:
 | `./start.sh update` | Memperbarui LenzNode ke versi terbaru |
 | `./start.sh logs` | Melihat catatan (*log*) live server |
 | `./start.sh report` | Ekspor berkas laporan error ke folder **Download** HP |
+| `./start.sh --root` | Mengaktifkan Mode Root (jika perangkat di-root) |
+| `./start.sh --non-root` | Mengembalikan ke Mode Non-Root standar |
 
 ---
 
@@ -71,7 +89,9 @@ Setelah server berjalan, buka peramban (*Chrome / Browser*) di HP atau Laptop:
 * **Android 7.0 s/d 16+**: 100% langsung lancar dan siap pakai (*Plug & Play*).
 * **Android 5.0 & 6.0**: Bisa berjalan, tetapi harus menggunakan APK Termux versi lama (*Legacy v0.73*).
 * **Kapasitas RAM**: Minimal 512 MB (disarankan pilih Mode 1 Lokal). Untuk RAM 1 GB ke atas bebas menggunakan Mode Lokal maupun Publik.
-* **Tanpa Root**: Semua fitur berjalan normal tanpa perlu root HP.
+* **Mendukung Non-Root & Root**:
+  * **HP Biasa (Non-Root)**: Berjalan aman tanpa perlu root HP.
+  * **HP Root (Magisk / KernelSU)**: Otomatis terdeteksi dengan fitur tambahan port standar (80 & 22) dan shell root di terminal web.
 
 ---
 
