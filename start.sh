@@ -53,18 +53,38 @@ export PANEL_PORT="8080"
 
 get_local_ip() {
     local ip=""
-    # 1. Deteksi dinamis via routing kernel aktif (paling akurat saat online Wi-Fi / Data)
-    if command -v ip >/dev/null 2>&1; then
-        ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}')
+    # 1. Android Property check (sangat cepat & native untuk Termux pada koneksi Wi-Fi)
+    if command -v getprop >/dev/null 2>&1; then
+        local prop_ip=$(getprop dhcp.wlan0.ipaddress 2>/dev/null | tr -d ' \r\n')
+        if [ -n "$prop_ip" ] && [ "$prop_ip" != "0.0.0.0" ]; then
+            ip="$prop_ip"
+        fi
     fi
-    # 2. Deteksi dinamis via Node.js interface scanner
+
+    # 2. Deteksi via 'ip -4 addr show' pada interface Wi-Fi / Hotspot / LAN / Seluler
+    if [ -z "$ip" ] && command -v ip >/dev/null 2>&1; then
+        for iface in wlan0 wlan1 ap0 rndis0 eth0 rmnet_data0; do
+            local cand=$(ip -4 addr show "$iface" 2>/dev/null | awk '/inet / {print $2}' | cut -d/ -f1 | head -n 1 | tr -d ' \r\n')
+            if [ -n "$cand" ] && [ "$cand" != "127.0.0.1" ]; then
+                ip="$cand"
+                break
+            fi
+        done
+        # Fallback ip route
+        if [ -z "$ip" ]; then
+            ip=$(ip route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1)}' | head -n 1 | tr -d ' \r\n')
+        fi
+    fi
+
+    # 3. Deteksi dinamis via Node.js interface scanner
     if [ -z "$ip" ] && command -v node >/dev/null 2>&1; then
-        ip=$(node -e "const os=require('os'),i=os.networkInterfaces();let r='',fallback='';for(const k in i){for(const x of i[k]){if(x.family==='IPv4'&&!x.internal){if(k.startsWith('wlan')||k.startsWith('eth')||k.startsWith('ap')||k.startsWith('rndis')){r=x.address;break;}if(!fallback)fallback=x.address;}}if(r)break;}console.log(r||fallback);" 2>/dev/null)
+        ip=$(node -e "const os=require('os'),i=os.networkInterfaces();let r='',f='';for(const k in i){for(const x of i[k]){if(x.family==='IPv4'&&!x.internal&&x.address!=='127.0.0.1'){if(k.startsWith('wlan')||k.startsWith('eth')||k.startsWith('ap')||k.startsWith('rndis')){r=x.address;break;}if(!f)f=x.address;}}if(r)break;}console.log(r||f);" 2>/dev/null | tr -d ' \r\n')
     fi
-    # 3. Fallback ifconfig multi-interface (wlan0, eth0, ap0, rndis0)
+
+    # 4. Fallback ifconfig multi-interface (wlan0, eth0, ap0, rndis0)
     if [ -z "$ip" ] && command -v ifconfig >/dev/null 2>&1; then
-        for iface in wlan0 eth0 ap0 rndis0 rmnet_data0; do
-            local cand=$(ifconfig "$iface" 2>/dev/null | grep 'inet ' | awk '{print $2}' | sed 's/addr://')
+        for iface in wlan0 wlan1 ap0 rndis0 eth0 rmnet_data0; do
+            local cand=$(ifconfig "$iface" 2>/dev/null | grep 'inet ' | awk '{print $2}' | sed 's/addr://' | tr -d ' \r\n')
             if [ -n "$cand" ] && [ "$cand" != "127.0.0.1" ]; then
                 ip="$cand"
                 break
@@ -123,6 +143,9 @@ repair_termux_libs() {
 }
 
 check_and_apply_update() {
+    local IS_MANUAL_TRIGGER=0
+    [ "$1" = "manual" ] || [ "$1" = "force" ] && IS_MANUAL_TRIGGER=1
+
     # Cegah loop jika skrip baru saja di-update dan dieksekusi ulang
     if [ "$_LENZNODE_UPDATED" = "1" ]; then
         echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}sistem sudah versi terbaru${NC}"
@@ -140,8 +163,8 @@ check_and_apply_update() {
     fi
 
     if [ -d "$GIT_DIR" ] && command -v git >/dev/null 2>&1 && git --version >/dev/null 2>&1; then
-        # Cek update dengan batas waktu cepat (4 detik) agar tidak hang jika offline
-        if git -C "$SERVER_DIR" -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=4 fetch origin main --depth=1 >/dev/null 2>&1; then
+        # Cek update dengan batas waktu wajar (15 detik) agar tidak putus di jaringan seluler/Wi-Fi
+        if git -C "$SERVER_DIR" -c http.lowSpeedLimit=500 -c http.lowSpeedTime=15 fetch origin main --depth=1 >/dev/null 2>&1; then
             local LOCAL_HASH=$(git -C "$SERVER_DIR" rev-parse HEAD 2>/dev/null)
             local REMOTE_HASH=$(git -C "$SERVER_DIR" rev-parse origin/main 2>/dev/null)
             if [ -n "$LOCAL_HASH" ] && [ -n "$REMOTE_HASH" ] && [ "$LOCAL_HASH" != "$REMOTE_HASH" ]; then
@@ -163,6 +186,15 @@ check_and_apply_update() {
 
                 echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  update      ${GREEN}berhasil diperbarui ke versi terbaru!${NC}"
 
+                # Jika dipanggil manual via './start.sh update', reload service jika sedang aktif lalu selesai
+                if [ "$IS_MANUAL_TRIGGER" = "1" ]; then
+                    if command -v pm2 >/dev/null 2>&1 && pm2 describe lenznode >/dev/null 2>&1; then
+                        pm2 restart lenznode >/dev/null 2>&1 || true
+                        echo -e "  ${CYAN}│${NC}  ${GREEN}✓${NC}  service     ${GREEN}layanan PM2 lenznode berhasil dimuat ulang${NC}"
+                    fi
+                    return 0
+                fi
+
                 # Hapus lock & jalankan skrip terbaru secara mulus
                 rm -f "$LOG_DIR/.start.lock" 2>/dev/null || true
                 unset _LENZNODE_STARTING
@@ -176,9 +208,9 @@ check_and_apply_update() {
     fi
 
     # Fallback jika update dipicu secara manual ('./start.sh update') namun git fetch gagal
-    if [ "$1" = "force" ]; then
+    if [ "$IS_MANUAL_TRIGGER" = "1" ]; then
         if [ -f "$SERVER_DIR/update.sh" ]; then
-            echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  update      ${YELLOW}menjalankan pembaruan via update.sh...${NC}"
+            echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}  update      ${YELLOW}menjalankan pembaruan cadangan via update.sh...${NC}"
             bash "$SERVER_DIR/update.sh"
             return 0
         fi
@@ -409,12 +441,14 @@ ask_operational_mode() {
     
     local MODE_CHOICE=""
     if [ -t 0 ]; then
-        printf "  Pilihan Anda [1/2] (Default 1): "
+        printf "  Pilihan Anda [1/2 atau y/n] (Default 1): "
         read -r MODE_CHOICE
     fi
 
-    case "$MODE_CHOICE" in
-        2)
+    local LOWER_CHOICE=$(echo "$MODE_CHOICE" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+
+    case "$LOWER_CHOICE" in
+        2|y|ya|iya|yes|tunnel|t|true|on)
             export LENZ_ENABLE_TUNNEL="1"
             echo -e "  ${CYAN}➜${NC} Memilih mode: ${GREEN}Public Tunnel Cloudflare${NC}\n"
             ;;
@@ -468,7 +502,7 @@ start_all() {
     command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock 2>/dev/null || true
 
     echo ""
-    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}──────────────────────────────${NC}"
+    echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode${NC} ${CYAN}───────────��──────────────────${NC}"
 
     check_and_apply_update "$@"
 
@@ -494,16 +528,20 @@ start_all() {
 
     echo -e "  ${CYAN}│${NC}"
     if [ "$PANEL_RES" = "0" ]; then
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local (HP ini):${NC}         http://127.0.0.1:${PANEL_PORT:-8080}/"
+        if [ "$LOCAL_IP" != "127.0.0.1" ]; then
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+        else
+            echo -e "  ${CYAN}│${NC}  ${YELLOW}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${YELLOW}Belum terhubung ke Wi-Fi / Hotspot${NC}"
+        fi
         if [ "$LENZ_ENABLE_TUNNEL" = "1" ]; then
             if [ -n "$TUNNEL_URL" ]; then
-                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public (Internet Luar):${NC} ${GREEN}${TUNNEL_URL}${NC}"
             else
-                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
+                echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public (Internet Luar):${NC} ${YELLOW}Menghubungkan tunnel... (cek './start.sh status')${NC}"
             fi
         else
-            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${DIM}Dinonaktifkan (Mode Lokal)${NC}"
+            echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public (Internet Luar):${NC} ${DIM}Dinonaktifkan (Mode Lokal)${NC}"
         fi
         echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
     else
@@ -547,10 +585,14 @@ status_all() {
     fi
 
     echo -e "  ${CYAN}│${NC}"
-    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local:${NC}    http://127.0.0.1:${PANEL_PORT:-8080}/"
-    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network:${NC}  http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+    echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Local (HP ini):${NC}         http://127.0.0.1:${PANEL_PORT:-8080}/"
+    if [ "$LOCAL_IP" != "127.0.0.1" ]; then
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    http://${LOCAL_IP}:${PANEL_PORT:-8080}/"
+    else
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}➜${NC}  ${BOLD}Network (Wi-Fi/LAN):${NC}    ${YELLOW}Belum terhubung ke Wi-Fi / Hotspot${NC}"
+    fi
     if [ -n "$TUNNEL_URL" ]; then
-        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public:${NC}   ${GREEN}${TUNNEL_URL}${NC}"
+        echo -e "  ${CYAN}│${NC}  ${CYAN}➜${NC}  ${BOLD}Public (Internet Luar):${NC} ${GREEN}${TUNNEL_URL}${NC}"
     fi
     if is_port_active "${PANEL_PORT:-8080}" || is_port_active 2222; then
         echo -e "  ${CYAN}╰─ Active ────────────────────────────────${NC}\n"
@@ -563,8 +605,9 @@ case "$1" in
     update)
         echo ""
         echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Update${NC} ${CYAN}───────────────────────${NC}"
-        check_and_apply_update "force"
+        check_and_apply_update "manual"
         echo -e "  ${CYAN}╰───────────────────────────────────────────${NC}\n"
+        exit 0
         ;;
     stop)
         stop_all

@@ -22,7 +22,7 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # Optimasi Memori Ekstrem untuk Semua Perangkat (RAM Minimal & Hemat Baterai)
-export NODE_OPTIONS="--max-old-space-size=64 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
+export NODE_OPTIONS="--max-old-space-size=128 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
 
 clear
 echo -e "${CYAN}=================================================================="
@@ -149,7 +149,7 @@ if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" 
     pkg install -y cloudflared 2>/dev/null || apt-get install -y cloudflared 2>/dev/null || true
     if ! command -v cloudflared >/dev/null 2>&1 && [ ! -x "$PREFIX/bin/cloudflared" ]; then
         mkdir -p "$PREFIX/bin"
-        local CF_URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}"
+        CF_URL="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}"
         if command -v curl >/dev/null 2>&1 && curl --version >/dev/null 2>&1; then
             curl -sL -o "$PREFIX/bin/cloudflared" "$CF_URL" 2>/dev/null || true
         fi
