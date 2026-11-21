@@ -184,6 +184,33 @@ LenzNode telah dirancang agar **otomatis tetap menyala** di latar belakang selam
 
 ---
 
+## Catatan Khusus & Penyesuaian Fitur pada Android Versi Baru (Android 11 s/d 16+)
+
+Karena kebijakan keamanan Google (*Security Hardening* & *SELinux*) yang semakin ketat pada versi Android modern, perhatikan catatan berikut agar seluruh fitur berjalan normal:
+
+### 1. Web File Manager: Akses Penyimpanan Internal (`/sdcard`)
+* **Kondisi**: Pada **Android 11 s/d 16+**, Google menerapkan aturan privasi *Scoped Storage*.
+* **Dampak**: File Manager dapat mengakses direktori Termux (`~`) secara langsung. Namun jika membuka tab `/sdcard` (penyimpanan bersama HP), isi folder akan kosong atau muncul *Permission Denied* jika izin sistem belum diberikan.
+* **Solusi**: Di terminal Termux, ketik perintah `termux-setup-storage` lalu pilih **Izinkan** (*Allow All Files*). Atau buka *Pengaturan HP > Aplikasi > Termux > Izin > File dan Media > Izinkan Pengelolaan Semua File*.
+
+### 2. Daya Tahan 24/7 di Latar Belakang (Android 12 s/d 16+)
+* **Kondisi**: Android 12+ memiliki fitur sistem bawaan bernama **Phantom Process Killer** dan Doze Mode agresif.
+* **Dampak**: Jika layar HP mati, sistem operasi dapat menghentikan (*freeze / kill*) proses server Termux setelah 10–20 menit jika Termux masih dalam mode hemat baterai bawaan.
+* **Solusi**:
+  1. Buka *Pengaturan HP > Aplikasi > Termux > Baterai*, ubah dari *Optimized* menjadi **"Tidak Dibatasi" (*Unrestricted*)**.
+  2. Buka menu *Recent Apps* (tampilan jendela aplikasi), lalu tekan ikon **Gembok (*Lock*)** pada aplikasi Termux.
+  3. *(Khusus ROM agresif seperti Xiaomi HyperOS/MIUI, Samsung OneUI, Oppo/Vivo)*: Aktifkan opsi **Autostart / Mulai Otomatis** untuk aplikasi Termux.
+
+### 3. Sensor Baterai & Arus Daya (Watt / mA) pada Android 14 s/d 16+
+* **Kondisi**: Beberapa produsen HP (seperti Samsung OneUI 6/7 dan Google Pixel) membatasi akses berkas kernel sysfs `/sys/class/power_supply/battery/current_now` untuk aplikasi non-root.
+* **Dampak**: Persentase baterai (`%`), status pengisian daya (Charging/Discharging), dan suhu baterai tetap terbaca **100% akurat** via `Termux:API`. Namun nilai arus riil (mA / Watt) pada tipe HP tertentu akan menggunakan sistem estimasi cerdas (*Dynamic Modeler*) jika kernel pabrikan mengunci akses sensor tersebut.
+
+### 4. Kompatibilitas Kernel 16 KB Page Size (Android 15 & 16)
+* **Kondisi**: Sebagian perangkat flagship Android 15 & 16 mulai menggunakan kernel Linux modern dengan ukuran memori *16 KB page size* (alih-alih 4 KB standar lama).
+* **Status di LenzNode**: Installer `install.sh` telah disesuaikan untuk otomatis mengutamakan paket resmi `tur-repo` / `cloudflared` yang sudah mendukung standar memori 16 KB, sehingga Cloudflare Tunnel tetap berjalan lancar.
+
+---
+
 ## Akses Dashboard & SSH
 
 Saat server berjalan (`./start.sh` atau perintah `lenznode`), terminal akan menampilkan informasi alamat akses yang **100% dinamis dan realtime**:
