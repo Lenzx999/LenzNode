@@ -465,6 +465,39 @@ ask_operational_mode() {
     esac
 }
 
+export_error_log() {
+    local REPORT_FILE="$LOG_DIR/LenzNode-Error.log"
+    echo "========================================================" > "$REPORT_FILE"
+    echo "  LENZNODE CRASH & ERROR REPORT FOR DEVELOPER" >> "$REPORT_FILE"
+    echo "  Waktu       : $(date '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo 'Unknown')" >> "$REPORT_FILE"
+    echo "  Android SDK : $(getprop ro.build.version.sdk 2>/dev/null || echo 'Unknown')" >> "$REPORT_FILE"
+    echo "  Arsitektur  : $(uname -m 2>/dev/null || echo 'Unknown')" >> "$REPORT_FILE"
+    echo "  Node.js     : $(node -v 2>/dev/null || echo 'Not installed')" >> "$REPORT_FILE"
+    echo "========================================================" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+    echo "--- [1] PANEL LOG TERAKHIR ---" >> "$REPORT_FILE"
+    [ -f "$PANEL_LOG" ] && tail -n 40 "$PANEL_LOG" >> "$REPORT_FILE" 2>/dev/null || echo "Tidak ada panel.log" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+    echo "--- [2] CLOUDFLARED TUNNEL LOG ---" >> "$REPORT_FILE"
+    [ -f "$TUNNEL_LOG" ] && tail -n 25 "$TUNNEL_LOG" >> "$REPORT_FILE" 2>/dev/null || echo "Tidak ada cloudflared.log" >> "$REPORT_FILE"
+    echo "" >> "$REPORT_FILE"
+    echo "--- [3] SSH LOG ---" >> "$REPORT_FILE"
+    [ -f "$SSH_LOG" ] && tail -n 15 "$SSH_LOG" >> "$REPORT_FILE" 2>/dev/null || echo "Tidak ada ssh.log" >> "$REPORT_FILE"
+
+    local EXPORTED=""
+    for dl in "/sdcard/Download" "/storage/emulated/0/Download" "$HOME/storage/downloads"; do
+        if [ -d "$dl" ]; then
+            cp -f "$REPORT_FILE" "$dl/LenzNode-Error.log" 2>/dev/null && EXPORTED="$dl/LenzNode-Error.log" && break
+        fi
+    done
+    if [ -n "$EXPORTED" ]; then
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}📁 Laporan error tersimpan di:${NC} ${GREEN}${EXPORTED}${NC}"
+        echo -e "  ${CYAN}│${NC}     ${DIM}(Buka folder Download di HP Anda & kirim file ini ke developer)${NC}"
+    else
+        echo -e "  ${CYAN}│${NC}  ${YELLOW}📁 Laporan error tersimpan di:${NC} ${GREEN}${REPORT_FILE}${NC}"
+    fi
+}
+
 start_all() {
     if [ "$_LENZNODE_STARTING" = "1" ]; then
         return 0
@@ -552,7 +585,8 @@ start_all() {
         echo -e "  ${CYAN}╰─ Ready ─────────────────────────────────${NC}\n"
     else
         echo -e "  ${CYAN}│${NC}  ${RED}PERHATIAN:${NC} Web dashboard belum aktif."
-        echo -e "  ${CYAN}│${NC}  Silakan jalankan '${BOLD}./start.sh logs${NC}' untuk memeriksa kendala sistem."
+        echo -e "  ${CYAN}│${NC}  Menyiapkan berkas laporan error untuk developer..."
+        export_error_log
         echo -e "  ${CYAN}╰─ Gagal Memulai ─────────────────────────${NC}\n"
     fi
 
@@ -608,6 +642,13 @@ status_all() {
 }
 
 case "$1" in
+    report|error|error-log)
+        echo ""
+        echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Error Report${NC} ${CYAN}──────────────────${NC}"
+        export_error_log
+        echo -e "  ${CYAN}╰───────────────────────────────────────────${NC}\n"
+        exit 0
+        ;;
     update)
         echo ""
         echo -e "  ${CYAN}╭─${NC} ${BOLD}LenzNode Update${NC} ${CYAN}───────────────────────${NC}"

@@ -1,255 +1,81 @@
-# LenzNode — Mini Server & OpenSSH (Native Termux Edition)
+# LenzNode — Mini Server Android (Termux)
 
-Transformasikan smartphone Android (**Android 7.0 s/d 16+**, serta Android 5/6 legacy) menjadi **Mini Server Linux & OpenSSH** hemat daya, ringan, dan siap pakai 24/7.
-
-> **Arsitektur Native Termux**: Berjalan langsung di atas Termux tanpa PRootDistro (hemat RAM hanya ~35–55 MB, tanpa overhead CPU emulation, hemat penyimpanan 2 GB, dan bebas risiko bootloop).
+Ubah smartphone Android menjadi **Mini Server Linux & SSH pribadi** yang hemat daya, ringan, dan siap pakai 24 jam.
 
 ---
 
-## Fitur Utama
+## Cara Pasang (Cukup 1 Baris)
 
-* **Web Dashboard Glassmorphism (Port 8080)**
-  * Antarmuka modern dengan dukungan tema gelap (*dark mode*) dan terang (*frosted glass*).
-  * Kompresi otomatis HTTP (Gzip/Deflate) untuk transfer data cepat dan hemat kuota.
-  * Keamanan autentikasi berbasis sesi dengan proteksi anti-brute force.
-* **Monitoring Daya & Baterai (Realtime Telemetri)**
-  * Deteksi telemetri pengisian daya real-time: **Watt (Daya)**, **Tegangan (Volt)**, **Arus (Ampere)**, dan **Suhu Baterai**.
-  * Multi-Tier Scanner: Sysfs, Termux:API, dan Dynamic CPU Modeler (akurat di Android 14/15/16 tanpa root).
-* **Monitoring Spesifikasi & Metrik Sistem**
-  * Pantau beban CPU %, penggunaan RAM, sisa kapasitas storage, uptime sistem, serta sensor suhu SoC.
-* **Akses Publik Bebas Blokir (Cloudflare Tunnel)**
-  * Terhubung otomatis ke Cloudflare Tunnel untuk akses jarak jauh dari luar jaringan Wi-Fi tanpa port forwarding modem.
-  * URL publik tunnel otomatis ditampilkan langsung di terminal saat server pertama kali dijalankan.
-* **Web File Manager**
-  * Akses direktori penyimpanan Termux (`~`) dan penyimpanan internal Android (`/sdcard`).
-  * Upload, download (otomatis ZIP), buat berkas/folder, rename, delete, serta built-in text editor.
-* **Web Terminal & Console**
-  * Eksekusi shell Linux langsung dari browser dengan live streaming output, riwayat perintah, dan tombol interupsi Ctrl + C.
-* **Manajer Log & PM2 Process Manager**
-  * Monitoring live log server serta status proses Node.js di PM2 (Start, Stop, Restart, Log).
-* **OpenSSH Server Native (Port 2222)**
-  * Akses SSH aman dan cepat langsung ke shell Termux.
-
----
-
-## Preview Tampilan Web Dashboard
-
-| Dashboard Monitoring (Desktop) | Tampilan Mobile |
-| :---: | :---: |
-| ![Dashboard Desktop](screenshots/monitoring.png) | ![Tampilan Mobile](screenshots/mobile_view.png) |
-
-| Web File Manager | Web Terminal & Console |
-| :---: | :---: |
-| ![File Manager](screenshots/file_manager.png) | ![Terminal](screenshots/terminal.png) |
-
-| Server & PM2 Logs |
-| :---: |
-| ![Server Logs](screenshots/logs_pm2.png) |
-
----
-
-## Kebutuhan Sistem & Kompatibilitas Realistis
-
-Tabel di bawah adalah fakta teknis pengujian di perangkat riil (bukan gimik):
-
-| Parameter | Spesifikasi Minimal | Rekomendasi | Catatan Realistis & Kompatibilitas |
-| :--- | :--- | :--- | :--- |
-| **Sistem Operasi** | Android 7.0 (Nougat / SDK 24) | Android 8.0 s/d 16+ | **Android 7+**: 100% *Plug-and-Play* via Termux F-Droid.<br>**Android 5 & 6**: Butuh APK Termux Legacy (v0.73) & Node.js v12. |
-| **Arsitektur CPU** | ARM32 (`armhf`), x86 | ARM64 (`aarch64`), x86_64 | **ARM64**: Mendukung penuh Panel, SSH, dan Cloudflared resmi.<br>**ARM32**: Panel & SSH 100% lancar, Cloudflared menggunakan binary standalone. |
-| **Kebutuhan RAM** | 512 MB fisik | 1 GB – 2 GB+ | **RAM 512 MB**: Gunakan **Mode [1] Lokal** (Sisa RAM HP aman dari LMK Android).<br>**RAM 1 GB+**: Bebas memilih **Mode [1] Lokal** atau **Mode [2] Tunnel**. |
-| **Ruang Penyimpanan** | Minimal 250 MB | 1 GB+ | Cukup untuk dependensi Termux, Node.js, OpenSSH, dan file log. |
-| **Akses Root** | Tidak Perlu (Non-Root) | Non-Root | **100% berjalan tanpa root**. Jika HP di-root, fungsi tetap berjalan normal. |
-| **Aplikasi Termux** | Termux F-Droid / GitHub | Versi 0.118+ | **Wajib F-Droid / GitHub**. Dilarang menggunakan Termux dari Play Store karena repo lamanya sudah mati. |
-
----
-
-## Panduan Instalasi yang Benar & Antisipasi Masalah
-
-Untuk memastikan LenzNode terpasang dengan sempurna tanpa kendala pustaka di semua versi Android (**Android 5 s/d 16+**), ikuti panduan berikut:
-
-### Langkah 1: Persiapan Aplikasi Termux (Paling Krusial)
-
-* **Wajib**: Gunakan aplikasi Termux resmi dari **[F-Droid](https://f-droid.org/packages/com.termux/)** atau **[GitHub Releases termux-app](https://github.com/termux/termux-app/releases)**.
-* **Perhatian Khusus**: DILARANG memasang Termux dari Google Play Store karena sudah tidak dikelola sejak tahun 2020 dan server repositorinya sudah tidak aktif, sehingga dapat menyebabkan error kegagalan instalasi paket.
-
----
-
-### Langkah 2: Perintah Instalasi
-
-Buka aplikasi **Termux**, lalu pilih salah satu cara berikut:
-
-#### Cara A: Salin-Tempel 1 Baris Perintah (Direkomendasikan & Otomatis)
-
-Salin seluruh perintah di bawah ini, tempel di Termux, lalu tekan **Enter**:
+Buka aplikasi **Termux**, salin perintah di bawah ini, tempel (*paste*), lalu tekan **Enter**:
 
 ```bash
-apt update && apt full-upgrade -y && pkg install git -y && rm -rf LenzNode && git clone https://github.com/Lenzx999/LenzNode.git && cd LenzNode && bash install.sh
+pkg update -y && pkg install git -y && rm -rf LenzNode && git clone https://github.com/Lenzx999/LenzNode.git && cd LenzNode && bash install.sh
 ```
 
----
-
-#### Cara B: Langkah Demi Langkah (Manual)
-
-Jika ingin menjalankan satu per satu secara teratur:
-
-1. **Sinkronkan dan perbarui seluruh sistem Termux** *(mencegah error linking curl/openssl)*:
-   ```bash
-   apt update && apt full-upgrade -y
-   ```
-2. **Pasang Git**:
-   ```bash
-   pkg install git -y
-   ```
-3. **Unduh repositori LenzNode**:
-   ```bash
-   git clone https://github.com/Lenzx999/LenzNode.git
-   ```
-4. **Masuk ke folder dan jalankan installer**:
-   ```bash
-   cd LenzNode
-   bash install.sh
-   ```
+> **Catatan Penting**: Pasang aplikasi Termux resmi dari **[F-Droid](https://f-droid.org/packages/com.termux/)**. Jangan gunakan Termux dari Google Play Store karena sudah tidak aktif/kadaluwarsa.
 
 ---
 
-### Langkah 3: Petunjuk Selama Proses Instalasi Berjalan
+## Cara Menjalankan Server
 
-* **Pertanyaan Konfigurasi Termux**: Jika muncul dialog teks bertuliskan `default action is to keep your current version [Y/n]` atau pilihan file konfigurasi, cukup tekan tombol **Enter** pada keyboard HP untuk melanjutkan dengan opsi default yang aman.
-* **Izin Akses Penyimpanan**: Jika layar HP memunculkan permintaan izin penyimpanan Android (*Storage Permission*), pilih **Izinkan** (*Allow*).
-* **Selesai**: Setelah instalasi tuntas, LenzNode akan langsung aktif secara otomatis di latar belakang dan terminal akan menampilkan alamat IP lokal serta tautan publik Cloudflare Tunnel.
-
----
-
-### Panduan Solusi & Antisipasi Kendala Umum (FAQ)
-
-* **Kendala 1**: Muncul pesan `CANNOT LINK EXECUTABLE "curl": cannot locate symbol "SSL_set_quic_tls_early_data_enabled"`
-  * **Penyebab**: Terjadi ketidaksinkronan versi pustaka *libcurl* dan *openssl* bawaan sistem Termux (sering terjadi pada Android 14–16).
-  * **Solusi Cepat**: Cukup jalankan perintah berikut di Termux:
-    ```bash
-    apt update && apt full-upgrade -y
-    ```
-    Setelah itu, jalankan kembali `bash install.sh`.
-
-* **Kendala 2**: Muncul peringatan `No mirror or mirror group selected`
-  * **Penyebab**: Repositori mirror default Termux belum terpilih di perangkat.
-  * **Solusi**: Ketik perintah `termux-change-repo`, pilih **Main repository**, centang **Mirrors by Grimler** atau **Mirrors by Cloudflare**, lalu pilih **OK**. Setelah selesai, jalankan kembali `apt update`.
-
-* **Kendala 3**: Ingin memperbarui LenzNode yang sudah pernah terpasang
-  * **Solusi**: Masuk ke folder LenzNode dan jalankan perintah update:
-    ```bash
-    cd ~/LenzNode && ./start.sh update
-    ```
-    *(Atau cukup ketik `lenznode update` dari direktori mana saja)*.
-
----
-
-## Cara Menjalankan Server (Lokal & Publik)
-
-Setelah instalasi selesai, Anda dapat menjalankan server kapan saja menggunakan skrip kontrol atau alias global `lenznode`:
+Ketik perintah berikut di Termux:
 
 ```bash
-# Menjalankan server (Pilihan Interaktif: Dual Mode)
 ./start.sh
-# atau cukup ketik:
-lenznode
 ```
+*(Atau cukup ketik: `lenznode`)*
 
-Saat dijalankan, Anda akan diberikan 2 opsi mode operasional:
-* **[1] Lokal Saja (Wi-Fi / LAN)**: Sangat hemat RAM dan kuota internet. Cocok untuk digunakan di rumah/kantor dalam satu jaringan Wi-Fi.
-* **[2] Public Tunnel (Cloudflare 24/7)**: Otomatis menghubungkan server ke Cloudflare Edge secara dinamis. Anda akan mendapatkan URL publik (`https://xxxx.trycloudflare.com`) yang bisa diakses dari mana saja tanpa perlu setting port forwarding modem.
-
-### Perintah Langsung (Shorthand Commands)
-```bash
-./start.sh --local    # Langsung jalankan mode lokal (tanpa menu prompt)
-./start.sh --tunnel   # Langsung jalankan dengan public tunnel Cloudflare
-./start.sh status     # Cek status layanan (Panel, SSH, Tunnel, IP aktif)
-./start.sh stop       # Hentikan semua proses server
-./start.sh restart    # Mulai ulang server
-./start.sh logs       # Pantau log live server
-./start.sh update     # Update otomatis source code ke rilis terbaru GitHub
-```
+Pilih mode yang diinginkan:
+* **Ketik 1 (Mode Lokal)**: Untuk pemakaian di rumah / dalam satu Wi-Fi. Paling hemat RAM dan baterai.
+* **Ketik 2 atau iya (Mode Publik)**: Server otomatis online 24/7 dan bisa dibuka dari mana saja lewat internet via Cloudflare Tunnel.
 
 ---
 
-## Menjaga Server Tetap Aktif 24/7 di Latar Belakang
+## Cara Membuka Dashboard Web
 
-LenzNode telah dirancang agar **otomatis tetap menyala** di latar belakang selama aplikasi Termux dibuka, bahkan saat layar HP dimatikan:
+Setelah server berjalan, buka peramban (*Chrome / Browser*) di HP atau Laptop:
+* **Dari HP itu sendiri**: Akses `http://127.0.0.1:8080`
+* **Dari Laptop / HP Lain (Satu Wi-Fi)**: Akses alamat IP Wi-Fi yang tampil di layar (contoh: `http://192.168.1.3:8080`)
+* **Dari Luar Rumah (Mode Publik)**: Akses link `https://xxxx.trycloudflare.com` yang muncul di layar.
 
-1. **Wake-Lock Otomatis**: Skrip `start.sh` secara otomatis mengaktifkan fitur `termux-wake-lock` Android agar CPU tidak mengalami *deep sleep*.
-2. **Matikan Penghemat Baterai Android (Wajib)**:
-   * Buka *Pengaturan HP* > *Aplikasi* > *Termux* > *Baterai / Penggunaan Daya*.
-   * Pilih **"Tidak Dibatasi" / "Jangan Optimalkan Baterai"** (*Unrestricted / Don't optimize*).
-3. **Kunci Aplikasi Termux di Recent Apps**:
-   * Buka menu *Recent Apps* (tampilan aplikasi yang berjalan), lalu tekan ikon gembok (*Lock*) pada aplikasi Termux agar tidak ditutup otomatis oleh pembersih RAM bawaan HP.
-
----
-
-## Catatan Khusus & Penyesuaian Fitur pada Android Versi Baru (Android 11 s/d 16+)
-
-Karena kebijakan keamanan Google (*Security Hardening* & *SELinux*) yang semakin ketat pada versi Android modern, perhatikan catatan berikut agar seluruh fitur berjalan normal:
-
-### 1. Web File Manager: Akses Penyimpanan Internal (`/sdcard`)
-* **Kondisi**: Pada **Android 11 s/d 16+**, Google menerapkan aturan privasi *Scoped Storage*.
-* **Dampak**: File Manager dapat mengakses direktori Termux (`~`) secara langsung. Namun jika membuka tab `/sdcard` (penyimpanan bersama HP), isi folder akan kosong atau muncul *Permission Denied* jika izin sistem belum diberikan.
-* **Solusi**: Di terminal Termux, ketik perintah `termux-setup-storage` lalu pilih **Izinkan** (*Allow All Files*). Atau buka *Pengaturan HP > Aplikasi > Termux > Izin > File dan Media > Izinkan Pengelolaan Semua File*.
-
-### 2. Daya Tahan 24/7 di Latar Belakang (Android 12 s/d 16+)
-* **Kondisi**: Android 12+ memiliki fitur sistem bawaan bernama **Phantom Process Killer** dan Doze Mode agresif.
-* **Dampak**: Jika layar HP mati, sistem operasi dapat menghentikan (*freeze / kill*) proses server Termux setelah 10–20 menit jika Termux masih dalam mode hemat baterai bawaan.
-* **Solusi**:
-  1. Buka *Pengaturan HP > Aplikasi > Termux > Baterai*, ubah dari *Optimized* menjadi **"Tidak Dibatasi" (*Unrestricted*)**.
-  2. Buka menu *Recent Apps* (tampilan jendela aplikasi), lalu tekan ikon **Gembok (*Lock*)** pada aplikasi Termux.
-  3. *(Khusus ROM agresif seperti Xiaomi HyperOS/MIUI, Samsung OneUI, Oppo/Vivo)*: Aktifkan opsi **Autostart / Mulai Otomatis** untuk aplikasi Termux.
-
-### 3. Sensor Baterai & Arus Daya (Watt / mA) pada Android 14 s/d 16+
-* **Kondisi**: Beberapa produsen HP (seperti Samsung OneUI 6/7 dan Google Pixel) membatasi akses berkas kernel sysfs `/sys/class/power_supply/battery/current_now` untuk aplikasi non-root.
-* **Dampak**: Persentase baterai (`%`), status pengisian daya (Charging/Discharging), dan suhu baterai tetap terbaca **100% akurat** via `Termux:API`. Namun nilai arus riil (mA / Watt) pada tipe HP tertentu akan menggunakan sistem estimasi cerdas (*Dynamic Modeler*) jika kernel pabrikan mengunci akses sensor tersebut.
-
-### 4. Kompatibilitas Kernel 16 KB Page Size (Android 15 & 16)
-* **Kondisi**: Sebagian perangkat flagship Android 15 & 16 mulai menggunakan kernel Linux modern dengan ukuran memori *16 KB page size* (alih-alih 4 KB standar lama).
-* **Status di LenzNode**: Installer `install.sh` telah disesuaikan untuk otomatis mengutamakan paket resmi `tur-repo` / `cloudflared` yang sudah mendukung standar memori 16 KB, sehingga Cloudflare Tunnel tetap berjalan lancar.
+**Data Akun Masuk (Login):**
+* Username: `admin`
+* Password: `admin123` *(Dapat diubah kapan saja di menu Pengaturan Dashboard)*
 
 ---
 
-## Akses Dashboard & SSH
+## Perintah Cepat
 
-Saat server berjalan (`./start.sh` atau perintah `lenznode`), terminal akan menampilkan informasi alamat akses yang **100% dinamis dan realtime**:
-
-```text
-  ╭─ LenzNode ��─────────────────────────────
-  │  ●  panel       port 8080
-  │  ●  ssh         port 2222
-  │  ●  tunnel      connected (terverifikasi)
-  │
-  │  ➜  Local (HP ini)        : http://127.0.0.1:8080/
-  │  ➜  Network (Wi-Fi/LAN)   : http://192.168.1.15:8080/
-  │  ➜  Public (Internet Luar): https://xxxx-xxxx.trycloudflare.com
-  ╰─ Ready ─────────────────────────────────
-```
-
-* **Web Dashboard**:
-  * **Dari HP itu sendiri**: Akses melalui alamat `Local (HP ini)`.
-  * **Dari Laptop / HP Lain dalam satu Wi-Fi**: Akses melalui alamat `Network (Wi-Fi/LAN)`.
-  * **Dari Luar Rumah / Internet Seluler**: Akses melalui tautan `Public (Internet Luar)`.
-  * **User default**: `admin`
-  * **Password default**: `admin123` *(Dapat diganti pada menu Settings di Web Dashboard)*
-* **SSH Remote Console**:
-  ```bash
-  ssh <user-termux>@<IP-HP> -p 2222
-  ```
+| Perintah | Fungsi |
+| :--- | :--- |
+| `./start.sh` | Menjalankan server |
+| `./start.sh stop` | Mematikan server |
+| `./start.sh restart` | Memulai ulang server |
+| `./start.sh status` | Mengecek apakah server sedang aktif |
+| `./start.sh update` | Memperbarui LenzNode ke versi terbaru |
+| `./start.sh logs` | Melihat catatan (*log*) live server |
+| `./start.sh report` | Ekspor berkas laporan error ke folder **Download** HP |
 
 ---
 
-## Kompatibilitas Lintas Perangkat (Multi-Platform)
+## 3 Tips Supaya Server Menyala Terus 24 Jam
 
-LenzNode tidak hanya optimal di Android Termux, tetapi juga kompatibel dengan berbagai lingkungan Linux dan Windows:
-* **Smartphone Android**: Android 5.0 s/d 16+ (Termux Native, Non-Root).
-* **Set-Top-Box (STB)**: Armbian, Alpine Linux, Debian/Ubuntu Server (HG680-P, B760H, dll).
-* **Komputer / Laptop**: Linux (Ubuntu/Debian/Arch) dan Windows (via Node.js).
+1. **Matikan Penghemat Baterai**: Buka *Pengaturan HP > Aplikasi > Termux > Baterai*, pilih opsi **"Tidak Dibatasi" (*Unrestricted*)**.
+2. **Kunci Aplikasi Termux**: Buka menu aplikasi yang berjalan (*Recent Apps*), lalu tekan ikon **Gembok (*Lock*)** pada aplikasi Termux agar tidak tertutup pembersih RAM otomatis.
+3. **Jika Ada Kendala / Error**: Cukup ketik perintah `./start.sh report`. Berkas laporan error otomatis tersimpan di folder **Download** HP (`LenzNode-Error.log`) sehingga bisa langsung dikirimkan ke developer untuk bantuan perbaikan.
 
 ---
 
-## Lisensi & Developer
+## Dukungan HP Android
+
+* **Android 7.0 s/d 16+**: 100% langsung lancar dan siap pakai (*Plug & Play*).
+* **Android 5.0 & 6.0**: Bisa berjalan, tetapi harus menggunakan APK Termux versi lama (*Legacy v0.73*).
+* **Kapasitas RAM**: Minimal 512 MB (disarankan pilih Mode 1 Lokal). Untuk RAM 1 GB ke atas bebas menggunakan Mode Lokal maupun Publik.
+* **Tanpa Root**: Semua fitur berjalan normal tanpa perlu root HP.
+
+---
+
+## Lisensi & Pembuat
 
 * **Developer**: Lenz
 * **Lisensi**: MIT License
