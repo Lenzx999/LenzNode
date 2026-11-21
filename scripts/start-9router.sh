@@ -63,7 +63,7 @@ start_router() {
     echo ">> Memulai layanan 9Router di port $PORT..."
     mkdir -p "$ROUTER_DIR"
     
-    NODE_OPTIONS="--max-old-space-size=128 --optimize-for-size" PORT=$PORT NO_BROWSER=true nohup node "$CLI" --port $PORT --no-browser >> "$ROUTER_LOG" 2>&1 &
+    NODE_OPTIONS="--max-old-space-size=128" PORT=$PORT NO_BROWSER=true nohup node "$CLI" --port $PORT --no-browser >> "$ROUTER_LOG" 2>&1 &
     local BG_PID=$!
     echo "$BG_PID" > "$PID_FILE"
 

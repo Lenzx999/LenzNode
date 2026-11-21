@@ -22,7 +22,7 @@ export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
 # Optimasi Memori Ekstrem untuk Semua Perangkat (RAM Minimal & Hemat Baterai)
-export NODE_OPTIONS="--max-old-space-size=128 --optimize-for-size --expose-gc ${NODE_OPTIONS:-}"
+export NODE_OPTIONS="--max-old-space-size=128 ${NODE_OPTIONS:-}"
 
 clear
 echo -e "${CYAN}=================================================================="
