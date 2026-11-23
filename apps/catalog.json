@@ -1,0 +1,14 @@
+[
+  {
+    "id": "9router",
+    "name": "9Router",
+    "desc": "Multi-Model AI Router & Token Saver Gateway",
+    "detailedDesc": "Hubungkan AI Coding Tools (Claude Code, Cursor, Codex, Antigravity, Cline) ke 40+ provider AI dengan penghemat token otomatis dan dashboard interaktif di Port 20128.",
+    "port": 20128,
+    "icon": "router",
+    "ram": "~40-70 MB",
+    "runtime": "Node.js 18+",
+    "version": "latest",
+    "builtin": true
+  }
+]
