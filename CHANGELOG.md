@@ -6,6 +6,23 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.3 (2026-11-23)
+
+### Bug Fixes & Refinements
+* **Perbaikan Autentikasi OpenSSH Native Termux**:
+  * Mengganti konfigurasi legacy Ubuntu PRoot (`root • ubuntu123`) di dashboard settings menjadi informasi OpenSSH Termux dinamis (`termux • admin123` / username Termux aktual).
+  * Menambahkan inisialisasi otomatis password Termux (`admin123`) pada `install.sh` dan `start.sh` via utilitas `passwd`, sehingga pengguna bisa langsung login SSH tanpa ditolak oleh sistem.
+  * Menyelaraskan password OpenSSH secara otomatis setiap kali pengguna mengubah kata sandi di Pengaturan Dashboard Web.
+  * Menyesuaikan perintah salin SSH Lokal menjadi `ssh <user>@<ip> -p 2222`.
+* **Perbaikan Izin Login Remote 9Router**:
+  * Menambahkan injeksi variabel lingkungan `INITIAL_PASSWORD="123456"` pada peluncur `start-9router.sh` dan backend `server.js`.
+  * Mengatasi blokade keamanan bawaan 9Router (*"Default password must be changed before remote access"*) saat diakses melalui LAN/Wi-Fi ataupun Cloudflare Tunnel, sehingga sandi default `123456` dapat langsung digunakan untuk masuk ke antarmuka 9Router.
+  * Menambahkan petunjuk kata sandi default `123456` pada modal kartu aplikasi 9Router di App Center.
+* **Privasi Dokumentasi**:
+  * Merapikan berkas dokumentasi `README.md` dan memproteksi endpoint/subdomain privat internal.
+
+---
+
 ## v2.2.2 (2026-11-23)
 
 ### Features

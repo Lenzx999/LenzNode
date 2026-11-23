@@ -23,6 +23,7 @@ fi
 # Inisialisasi Environment Termux
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 [ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
+export USER="${USER:-$(whoami 2>/dev/null || echo 'termux')}"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
@@ -255,6 +256,11 @@ start_ssh() {
     # Pastikan host key OpenSSH telah digenerate (mencegah error pada instalasi baru)
     if [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
         ssh-keygen -A >/dev/null 2>&1 || true
+    fi
+
+    # Pastikan password SSH Termux bawaan telah disetel (default: admin123, sinkron dengan Web Panel)
+    if command -v passwd >/dev/null 2>&1; then
+        printf "admin123\nadmin123\n" | passwd >/dev/null 2>&1 || true
     fi
 
     pkill -f "sshd -p 2222" 2>/dev/null || true

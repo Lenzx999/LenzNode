@@ -12,7 +12,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.2-blue?style=flat-square" alt="Version"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.3-blue?style=flat-square" alt="Version"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20Termux%20%7C%20Linux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
     <a href="https://lenznity.my.id"><img src="https://img.shields.io/badge/website-lenznity.my.id-0EA5E9?style=flat-square" alt="Website"></a>
@@ -75,14 +75,9 @@ Setelah terpasang, Anda bisa mengendalikan server dari mana saja di terminal Ter
 
 ---
 
-## 🌐 Ekosistem & Website Resmi
+## 🌐 Website Resmi
 
-LenzNode merupakan bagian dari ekosistem server dan layanan mandiri yang dikembangkan oleh **Lenz**:
-
-* 🌍 **Website Portal Resmi**: [**lenznity.my.id**](https://lenznity.my.id)
-* 🤖 **AI Gateway & Token Saver**: [**ai.lenznity.my.id**](https://ai.lenznity.my.id)
-* 🧠 **Lenz Agent Assistant**: [**agent.lenznity.my.id**](https://agent.lenznity.my.id)
-* 💳 **Payment Gateway**: [**pg.lenznity.my.id**](https://pg.lenznity.my.id)
+* 🌍 **Website Resmi**: [**lenznity.my.id**](https://lenznity.my.id)
 
 Kunjungi [**lenznity.my.id**](https://lenznity.my.id) untuk melihat portofolio proyek, panduan teknis, dan informasi ekosistem server lainnya.
 

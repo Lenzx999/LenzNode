@@ -122,8 +122,11 @@ if ! curl --version >/dev/null 2>&1; then
     apt-get install --reinstall -y openssl libcurl curl 2>/dev/null || pkg install -y openssl libcurl curl 2>/dev/null || true
 fi
 
-# 2.5 Pastikan host key OpenSSH telah digenerate
+# 2.5 Pastikan host key OpenSSH telah digenerate & password default disetel
 [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] && ssh-keygen -A >/dev/null 2>&1 || true
+if command -v passwd >/dev/null 2>&1; then
+    printf "admin123\nadmin123\n" | passwd >/dev/null 2>&1 || true
+fi
 
 # 2.6 Pastikan termux-api terpasang (CLI)
 if ! command -v termux-battery-status >/dev/null 2>&1; then
