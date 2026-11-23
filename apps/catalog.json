@@ -10,5 +10,29 @@
     "runtime": "Node.js 18+",
     "version": "latest",
     "builtin": true
+  },
+  {
+    "id": "nextcloud",
+    "name": "Nextcloud",
+    "desc": "Self-Hosted Cloud Storage, Sync & File Sharing Platform",
+    "detailedDesc": "Platform cloud pribadi untuk penyimpanan data, sinkronisasi file otomatis antar HP dan laptop, kalender, kontak, dan kolaborasi mandiri tanpa pihak ketiga di Port 8088.",
+    "port": 8088,
+    "icon": "cloud",
+    "ram": "~120-250 MB",
+    "runtime": "PHP / SQLite3",
+    "version": "latest",
+    "builtin": false
+  },
+  {
+    "id": "immich",
+    "name": "Immich",
+    "desc": "High Performance Self-Hosted Photo & Video Backup Solution",
+    "detailedDesc": "Alternatif Google Photos mandiri berkinerja tinggi untuk backup otomatis foto dan video langsung dari HP dengan timeline cerdas, pencarian cepat, dan album bersama di Port 2283.",
+    "port": 2283,
+    "icon": "photos",
+    "ram": "~150-350 MB",
+    "runtime": "Node.js / Web Services",
+    "version": "latest",
+    "builtin": false
   }
 ]
