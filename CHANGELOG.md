@@ -6,6 +6,18 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.4 (2026-11-23)
+
+### Features
+* **1-Click Headless Remote OTA Update (Pembaruan Jarak Jauh)**:
+  * Pengguna kini dapat memperbarui seluruh sistem LenzNode langsung dari Web Dashboard tanpa perlu membuka atau menyentuh aplikasi Termux di smartphone (*100% headless & remote friendly*).
+  * Tombol interaktif **"Perbarui Sekarang (1-Klik)"** terintegrasi langsung pada banner notifikasi rilis baru dan menu **Pengaturan ➜ Sistem**.
+  * Endpoint API backend `/api/system/update/check` dan `/api/system/update/apply` yang mengeksekusi git fetch & reset aman ke repositori GitHub resmi.
+  * **Auto Backup & Restore Kredensial**: File autentikasi akun pengguna (`auth.json`) dicadangkan dan dipulihkan secara otomatis selama proses update, sehingga kata sandi dashboard tidak akan pernah ter-reset.
+  * **Self-Respawn & Auto-Reload**: Server otomatis memuat ulang instance dirinya sendiri (baik berjalan di bawah PM2 maupun standalone background Termux), dan antarmuka browser otomatis melakukan refresh setelah 3 detik.
+
+---
+
 ## v2.2.3 (2026-11-23)
 
 ### Bug Fixes & Refinements

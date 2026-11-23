@@ -12,7 +12,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.3-blue?style=flat-square" alt="Version"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.4-blue?style=flat-square" alt="Version"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20Termux%20%7C%20Linux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
     <a href="https://lenznity.my.id"><img src="https://img.shields.io/badge/website-lenznity.my.id-0EA5E9?style=flat-square" alt="Website"></a>
@@ -47,6 +47,7 @@ pkg update -y && pkg install git -y && rm -rf LenzNode && git clone https://gith
 ## ✨ Fitur Unggulan
 
 * **📊 Web Dashboard Interaktif**: Pemantauan beban sistem (*CPU, RAM, Storage, Baterai, Suhu*) secara waktu nyata (*real-time*) dengan tema Gelap (*Obsidian Dark*) dan Terang (*Clean Glass*).
+* **🔄 Pembaruan Sistem 1-Klik (OTA Headless)**: Perbarui sistem server ke versi terbaru langsung dari browser tanpa perlu membuka aplikasi Termux di smartphone.
 * **📦 App Center Marketplace**: Pasang aplikasi server siap pakai dengan satu kali klik:
   * **9Router** (*Port 20128*): Multi-Model AI Router & penghemat token coding tools (Claude Code, Cursor, Antigravity, dll).
   * **Nextcloud** (*Port 8088*): Cloud storage pribadi untuk sinkronisasi berkas antar-perangkat, kalender, dan kolaborasi mandiri.
