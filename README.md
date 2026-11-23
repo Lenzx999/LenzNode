@@ -15,7 +15,6 @@
     <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.4-blue?style=flat-square" alt="Version"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20Termux%20%7C%20Linux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
-    <a href="https://lenznity.my.id"><img src="https://img.shields.io/badge/website-lenznity.my.id-0EA5E9?style=flat-square" alt="Website"></a>
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-view-f97316?style=flat-square" alt="Changelog"></a>
     <img src="https://img.shields.io/badge/license-MIT-EAB308?style=flat-square" alt="License">
   </p>
@@ -24,7 +23,7 @@
     <a href="#-quick-install-cukup-1-baris">🚀 Quick Install</a> •
     <a href="#-fitur-unggulan">✨ Fitur Unggulan</a> •
     <a href="#-perintah-cli-lenz">⚡ CLI Commands</a> •
-    <a href="#-ekosistem--website-resmi">🌐 Ekosistem Web</a> •
+    <a href="#-cara-membuka-dashboard-web">📱 Cara Membuka</a> •
     <a href="CHANGELOG.md">📝 Changelog</a>
   </p>
 
@@ -76,14 +75,6 @@ Setelah terpasang, Anda bisa mengendalikan server dari mana saja di terminal Ter
 
 ---
 
-## 🌐 Website Resmi
-
-* 🌍 **Website Resmi**: [**lenznity.my.id**](https://lenznity.my.id)
-
-Kunjungi [**lenznity.my.id**](https://lenznity.my.id) untuk melihat portofolio proyek, panduan teknis, dan informasi ekosistem server lainnya.
-
----
-
 ## 📱 Cara Membuka Dashboard Web
 
 Setelah server dijalankan, buka peramban (*Chrome / Firefox*) di HP atau Laptop:
@@ -125,5 +116,5 @@ Riwayat lengkap pembaruan fitur, perbaikan bug, dan optimasi dapat dilihat di be
 ## 📄 Lisensi & Pengembang
 
 * **Developer**: Lenz ([@Lenzx999](https://github.com/Lenzx999))
-* **Website**: [lenznity.my.id](https://lenznity.my.id)
+* **Personal Web / Portofolio**: [lenznity.my.id](https://lenznity.my.id)
 * **Lisensi**: MIT License
