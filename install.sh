@@ -202,6 +202,7 @@ pkg install -y "$@"
 EOF
     chmod +x "$PREFIX_BIN/termux-install"
 
+    ln -sf "$BASE_DIR/start.sh" "$PREFIX_BIN/lenz" 2>/dev/null || true
     ln -sf "$BASE_DIR/start.sh" "$PREFIX_BIN/lenznode" 2>/dev/null || true
 fi
 
@@ -231,9 +232,10 @@ chmod +x "$BASE_DIR/start.sh"
 bash "$BASE_DIR/start.sh"
 
 echo -e "${GREEN}🎉 Instalasi LenzNode Berhasil Selesai!${NC}"
-echo -e "${CYAN}Perintah Cepat:${NC}"
-echo -e "  • Status Server  : ${BOLD}./start.sh status${NC}"
-echo -e "  • Restart Server : ${BOLD}./start.sh restart${NC}"
-echo -e "  • Stop Server    : ${BOLD}./start.sh stop${NC}"
-echo -e "  • Live Logs      : ${BOLD}./start.sh logs${NC}"
+echo -e "${CYAN}Perintah Cepat (dapat diketik dari mana saja):${NC}"
+echo -e "  • Cek Status     : ${BOLD}lenz status${NC}"
+echo -e "  • Update Sistem  : ${BOLD}lenz update${NC}"
+echo -e "  • Restart Server : ${BOLD}lenz restart${NC}"
+echo -e "  • Stop Server    : ${BOLD}lenz stop${NC}"
+echo -e "  • Live Logs      : ${BOLD}lenz logs${NC}"
 echo ""

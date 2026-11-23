@@ -40,6 +40,23 @@ else
     SERVER_DIR="$DIR"
 fi
 
+# Auto-register perintah CLI global 'lenz' & 'lenznode' ke PATH sistem
+register_cli_symlinks() {
+    local target="$SERVER_DIR/start.sh"
+    [ -f "$target" ] || return 0
+    local bin_dirs=()
+    [ -n "$PREFIX" ] && [ -d "$PREFIX/bin" ] && bin_dirs+=("$PREFIX/bin")
+    [ -d "/data/data/com.termux/files/usr/bin" ] && bin_dirs+=("/data/data/com.termux/files/usr/bin")
+    [ -d "/usr/local/bin" ] && bin_dirs+=("/usr/local/bin")
+    for bdir in "${bin_dirs[@]}"; do
+        if [ -w "$bdir" ]; then
+            [ ! -L "$bdir/lenz" ] || [ "$(readlink "$bdir/lenz" 2>/dev/null)" != "$target" ] && ln -sf "$target" "$bdir/lenz" 2>/dev/null || true
+            [ ! -L "$bdir/lenznode" ] || [ "$(readlink "$bdir/lenznode" 2>/dev/null)" != "$target" ] && ln -sf "$target" "$bdir/lenznode" 2>/dev/null || true
+        fi
+    done
+}
+register_cli_symlinks
+
 LOG_DIR="$SERVER_DIR/logs"
 mkdir -p "$LOG_DIR"
 PANEL_LOG="$LOG_DIR/panel.log"
@@ -201,8 +218,8 @@ check_and_apply_update() {
                 else
                     # Skenario B: Pengguna menjalankan startup normal './start.sh' -> Berikan notifikasi dinamis & saran update
                     echo -e "  ${CYAN}│${NC}  ${YELLOW}⬆${NC}  update      ${YELLOW}${BOLD}TERSEDIA PEMBARUAN!${NC} (${LOCAL_HASH:-lama} ➜ ${GREEN}${REMOTE_HASH}${NC})"
-                    echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}              Ketik '${BOLD}./start.sh update${NC}' untuk memperbarui sistem."
-                    [ -f "$PANEL_LOG" ] && echo "[$(date '+%H.%M.%S' 2>/dev/null || echo '00:00:00')] [UPDATE] Pembaruan terdeteksi di GitHub (${LOCAL_HASH:-lama} -> ${REMOTE_HASH}). Ketik ./start.sh update untuk memperbarui." >> "$PANEL_LOG" 2>/dev/null || true
+                    echo -e "  ${CYAN}│${NC}  ${YELLOW}ℹ${NC}              Ketik '${BOLD}lenz update${NC}' untuk memperbarui sistem."
+                    [ -f "$PANEL_LOG" ] && echo "[$(date '+%H.%M.%S' 2>/dev/null || echo '00:00:00')] [UPDATE] Pembaruan terdeteksi di GitHub (${LOCAL_HASH:-lama} -> ${REMOTE_HASH}). Ketik lenz update untuk memperbarui." >> "$PANEL_LOG" 2>/dev/null || true
                     return 0
                 fi
             elif [ -n "$REMOTE_HASH" ]; then
