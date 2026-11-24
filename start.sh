@@ -24,6 +24,7 @@ fi
 export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 [ -z "$HOME" ] || [ "$HOME" = "/" ] || [ "$HOME" = "/root" ] && [ -d "/data/data/com.termux/files/home" ] && export HOME="/data/data/com.termux/files/home"
 export USER="${USER:-$(whoami 2>/dev/null || echo 'termux')}"
+export INITIAL_PASSWORD="${INITIAL_PASSWORD:-123456}"
 export PATH="/data/data/com.termux/files/usr/bin:$PREFIX/bin:$PREFIX/bin/applets:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
 [ -d "$PREFIX/lib" ] && export LD_LIBRARY_PATH="$PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
@@ -248,29 +249,67 @@ check_and_apply_update() {
 # 1. KONTROL SSH SERVER (Port 2222) — NATIVE TERMUX (TANPA PROOT)
 # -----------------------------------------------------------------------------
 start_ssh() {
-    if is_port_active 2222; then
-        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}"
+    local SSH_PORT=2222
+    local SSH_PASS="${LENZ_SSH_PASS:-admin123}"
+
+    mkdir -p "$PREFIX/var/run" "$PREFIX/etc/ssh" 2>/dev/null || true
+    chmod 700 "$PREFIX/etc/ssh" 2>/dev/null || true
+    rm -f "$PREFIX/var/run/sshd.pid" 2>/dev/null || true
+
+    # Pastikan host key OpenSSH telah digenerate (mencegah error pada instalasi baru)
+    for key_type in rsa ed25519; do
+        local key_file="$PREFIX/etc/ssh/ssh_host_${key_type}_key"
+        if [ ! -s "$key_file" ]; then
+            rm -f "$key_file" "${key_file}.pub" 2>/dev/null || true
+        fi
+    done
+    if [ ! -s "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -s "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
+        ssh-keygen -A >/dev/null 2>&1 || true
+    fi
+    chmod 600 "$PREFIX/etc/ssh/ssh_host_"*"_key" 2>/dev/null || true
+    chmod 644 "$PREFIX/etc/ssh/ssh_host_"*"_key.pub" 2>/dev/null || true
+
+    # Pastikan sshd_config memiliki konfigurasi port 2222 & PasswordAuthentication yes
+    local SSHD_CFG="$PREFIX/etc/ssh/sshd_config"
+    if [ ! -f "$SSHD_CFG" ] || ! grep -q "^PasswordAuthentication yes" "$SSHD_CFG" 2>/dev/null || ! grep -q "^Port 2222" "$SSHD_CFG" 2>/dev/null; then
+        cat << 'EOF' > "$SSHD_CFG"
+Port 2222
+ListenAddress 0.0.0.0
+PasswordAuthentication yes
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+PermitRootLogin yes
+PrintMotd yes
+Subsystem sftp /data/data/com.termux/files/usr/libexec/sftp-server
+EOF
+        chmod 600 "$SSHD_CFG" 2>/dev/null || true
+    fi
+
+    # Pastikan password SSH Termux bawaan selalu disetel / disinkronkan
+    if command -v passwd >/dev/null 2>&1; then
+        printf "%s\n%s\n" "$SSH_PASS" "$SSH_PASS" | passwd >/dev/null 2>&1 || true
+    fi
+
+    if is_port_active "$SSH_PORT"; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port $SSH_PORT${NC}"
         return 0
     fi
 
-    # Pastikan host key OpenSSH telah digenerate (mencegah error pada instalasi baru)
-    if [ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
-        ssh-keygen -A >/dev/null 2>&1 || true
-    fi
+    pkill -f "sshd.*$SSH_PORT" 2>/dev/null || true
+    sleep 0.3
+    sshd -p "$SSH_PORT" 2>/dev/null || true
+    sleep 0.4
 
-    # Pastikan password SSH Termux bawaan telah disetel (default: admin123, sinkron dengan Web Panel)
-    if command -v passwd >/dev/null 2>&1; then
-        printf "admin123\nadmin123\n" | passwd >/dev/null 2>&1 || true
-    fi
-
-    pkill -f "sshd -p 2222" 2>/dev/null || true
-    sshd -p 2222 2>/dev/null || true
-    sleep 0.5
-
-    if is_port_active 2222; then
-        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port 2222${NC}"
+    if is_port_active "$SSH_PORT"; then
+        echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port $SSH_PORT${NC}"
     else
-        echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  ssh         ${DIM}port 2222 (menjalankan ulang)${NC}"
+        sshd 2>/dev/null || true
+        sleep 0.4
+        if is_port_active "$SSH_PORT"; then
+            echo -e "  ${CYAN}│${NC}  ${GREEN}●${NC}  ssh         ${DIM}port $SSH_PORT${NC}"
+        else
+            echo -e "  ${CYAN}│${NC}  ${YELLOW}○${NC}  ssh         ${DIM}port $SSH_PORT (periksa log OpenSSH)${NC}"
+        fi
     fi
 }
 
@@ -305,17 +344,17 @@ start_panel() {
 
     if command -v pm2 >/dev/null 2>&1; then
         if pm2 describe lenznode >/dev/null 2>&1; then
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart lenznode --update-env >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 restart lenznode --update-env >/dev/null 2>&1
         elif pm2 describe panel >/dev/null 2>&1 && [ ! -d "$HOME/panel" ]; then
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 restart panel --update-env >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 restart panel --update-env >/dev/null 2>&1
         else
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" pm2 start "$SERVER_JS" --name "lenznode" --node-args="--max-old-space-size=128" --max-memory-restart 120M >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 start "$SERVER_JS" --name "lenznode" --update-env --node-args="--max-old-space-size=128" --max-memory-restart 120M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
         pkill -f "node.*/panel/server\.js" 2>/dev/null || true
         pkill -f "node server.js" 2>/dev/null || true
-        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" node --max-old-space-size=128 "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" node --max-old-space-size=128 "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
 

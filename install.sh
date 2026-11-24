@@ -114,7 +114,7 @@ apt-get --fix-broken install -y -o Dpkg::Options::="--force-confnew" 2>/dev/null
 apt-get full-upgrade -y -o Dpkg::Options::="--force-confnew" 2>/dev/null || pkg upgrade -y 2>/dev/null || true
 
 # 2.3 Pasang Paket Utama
-pkg install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || apt-get install -y openssh curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || true
+pkg install -y openssh psmisc procps curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || apt-get install -y openssh psmisc procps curl wget zip unzip nano git tar xz-utils termux-api jq 2>/dev/null || true
 
 # 2.4 Verifikasi Kesiapan curl & libcurl (Auto-Reinstall jika terjadi symbol mismatch)
 if ! curl --version >/dev/null 2>&1; then
@@ -122,10 +122,46 @@ if ! curl --version >/dev/null 2>&1; then
     apt-get install --reinstall -y openssl libcurl curl 2>/dev/null || pkg install -y openssl libcurl curl 2>/dev/null || true
 fi
 
-# 2.5 Pastikan host key OpenSSH telah digenerate & password default disetel
-[ ! -f "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -f "$PREFIX/etc/ssh/ssh_host_ed25519_key" ] && ssh-keygen -A >/dev/null 2>&1 || true
+# 2.5 Pastikan direktori, konfigurasi sshd_config, host key, dan password OpenSSH disetel
+mkdir -p "$PREFIX/var/run" "$PREFIX/etc/ssh" 2>/dev/null || true
+chmod 700 "$PREFIX/etc/ssh" 2>/dev/null || true
+rm -f "$PREFIX/var/run/sshd.pid" 2>/dev/null || true
+
+for key_type in rsa ed25519; do
+    key_file="$PREFIX/etc/ssh/ssh_host_${key_type}_key"
+    if [ ! -s "$key_file" ]; then
+        rm -f "$key_file" "${key_file}.pub" 2>/dev/null || true
+    fi
+done
+if [ ! -s "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -s "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
+    ssh-keygen -A >/dev/null 2>&1 || true
+fi
+chmod 600 "$PREFIX/etc/ssh/ssh_host_"*"_key" 2>/dev/null || true
+chmod 644 "$PREFIX/etc/ssh/ssh_host_"*"_key.pub" 2>/dev/null || true
+
+cat << 'EOF' > "$PREFIX/etc/ssh/sshd_config"
+Port 2222
+ListenAddress 0.0.0.0
+PasswordAuthentication yes
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+PermitRootLogin yes
+PrintMotd yes
+Subsystem sftp /data/data/com.termux/files/usr/libexec/sftp-server
+EOF
+chmod 600 "$PREFIX/etc/ssh/sshd_config" 2>/dev/null || true
+
 if command -v passwd >/dev/null 2>&1; then
     printf "admin123\nadmin123\n" | passwd >/dev/null 2>&1 || true
+fi
+
+# Injeksi INITIAL_PASSWORD default untuk 9Router di bashrc
+if [ -f "$HOME/.bashrc" ]; then
+    if ! grep -q "INITIAL_PASSWORD" "$HOME/.bashrc" 2>/dev/null; then
+        echo 'export INITIAL_PASSWORD="123456"' >> "$HOME/.bashrc"
+    fi
+else
+    echo 'export INITIAL_PASSWORD="123456"' > "$HOME/.bashrc"
 fi
 
 # 2.6 Pastikan termux-api terpasang (CLI)

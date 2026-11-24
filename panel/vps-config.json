@@ -2,6 +2,7 @@
   "enabled": true,
   "distro": "native",
   "username": "termux",
+  "password": "admin123",
   "port": 2222,
   "publicHost": null,
   "publicPort": null,

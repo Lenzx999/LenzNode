@@ -12,7 +12,7 @@
   </p>
 
   <p>
-    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.4-blue?style=flat-square" alt="Version"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.6-blue?style=flat-square" alt="Version"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20Termux%20%7C%20Linux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-view-f97316?style=flat-square" alt="Changelog"></a>

@@ -120,21 +120,75 @@ else
     echo -e "${RED}✗ Gagal memperbarui berkas. Pastikan perangkat terhubung ke internet.${NC}"
 fi
 
-echo -e "\n${BLUE}[2/3] Memperbarui hak akses file skrip...${NC}"
+echo -e "\n${BLUE}[2/3] Memperbarui hak akses & menyelaraskan dependensi sistem...${NC}"
 chmod +x "$SERVER_DIR/"*.sh "$SERVER_DIR/scripts/"*.sh 2>/dev/null || true
-echo -e "${GREEN}✓ Hak akses skrip diperbarui.${NC}"
+
+# Pastikan dependensi psmisc & procps untuk port-killing terpasang
+if ! command -v fuser >/dev/null 2>&1; then
+    pkg install -y psmisc procps 2>/dev/null || apt-get install -y psmisc procps 2>/dev/null || true
+fi
+
+# Sinkronkan sshd_config & password OpenSSH Termux
+mkdir -p "$PREFIX/var/run" "$PREFIX/etc/ssh" 2>/dev/null || true
+chmod 700 "$PREFIX/etc/ssh" 2>/dev/null || true
+rm -f "$PREFIX/var/run/sshd.pid" 2>/dev/null || true
+
+for key_type in rsa ed25519; do
+    key_file="$PREFIX/etc/ssh/ssh_host_${key_type}_key"
+    if [ ! -s "$key_file" ]; then
+        rm -f "$key_file" "${key_file}.pub" 2>/dev/null || true
+    fi
+done
+if [ ! -s "$PREFIX/etc/ssh/ssh_host_rsa_key" ] && [ ! -s "$PREFIX/etc/ssh/ssh_host_ed25519_key" ]; then
+    ssh-keygen -A >/dev/null 2>&1 || true
+fi
+chmod 600 "$PREFIX/etc/ssh/ssh_host_"*"_key" 2>/dev/null || true
+chmod 644 "$PREFIX/etc/ssh/ssh_host_"*"_key.pub" 2>/dev/null || true
+
+cat << 'EOF' > "$PREFIX/etc/ssh/sshd_config"
+Port 2222
+ListenAddress 0.0.0.0
+PasswordAuthentication yes
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+PermitRootLogin yes
+PrintMotd yes
+Subsystem sftp /data/data/com.termux/files/usr/libexec/sftp-server
+EOF
+chmod 600 "$PREFIX/etc/ssh/sshd_config" 2>/dev/null || true
+
+if command -v passwd >/dev/null 2>&1; then
+    printf "admin123\nadmin123\n" | passwd >/dev/null 2>&1 || true
+fi
+
+# Pastikan INITIAL_PASSWORD default 9Router terdaftar di bashrc
+if [ -f "$HOME/.bashrc" ]; then
+    if ! grep -q "INITIAL_PASSWORD" "$HOME/.bashrc" 2>/dev/null; then
+        echo 'export INITIAL_PASSWORD="123456"' >> "$HOME/.bashrc"
+    fi
+else
+    echo 'export INITIAL_PASSWORD="123456"' > "$HOME/.bashrc"
+fi
+
+# Muat ulang OpenSSH jika aktif di port 2222 agar konfigurasi baru aktif
+pkill -f "sshd.*2222" 2>/dev/null || true
+sleep 0.3
+sshd -p 2222 2>/dev/null || true
+
+echo -e "${GREEN}✓ Konfigurasi OpenSSH & hak akses berkas diperbarui.${NC}"
 
 echo -e "\n${BLUE}[3/3] Memulai ulang panel server...${NC}"
+export INITIAL_PASSWORD="123456"
 if command -v pm2 >/dev/null 2>&1 && (pm2 describe lenznode >/dev/null 2>&1 || pm2 describe panel >/dev/null 2>&1 || pm2 describe lenz-panel >/dev/null 2>&1); then
-    pm2 restart lenznode 2>/dev/null || pm2 restart panel 2>/dev/null || pm2 restart lenz-panel 2>/dev/null
-    echo -e "${GREEN}✓ Layanan PM2 lenznode berhasil dimuat ulang!${NC}"
+    pm2 restart lenznode --update-env 2>/dev/null || pm2 restart panel --update-env 2>/dev/null || pm2 restart lenz-panel --update-env 2>/dev/null
+    echo -e "${GREEN}✓ Layanan PM2 lenznode berhasil dimuat ulang dengan environment terbaru!${NC}"
 else
     pkill -f "node.*panel/server.js" 2>/dev/null || true
     sleep 1
     if [ -f "$SERVER_DIR/start.sh" ]; then
         bash "$SERVER_DIR/start.sh" --bg
     else
-        nohup node --max-old-space-size=128 "$SERVER_DIR/panel/server.js" > "$SERVER_DIR/logs/panel.log" 2>&1 &
+        nohup env INITIAL_PASSWORD="123456" node --max-old-space-size=128 "$SERVER_DIR/panel/server.js" > "$SERVER_DIR/logs/panel.log" 2>&1 &
     fi
     echo -e "${GREEN}✓ Server panel berhasil dimulai ulang!${NC}"
 fi

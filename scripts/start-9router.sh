@@ -23,17 +23,25 @@ get_local_ip() {
     echo "$ip"
 }
 
-is_running() {
+is_port_active() {
+    local p="$1"
+    if command -v node >/dev/null 2>&1; then
+        node -e "const net=require('net'),s=net.connect(${p},'127.0.0.1',()=>{s.destroy();process.exit(0)});s.on('error',()=>process.exit(1));s.on('timeout',()=>process.exit(1));s.setTimeout(1000);" >/dev/null 2>&1 && return 0
+    fi
+    if command -v curl >/dev/null 2>&1; then
+        curl -s -m 1 "http://127.0.0.1:${p}/" >/dev/null 2>&1 && return 0
+    fi
     if command -v netstat >/dev/null 2>&1; then
-        if netstat -tuln 2>/dev/null | grep -q ":${PORT}[[:space:]]"; then
-            return 0
-        fi
+        netstat -tuln 2>/dev/null | grep -q ":${p}[[:space:]]" && return 0
     fi
     if command -v ss >/dev/null 2>&1; then
-        if ss -tuln 2>/dev/null | grep -q ":${PORT}[[:space:]]"; then
-            return 0
-        fi
+        ss -tuln 2>/dev/null | grep -q ":${p}[[:space:]]" && return 0
     fi
+    return 1
+}
+
+is_running() {
+    is_port_active "$PORT" && return 0
     if [ -f "$PID_FILE" ]; then
         PID=$(cat "$PID_FILE" 2>/dev/null)
         if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
@@ -64,11 +72,14 @@ start_router() {
     mkdir -p "$ROUTER_DIR"
     
     export INITIAL_PASSWORD="${INITIAL_PASSWORD:-123456}"
-    NODE_OPTIONS="--max-old-space-size=128" INITIAL_PASSWORD="$INITIAL_PASSWORD" PORT=$PORT NO_BROWSER=true nohup node "$CLI" --port $PORT --no-browser >> "$ROUTER_LOG" 2>&1 &
+    export PORT=$PORT
+    export HOSTNAME="0.0.0.0"
+    export NO_BROWSER="true"
+    NODE_OPTIONS="--max-old-space-size=128" INITIAL_PASSWORD="$INITIAL_PASSWORD" PORT=$PORT HOSTNAME="0.0.0.0" NO_BROWSER=true nohup node "$CLI" --port $PORT -H 0.0.0.0 --skip-update --no-browser >> "$ROUTER_LOG" 2>&1 &
     local BG_PID=$!
     echo "$BG_PID" > "$PID_FILE"
 
-    for i in {1..20}; do
+    for i in {1..30}; do
         sleep 0.5
         if is_running; then
             echo ">> 9Router BERHASIL AKTIF (PID: $BG_PID)!"
@@ -77,28 +88,52 @@ start_router() {
         fi
     done
 
-    echo ">> 9Router dimulai di background (PID: $BG_PID). Memeriksa log..."
-    tail -n 10 "$ROUTER_LOG"
+    echo ">> 9Router gagal merespons di port $PORT (PID: $BG_PID). Memeriksa log..."
+    tail -n 15 "$ROUTER_LOG" 2>/dev/null || true
+    return 1
 }
 
 stop_router() {
     echo ">> Menghentikan layanan 9Router..."
     if [ -f "$PID_FILE" ]; then
         PID=$(cat "$PID_FILE" 2>/dev/null)
-        if [ -n "$PID" ]; then
-            kill -15 "$PID" 2>/dev/null || true
-            sleep 1
-            kill -9 "$PID" 2>/dev/null || true
-        fi
-        rm -f "$PID_FILE"
+        [ -n "$PID" ] && kill -9 "$PID" 2>/dev/null || true
+        rm -f "$PID_FILE" 2>/dev/null || true
+    fi
+
+    # Bersihkan PID dari ~/.9router/launcher.pid jika ada
+    local LAUNCHER_PID="$HOME/.9router/launcher.pid"
+    [ ! -f "$LAUNCHER_PID" ] && [ -d "/data/data/com.termux/files/home/.9router" ] && LAUNCHER_PID="/data/data/com.termux/files/home/.9router/launcher.pid"
+    if [ -f "$LAUNCHER_PID" ]; then
+        local S_PID=$(grep -o '"serverPid":[0-9]*' "$LAUNCHER_PID" 2>/dev/null | cut -d: -f2)
+        local C_PID=$(grep -o '"cliPid":[0-9]*' "$LAUNCHER_PID" 2>/dev/null | cut -d: -f2)
+        [ -n "$S_PID" ] && kill -9 "$S_PID" 2>/dev/null || true
+        [ -n "$C_PID" ] && kill -9 "$C_PID" 2>/dev/null || true
+        rm -f "$LAUNCHER_PID" 2>/dev/null || true
     fi
 
     pkill -9 -f "custom-server.js" 2>/dev/null || true
     pkill -9 -f "9router" 2>/dev/null || true
     if command -v fuser >/dev/null 2>&1; then
-        fuser -k $PORT/tcp 2>/dev/null || true
+        fuser -k -9 $PORT/tcp 2>/dev/null || true
     fi
-    echo ">> 9Router dihentikan."
+    if command -v lsof >/dev/null 2>&1; then
+        lsof -ti :$PORT 2>/dev/null | xargs kill -9 2>/dev/null || true
+    fi
+
+    for i in {1..15}; do
+        sleep 0.2
+        if ! is_running; then
+            break
+        fi
+    done
+    if is_running; then
+        echo ">> Peringatan: 9Router masih berjalan di port $PORT."
+        return 1
+    else
+        echo ">> 9Router berhasil dihentikan."
+        return 0
+    fi
 }
 
 delete_router() {

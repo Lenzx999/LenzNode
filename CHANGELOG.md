@@ -6,6 +6,41 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.6 (2026-11-24)
+
+### Critical Bug Fixes & Resiliency
+* **Penuntasan Akar Masalah Login Remote 9Router AI Gateway**:
+  * Injeksi password default hash bcrypt (`$2b$10$...` untuk `123456`) langsung ke database SQLite 9Router (`~/.9router/db/data.sqlite`) via `ensure9RouterPassword()`, mencegah pemicu blokade keamanan Next.js 9Router ("Default password must be changed before remote access").
+  * Menyelaraskan variabel lingkungan `INITIAL_PASSWORD="123456"` dengan parameter `--update-env` pada PM2 dan peluncur background, sehingga login remote dari IP LAN (`192.168.x.x`) langsung terautentikasi sukses.
+* **Perbaikan Total Kontrol Start/Stop & Sinkronisasi Status 9Router**:
+  * Menghilangkan proses hang dan false-detection dengan menghapus fallback IPv6 `::1` pada loopback socket probe `isPortListening` dan memangkas waktu respons probe menjadi 1000ms.
+  * Menyelaraskan pendeteksian port di skrip `start-9router.sh` menggunakan Node.js `net.connect` langsung (menggantikan netstat/ss yang tidak memiliki izin baca di Android Termux non-root).
+  * Menyempurnakan pembersihan proses `killProcessOnPort()`: mematikan langsung proses anak Next.js dengan `SIGKILL`, memverifikasi pelepasan port sebelum merespons, dan mengembalikan status error nyata (`ok: false`) jika port gagal dibuka/ditutup.
+* **Perbaikan Layanan OpenSSH Server Termux (Port 2222)**:
+  * Menambahkan indikator status live OpenSSH Server (`vps-live-badge`) serta tombol kendali **"Mulai SSH"** dan **"Hentikan SSH"** pada antarmuka Web Dashboard Pengaturan Akses SSH.
+  * Memastikan izin berkas host key privat (`0600`), kunci publik (`0644`), dan folder `$PREFIX/etc/ssh` (`0700`) sesuai standar ketat OpenSSH, mencegah kegagalan silent boot `sshd: no hostkeys available`.
+  * Menyelaraskan teks instruksi SSH Publik jika tunnel belum aktif agar pengguna diarahkan menggunakan SSH Lokal di jaringan Wi-Fi.
+
+---
+
+## v2.2.5 (2026-11-24)
+
+### Bug Fixes & System Stability
+* **Perbaikan Total Blokade Login Remote 9Router AI Gateway**:
+  * Menyelaraskan injeksi `INITIAL_PASSWORD="123456"` di seluruh layer sistem: `~/.bashrc`, `install.sh`, `start.sh`, `update.sh`, peluncur `start-9router.sh`, dan proses backend `server.js`.
+  * Memastikan parameter host binding `-H 0.0.0.0` dan proteksi `--skip-update` disematkan saat menjalankan 9Router, mencegah freeze/hang saat booting pada perangkat mobile dan mengizinkan autentikasi remote via IP LAN maupun domain Cloudflare.
+* **Sinkronisasi Status Dashboard & Tombol Start/Stop/Restart**:
+  * Mengganti indikator visual hardcoded menjadi status deteksi live real-time (`dot-none` saat memuat).
+  * Mengimplementasikan modul `killProcessOnPort()` mutlak: membersihkan proses via `~/.9router/launcher.pid`, memindai inode socket `/proc/net/tcp` & `/proc/net/tcp6`, memindai `/proc/[pid]/cmdline`, serta utilitas sistem (`lsof`, `fuser`, `pkill`), sehingga perintah Stop benar-benar mematikan proses dan membebaskan port 20128 secara instan tanpa proses menggantung.
+  * Menambahkan status visual loading spinner dan penonaktifan tombol sementara selama transisi Start/Stop/Restart untuk mencegah klik ganda dan race conditions.
+  * Menyesuaikan toleransi timeout deteksi socket TCP (2500ms) agar kebal terhadap lonjakan CPU pada perangkat dengan RAM terbatas.
+* **Penuntasan Konfigurasi OpenSSH Server Termux**:
+  * Memastikan direktori `$PREFIX/var/run`, berkas `$PREFIX/etc/ssh/sshd_config` (`Port 2222`, `PasswordAuthentication yes`, `ListenAddress 0.0.0.0`), dan host key OpenSSH selalu dijamin ada dan valid pada proses startup, instalasi, maupun update OTA.
+  * Menyelaraskan kata sandi bawaan `admin123` via `passwd` dengan environment PATH penuh termux bin, sehingga login via SSH lokal (`ssh termux@<ip> -p 2222`) maupun remote tunnel langsung terautentikasi sukses.
+  * Menambahkan paket `psmisc` dan `procps` ke installer untuk menjamin perkakas kontrol proses Termux selalu lengkap.
+
+---
+
 ## v2.2.4 (2026-11-23)
 
 ### Features
