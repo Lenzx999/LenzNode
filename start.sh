@@ -348,13 +348,13 @@ start_panel() {
         elif pm2 describe panel >/dev/null 2>&1 && [ ! -d "$HOME/panel" ]; then
             LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 restart panel --update-env >/dev/null 2>&1
         else
-            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 start "$SERVER_JS" --name "lenznode" --update-env --node-args="--max-old-space-size=128" --max-memory-restart 120M >/dev/null 2>&1
+            LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" pm2 start "$SERVER_JS" --name "lenznode" --update-env --node-args="--max-old-space-size=128" --max-memory-restart 256M >/dev/null 2>&1
             pm2 save >/dev/null 2>&1 || true
         fi
     else
         pkill -f "node.*/panel/server\.js" 2>/dev/null || true
         pkill -f "node server.js" 2>/dev/null || true
-        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" node --max-old-space-size=128 "$SERVER_JS" > "$PANEL_LOG" 2>&1 &
+        nohup env LENZ_ENABLE_TUNNEL="$ENV_TUNNEL" INITIAL_PASSWORD="123456" node --max-old-space-size=128 "$SERVER_JS" </dev/null > "$PANEL_LOG" 2>&1 &
         disown $! 2>/dev/null || true
     fi
 

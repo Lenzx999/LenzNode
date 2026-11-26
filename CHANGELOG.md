@@ -6,6 +6,26 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.8 (2026-11-27)
+
+### Stability & Anti-Signal 9 Optimization (Termux)
+* **Pencegahan `Process completed (signal 9)` / Phantom Process Killer (Android 12+)**:
+  * Menambahkan caching 15 detik pada fungsi `getDiskInfo()` di `panel/server.js` agar pemantauan metrik WebSocket (`/ws/stats`) dan `/api/system/stats` tidak terus-menerus memicu pembuatan sub-proses `df` setiap 2 detik (mengurangi beban proses anak di Android secara drastis).
+  * Menaikkan batas `--max-memory-restart` PM2 di `start.sh` dari `120M` menjadi `256M` agar selaras dengan batas heap `--max-old-space-size=128` dan mencegah loop restart paksa saat penggunaan RAM normal meningkat.
+  * Menambahkan pengaktifan ulang `termux-wake-lock` otomatis di `panel/server.js` saat server melakukan boot/restart serta memisahkan stream input (`</dev/null`) pada peluncuran `nohup` di `start.sh`.
+
+---
+
+## v2.2.7 (2026-11-26)
+
+### App Center Fixes (Immich & Nextcloud)
+* **Perbaikan Bug Start/Stop & Status Palsu Immich & Nextcloud**:
+  * Memperbaiki *race condition* file `.pid` di `startDynamicAppService()` (`panel/server.js`): menghapus `.pid` basi sebelum start dan tidak lagi menimpa `.pid` dengan PID shell sementara ketika aplikasi dijalankan via `start.sh`.
+  * Menyelaraskan validasi port aktif (`2283` untuk Immich, `8088` untuk Nextcloud) hingga 10 detik dan mengembalikan pesan error log asli jika layanan gagal menyala.
+  * Memperbaiki skrip `apps/nextcloud/install.sh` dengan menghapus nama paket `php-sqlite` yang tidak tersedia di repositori Termux agar instalasi `php` berjalan sukses.
+
+---
+
 ## v2.2.6 (2026-11-24)
 
 ### Critical Bug Fixes & Resiliency
