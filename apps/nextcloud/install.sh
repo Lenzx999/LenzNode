@@ -15,11 +15,16 @@ echo "[INFO] Direktori instalasi: $APP_DIR"
 # 1. Deteksi Sistem & Pasang Dependensi
 if command -v pkg >/dev/null 2>&1; then
     echo "[INFO] Lingkungan Android Termux terdeteksi..."
-    pkg install -y php php-sqlite sqlite curl unzip >/dev/null 2>&1 || true
+    if ! command -v php >/dev/null 2>&1; then
+        pkg update -y >/dev/null 2>&1 || true
+        pkg install -y php sqlite curl unzip >/dev/null 2>&1 || pkg install -y php || true
+    fi
 elif command -v apt-get >/dev/null 2>&1; then
     echo "[INFO] Lingkungan Linux (apt) terdeteksi..."
-    apt-get update -qq >/dev/null 2>&1 || true
-    apt-get install -y php-cli php-sqlite3 sqlite3 curl unzip >/dev/null 2>&1 || true
+    if ! command -v php >/dev/null 2>&1; then
+        apt-get update -qq >/dev/null 2>&1 || true
+        apt-get install -y php-cli php-sqlite3 sqlite3 curl unzip >/dev/null 2>&1 || true
+    fi
 fi
 
 # 2. Siapkan Struktur Direktori
