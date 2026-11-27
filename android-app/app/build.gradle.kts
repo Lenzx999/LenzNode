@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.lenznode.app"
-        minSdk = 24
+        minSdk = 23
         targetSdk = 28
-        versionCode = 233
-        versionName = "2.2.13"
+        versionCode = 234
+        versionName = "2.2.14"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
