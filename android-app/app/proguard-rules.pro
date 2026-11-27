@@ -15,10 +15,11 @@
 -keep public class com.lenznode.app.MainActivity
 -keep public class com.lenznode.app.service.LenzServerService
 
-# Preserve WebView JavascriptInterface callbacks if added
+# Preserve WebView JavascriptInterface callbacks
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
+-keepattributes *Annotation*
 
 # Preserve ViewBinding static inflate entry points
 -keepclassmembers class * implements androidx.viewbinding.ViewBinding {

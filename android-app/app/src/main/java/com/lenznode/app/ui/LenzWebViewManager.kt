@@ -14,6 +14,7 @@ import android.os.Environment
 import android.os.Message
 import android.view.View
 import android.webkit.CookieManager
+import android.webkit.JavascriptInterface
 import android.webkit.MimeTypeMap
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.URLUtil
@@ -35,7 +36,9 @@ class LenzWebViewManager(
     private val onOpenFileChooser: (Intent, ValueCallback<Array<Uri>>?) -> Unit,
     private val onPageReady: () -> Unit,
     private val onConnectionLost: (String) -> Unit,
-    private val onToast: (String) -> Unit
+    private val onToast: (String) -> Unit,
+    private val onSwitchModeRequested: () -> Unit = {},
+    private val getCurrentModeName: () -> String = { "HOST_SERVER" }
 ) {
 
     var hasLoadedOnce: Boolean = false
@@ -189,6 +192,25 @@ class LenzWebViewManager(
 
         webView.setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
             enqueueDownload(url, userAgent, contentDisposition, mimetype)
+        }
+
+        webView.addJavascriptInterface(LenzBridgeJsInterface(), "LenzAndroidBridge")
+    }
+
+    private inner class LenzBridgeJsInterface {
+        @JavascriptInterface
+        fun switchMode() {
+            activity.runOnUiThread {
+                val currentUrl = webView.url?.let { Uri.parse(it) }
+                if (currentUrl != null && isInternalPanelUri(currentUrl)) {
+                    onSwitchModeRequested()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun getAppMode(): String {
+            return getCurrentModeName()
         }
     }
 

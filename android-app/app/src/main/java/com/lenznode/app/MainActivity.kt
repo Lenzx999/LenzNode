@@ -221,6 +221,12 @@ class MainActivity : AppCompatActivity() {
             },
             onToast = { msg ->
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            },
+            onSwitchModeRequested = {
+                switchBackToModeSelector()
+            },
+            getCurrentModeName = {
+                currentMode.name
             }
         )
         webViewManager.configure()

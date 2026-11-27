@@ -6,6 +6,21 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.9 (2026-11-27)
+
+### Critical Stability, Performance & Tunnel Control Fixes
+* **Perbaikan Loop `Error: write EPIPE` & Lonjakan CPU/Log di Android APK**:
+  * Menambahkan handler error `EPIPE` pada `process.stdout` / `process.stderr` di `panel/server.js`, mengabaikan error `EPIPE` di `uncaughtException` & `unhandledRejection` dengan *rate-limit* log duplikat, serta membatasi ukuran log (`1 MB` auto-rotate) agar `error.log`/`panel.log` tidak membengkak atau mengunci Node.js.
+  * Memperbaiki `start-lenznode-app.sh` (mencatat `lenz-proot.pid` / `lenz-node.pid`, mengarahkan output Node.js ke `panel-stdout.log` dengan aman setelah `[PROGRESS:95]`/`[PROGRESS:98]`) dan `LenzServerService.kt` / `RootfsManager.kt` untuk menghentikan seluruh pohon proses PRoot (`descendants()` + PID file) tanpa proses yatim (*orphan*).
+* **Performa WebView & Transisi Tema Gelap/Terang**:
+  * Mengoptimalkan lapisan latar belakang (`body::after` terpisah dari `background-attachment: fixed`) dan mengurangi beban *compositing* `backdrop-filter` pada WebView mobile di `panel/public/index.html` untuk menghilangkan *frame drop* saat scroll.
+  * Menambahkan kelas `theme-switching` sementara saat `setTheme()` agar pergantian tema Terang/Gelap berjalan instan tanpa kedipan (*glitch*).
+* **Kontrol Cloudflare Tunnel ON/OFF di App Center & OTA 1-Klik Penuh**:
+  * Menambahkan endpoint `GET /api/tunnel/status`, `POST /api/tunnel/start`, `POST /api/tunnel/stop` (tersimpan persisten di `state.json`), serta kartu **Cloudflare Tunnel** interaktif di **App Center** dan tombol kontrol di **Pengaturan ➜ Jaringan & Tunnel**.
+  * Menyempurnakan **1-Click OTA Update** di mode `android-apk` agar juga menyinkronkan skrip bootstrap (`start-lenznode-app.sh` & `setup-lenznode.sh`), mempertahankan `state.json` & `auth-config.json`, serta menyediakan tombol **"Ganti Mode Aplikasi"** langsung dari Pengaturan saat dijalankan di APK Android.
+
+---
+
 ## v2.2.8 (2026-11-27)
 
 ### Android APK Edition (Standalone PRoot, Dual-Mode & Multi-ABI CI)

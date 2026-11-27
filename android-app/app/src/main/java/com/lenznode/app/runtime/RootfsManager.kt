@@ -294,6 +294,7 @@ class RootfsManager(private val context: Context) {
 
     fun startServerProcess(): Process {
         extractAssetsIfNeeded()
+        cleanupOrphanedProcesses()
         BundleCrypto.syncBundleIfNewer(
             bundleDir = bundleDir,
             targetAppDir = File(rootfsDir, "root/LenzNode"),
@@ -312,8 +313,113 @@ class RootfsManager(private val context: Context) {
         return pb.start()
     }
 
+    fun terminateProcessTree(proc: Process?) {
+        if (proc != null) {
+            try {
+                proc.destroy()
+            } catch (_: Exception) {
+            }
+        }
+
+        cleanupOrphanedProcesses()
+
+        if (proc != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                if (proc.isAlive) {
+                    proc.destroyForcibly()
+                }
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    fun cleanupOrphanedProcesses() {
+        val myPid = android.os.Process.myPid()
+        val pidFiles = listOf(
+            File(tmpDir, "lenz-node.pid"),
+            File(tmpDir, "lenz-proot.pid"),
+            File(rootfsDir, "tmp/lenz-node.pid"),
+            File(rootfsDir, "tmp/lenz-proot.pid"),
+            File(rootfsDir, "run/sshd.pid")
+        )
+
+        val pidsToKill = linkedSetOf<Int>()
+        for (pidFile in pidFiles) {
+            if (!pidFile.exists()) continue
+            try {
+                val pid = pidFile.readText().trim().toIntOrNull()
+                if (pid != null && pid > 1 && pid != myPid) {
+                    pidsToKill.add(pid)
+                }
+            } catch (_: Exception) {
+            }
+        }
+
+        // Send graceful SIGTERM first, then SIGKILL if still alive
+        for (pid in pidsToKill) {
+            try {
+                android.system.Os.kill(pid, android.system.OsConstants.SIGTERM)
+            } catch (_: Exception) {
+            }
+        }
+        if (pidsToKill.isNotEmpty()) {
+            try {
+                Thread.sleep(250)
+            } catch (_: InterruptedException) {
+            }
+            for (pid in pidsToKill) {
+                try {
+                    android.system.Os.kill(pid, android.system.OsConstants.SIGKILL)
+                } catch (_: Exception) {
+                }
+            }
+        }
+
+        // Clean up any stale cloudflared / node / proot processes belonging to this app sandbox via /proc
+        killResidualSandboxProcesses(myPid)
+
+        for (pidFile in pidFiles) {
+            try {
+                if (pidFile.exists()) pidFile.delete()
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun killResidualSandboxProcesses(myPid: Int) {
+        val myUid = android.os.Process.myUid()
+        val markers = listOf("libproot.so", "/root/LenzNode/panel/server.js", "cloudflared", "sshd")
+        try {
+            val procDir = File("/proc")
+            val entries = procDir.listFiles() ?: return
+            for (entry in entries) {
+                val pid = entry.name.toIntOrNull() ?: continue
+                if (pid <= 1 || pid == myPid) continue
+                try {
+                    val stat = android.system.Os.stat(entry.absolutePath)
+                    if (stat.st_uid != myUid) continue
+                    val cmdlineFile = File(entry, "cmdline")
+                    if (!cmdlineFile.exists()) continue
+                    val cmdline = cmdlineFile.readBytes()
+                        .toString(Charsets.UTF_8)
+                        .replace('\u0000', ' ')
+                        .trim()
+                    if (cmdline.isEmpty()) continue
+                    if (markers.any { marker -> cmdline.contains(marker) }) {
+                        try {
+                            android.system.Os.kill(pid, android.system.OsConstants.SIGKILL)
+                        } catch (_: Exception) {
+                        }
+                    }
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) {
+        }
+    }
+
     fun waitForPanelReady(
-        probeUrl: String = "http://127.0.0.1:8080/login",
+        probeUrl: String = "http://127.0.0.1:8080/api/auth/status",
         timeoutMs: Long = 60_000L,
         isProcessAlive: () -> Boolean
     ): Boolean {

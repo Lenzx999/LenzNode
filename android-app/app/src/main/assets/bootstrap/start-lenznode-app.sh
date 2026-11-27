@@ -45,6 +45,21 @@ if [ -z "$LENZ_IN_PROOT" ]; then
     fi
   fi
 
+  # Clean stale proot/node processes before launching a fresh session
+  for _pf in "$TMP_DIR/lenz-node.pid" "$TMP_DIR/lenz-proot.pid"; do
+    if [ -f "$_pf" ]; then
+      _old_pid="$(cat "$_pf" 2>/dev/null || true)"
+      if [ -n "$_old_pid" ] && [ "$_old_pid" != "$$" ]; then
+        kill -TERM "$_old_pid" 2>/dev/null || true
+        sleep 0.2
+        kill -KILL "$_old_pid" 2>/dev/null || true
+      fi
+      rm -f "$_pf" 2>/dev/null || true
+    fi
+  done
+
+  printf '%s\n' "$$" > "$TMP_DIR/lenz-proot.pid" 2>/dev/null || true
+
   # Keep DNS valid on each launch
   rm -f "$ROOTFS_DIR/etc/resolv.conf" 2>/dev/null || true
   printf 'nameserver 8.8.8.8\nnameserver 1.1.1.1\n' > "$ROOTFS_DIR/etc/resolv.conf"
@@ -74,6 +89,7 @@ if [ -z "$LENZ_IN_PROOT" ]; then
     LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive \
     PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+    FILES_DIR="$FILES_DIR" \
     LENZ_IN_PROOT=1 \
     LENZ_SUPERVISED=1 \
     LENZ_APP_MODE="${LENZ_APP_MODE:-android-apk}" \
@@ -96,10 +112,14 @@ export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH
 
 PANEL_DIR="/root/LenzNode/panel"
 LOG_DIR="/root/LenzNode/logs"
+TMP_PID_DIR="${FILES_DIR:-/tmp}/tmp"
+NODE_PID_FILE="$TMP_PID_DIR/lenz-node.pid"
+PROOT_PID_FILE="$TMP_PID_DIR/lenz-proot.pid"
 SSH_PORT="${SSH_PORT:-2222}"
 PANEL_PORT="${PANEL_PORT:-8080}"
 
-mkdir -p "$LOG_DIR" /etc/ssh /run/sshd /var/run/sshd
+mkdir -p "$LOG_DIR" "$TMP_PID_DIR" /etc/ssh /run/sshd /var/run/sshd
+printf '%s\n' "$$" > "$PROOT_PID_FILE" 2>/dev/null || true
 
 configure_and_start_sshd() {
   if [ ! -x /usr/sbin/sshd ]; then
@@ -159,7 +179,9 @@ cleanup_and_exit() {
     sleep 1
     kill -KILL "$NODE_PID" 2>/dev/null || true
   fi
+  rm -f "$NODE_PID_FILE" "$PROOT_PID_FILE" 2>/dev/null || true
   pkill -f "sshd.*${SSH_PORT}" 2>/dev/null || true
+  pkill -f "cloudflared.*tunnel" 2>/dev/null || true
   exit 0
 }
 
@@ -172,16 +194,29 @@ printf '[PROGRESS:98] Starting LenzNode Panel (port %s)...\n' "$PANEL_PORT"
 
 cd "$PANEL_DIR" || exit 1
 
+cap_stdout_log() {
+  _lfile="$LOG_DIR/panel-stdout.log"
+  if [ -f "$_lfile" ]; then
+    _sz="$(wc -c < "$_lfile" 2>/dev/null || echo 0)"
+    if [ "$_sz" -gt 1048576 ] 2>/dev/null; then
+      tail -c 65536 "$_lfile" > "$_lfile.tmp" 2>/dev/null && mv -f "$_lfile.tmp" "$_lfile" 2>/dev/null || true
+    fi
+  fi
+}
+
 while [ "$STOP_REQUESTED" = "0" ]; do
   rm -f "$PANEL_DIR/.restart-requested" 2>/dev/null || true
-  node --max-old-space-size=128 "$PANEL_DIR/server.js" &
+  cap_stdout_log
+  node --max-old-space-size=128 "$PANEL_DIR/server.js" </dev/null >> "$LOG_DIR/panel-stdout.log" 2>&1 &
   NODE_PID=$!
+  printf '%s\n' "$NODE_PID" > "$NODE_PID_FILE" 2>/dev/null || true
 
   set +e
   wait "$NODE_PID"
   EXIT_CODE=$?
   set -e
   NODE_PID=""
+  rm -f "$NODE_PID_FILE" 2>/dev/null || true
 
   if [ "$STOP_REQUESTED" = "1" ]; then
     break

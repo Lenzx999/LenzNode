@@ -82,6 +82,7 @@ class LenzServerService : Service() {
         val action = intent?.action ?: ACTION_START
         val appMode = AppModeStore(applicationContext).getAppMode()
         if (action != ACTION_STOP && appMode != AppMode.HOST_SERVER) {
+            rootfsManager.cleanupOrphanedProcesses()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -225,7 +226,7 @@ class LenzServerService : Service() {
         }
 
         val ready = rootfsManager.waitForPanelReady(
-            probeUrl = "http://127.0.0.1:$PANEL_PORT/login",
+            probeUrl = "http://127.0.0.1:$PANEL_PORT/api/auth/status",
             timeoutMs = 60_000L,
             isProcessAlive = { isProcessAlive(proc) }
         )
@@ -300,17 +301,7 @@ class LenzServerService : Service() {
         monitorJob = null
         val proc = serverProcess
         serverProcess = null
-        if (proc != null) {
-            try {
-                proc.destroy()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    if (proc.isAlive) {
-                        proc.destroyForcibly()
-                    }
-                }
-            } catch (_: Exception) {
-            }
-        }
+        rootfsManager.terminateProcessTree(proc)
     }
 
     private fun stopServerInternal(keepNotification: Boolean) {
