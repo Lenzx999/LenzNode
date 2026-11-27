@@ -60,7 +60,7 @@ register_cli_symlinks() {
 register_cli_symlinks
 
 LOG_DIR="$SERVER_DIR/logs"
-mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" "$HOME/workspace"
 PANEL_LOG="$LOG_DIR/panel.log"
 SSH_LOG="$LOG_DIR/ssh.log"
 TUNNEL_LOG="$LOG_DIR/cloudflared.log"

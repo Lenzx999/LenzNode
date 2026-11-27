@@ -213,6 +213,7 @@ mkdir -p \
   "$ROOTFS_DIR/sys" \
   "$ROOTFS_DIR/tmp" \
   "$ROOTFS_DIR/root" \
+  "$ROOTFS_DIR/root/workspace" \
   "$ROOTFS_DIR/root/LenzNode" \
   "$ROOTFS_DIR/run/sshd" \
   "$ROOTFS_DIR/etc/apt/apt.conf.d" \
@@ -244,6 +245,10 @@ export PS1='\[\e[1;36m\]root@lenznode\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]# '
 alias ll='ls -la'
 if [ -f /root/LenzNode/panel/server.js ]; then
   alias lenz-dir='cd /root/LenzNode'
+fi
+mkdir -p "$HOME/workspace" 2>/dev/null || true
+if [ "$PWD" = "$HOME" ] && [ -d "$HOME/workspace" ]; then
+  cd "$HOME/workspace"
 fi
 EOF
 
@@ -364,7 +369,7 @@ if [ "$SHOULD_COPY_BUNDLE" = "0" ]; then
   emit_progress 95 "Preserving existing/OTA-updated /root/LenzNode runtime..."
 elif [ -d "$BUNDLE_DIR" ]; then
   # Preserve user runtime configs if upgrading/re-extracting
-  for cfg in auth-config.json vps-config.json sessions.json state.json root-config.json; do
+  for cfg in auth-config.json vps-config.json sessions.json state.json shares.json root-config.json; do
     if [ -f "$TARGET_APP_DIR/panel/$cfg" ]; then
       cp -f "$TARGET_APP_DIR/panel/$cfg" "$TMP_DIR/.keep-$cfg" 2>/dev/null || true
     fi
@@ -382,7 +387,7 @@ elif [ -d "$BUNDLE_DIR" ]; then
   [ -f "$BUNDLE_DIR/version.json" ] && cp -f "$BUNDLE_DIR/version.json" "$TARGET_APP_DIR/version.json"
   [ -f "$BUNDLE_DIR/CHANGELOG.md" ] && cp -f "$BUNDLE_DIR/CHANGELOG.md" "$TARGET_APP_DIR/CHANGELOG.md"
 
-  for cfg in auth-config.json vps-config.json sessions.json state.json root-config.json; do
+  for cfg in auth-config.json vps-config.json sessions.json state.json shares.json root-config.json; do
     if [ -f "$TMP_DIR/.keep-$cfg" ]; then
       mv -f "$TMP_DIR/.keep-$cfg" "$TARGET_APP_DIR/panel/$cfg" 2>/dev/null || true
     fi

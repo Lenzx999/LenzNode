@@ -118,7 +118,7 @@ PROOT_PID_FILE="$TMP_PID_DIR/lenz-proot.pid"
 SSH_PORT="${SSH_PORT:-2222}"
 PANEL_PORT="${PANEL_PORT:-8080}"
 
-mkdir -p "$LOG_DIR" "$TMP_PID_DIR" /etc/ssh /run/sshd /var/run/sshd
+mkdir -p "$LOG_DIR" "$TMP_PID_DIR" /root/workspace /etc/ssh /run/sshd /var/run/sshd
 printf '%s\n' "$$" > "$PROOT_PID_FILE" 2>/dev/null || true
 
 configure_and_start_sshd() {

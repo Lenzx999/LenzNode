@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <files-path
+        name="rootfs_files"
+        path="rootfs/" />
+    <files-path
+        name="files_shared_exports"
+        path="cache/shared-exports/" />
+    <cache-path
+        name="cache_shared_exports"
+        path="shared-exports/" />
+    <external-path
+        name="external_sdcard"
+        path="." />
+</paths>

@@ -29,6 +29,7 @@ import androidx.activity.ComponentActivity
 import androidx.core.content.ContextCompat
 import com.lenznode.app.BuildConfig
 import com.lenznode.app.R
+import com.lenznode.app.runtime.NativeFileShareHelper
 
 class LenzWebViewManager(
     private val activity: ComponentActivity,
@@ -211,6 +212,21 @@ class LenzWebViewManager(
         @JavascriptInterface
         fun getAppMode(): String {
             return getCurrentModeName()
+        }
+
+        @JavascriptInterface
+        fun shareFile(serverPath: String?) {
+            val targetPath = serverPath?.trim().orEmpty()
+            if (targetPath.isEmpty()) return
+            activity.runOnUiThread {
+                val currentUrl = webView.url?.let { Uri.parse(it) }
+                if (currentUrl != null && isInternalPanelUri(currentUrl)) {
+                    val res = NativeFileShareHelper.shareServerPath(activity, targetPath)
+                    res.onFailure { err ->
+                        onToast(err.message ?: "Gagal membagikan berkas")
+                    }
+                }
+            }
         }
     }
 

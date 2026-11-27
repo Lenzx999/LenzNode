@@ -3,6 +3,7 @@ logs/
 *.log
 panel/sessions.json
 panel/state.json
+panel/shares.json
 
 # Environment & Sensitive Keys
 .env

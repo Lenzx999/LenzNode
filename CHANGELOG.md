@@ -6,6 +6,22 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.10 (2026-11-27)
+
+### Workspace, File Sharing (PIN & Native Share), Copy/Paste & UI Polish
+* **Workspace Bersih Bersama (`~/workspace`)**:
+  * Menyatukan direktori awal default **File Manager**, **Web Terminal** (`/api/terminal/exec`, `/api/terminal/stream`, `/ws/terminal`), dan shell **SSH/Termux** ke `~/workspace` (`setup-lenznode.sh`, `start-lenznode-app.sh`, `start.sh`, `/root/.bashrc`).
+* **Fitur Copy/Paste & Berbagi Berkas (PIN URL + Android Share Sheet)**:
+  * Menambahkan endpoint `POST /api/files/copy` untuk menyalin berkas/folder secara rekursif beserta penamaan otomatis anti-tabrakan (`Salin` & `Tempel` di File Manager + tombol pintasan `Workspace`).
+  * Menambahkan sistem berbagi tautan URL berproteksi PIN (`scrypt` + `timingSafeEqual`) & masa berlaku (`15 Menit` s/d `7 Hari`) melalui `POST /api/files/share/create`, `GET /api/files/share/list`, `POST /api/files/share/revoke`, halaman publik `GET /share/<id>`, `POST /api/share/<id>/verify`, dan `GET /share/<id>/download` (file langsung atau `.zip` folder).
+  * Menambahkan `NativeFileShareHelper.kt` + `FileProvider` dan `LenzAndroidBridge.shareFile()` untuk membagikan berkas/folder langsung ke aplikasi lain di Android melalui Share Sheet native.
+* **Penyempurnaan Tata Letak & Proporsi UI (`panel/public/index.html`)**:
+  * Memperbesar ukuran header, tombol Settings, dan navbar tab agar lebih proporsional serta nyaman disentuh di layar ponsel.
+  * Memperbaiki jarak & tata letak kartu pada **Settings ➜ Jaringan & Tunnel** agar lega dan responsif di layar mobile.
+  * Merapikan baris **File Manager** (`min-height: 54px`, metadata ringkas di bawah nama berkas), memperbesar area panel **Logs** (`min-height: 460px; height: 62vh`), serta mengecilkan tombol **Execute** di Web Terminal agar proporsional dengan kotak perintah.
+
+---
+
 ## v2.2.9 (2026-11-27)
 
 ### Critical Stability, Performance & Tunnel Control Fixes

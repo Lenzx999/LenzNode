@@ -217,6 +217,7 @@ pack_encrypted_bundle() {
   rm -f \
     "$stage_dir/panel/sessions.json" \
     "$stage_dir/panel/state.json" \
+    "$stage_dir/panel/shares.json" \
     "$stage_dir/panel/root-config.json" \
     "$stage_dir/panel/auth-config.json" \
     "$stage_dir/panel/vps-config.json"
