@@ -6,6 +6,20 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.12 (2026-11-27)
+
+### Live Streaming Terminal, ZArchiver `+` FAB, Smart Live Logs & UI Polish
+* **Terminal Streaming Real-Time & `Ctrl+C` Kill (`panel/server.js`, `index.html`)**:
+  * Memperbarui `/api/terminal/stream` menjadi SSE langsung per *chunk* (`stdbuf -oL -eL`, `PYTHONUNBUFFERED=1`, penanganan `\r` progress bar, dan pembersihan ANSI), serta menambahkan `POST /api/terminal/kill` untuk menghentikan proses berjalan (`Hentikan (Ctrl+C)`).
+  * Mengoptimalkan tinggi panel `#tab-terminal` (`100dvh`) agar input perintah menempel rapi di bawah tanpa tombol `Clear` di header (perintah ketik `clear`/`cls` tetap didukung).
+* **File Manager ZArchiver `+` FAB & Empty State Terpusat**:
+  * Memusatkan tampilan `"Folder ini kosong"`, membersihkan toolbar atas (Path Header + Refresh), dan menambahkan **Floating Action Button (`+` FAB)** serta *long-press* area kosong untuk membuka lembar **Menu Tambah** (*Folder Baru, Berkas Baru, Unggah Berkas*).
+* **Smart Auto-Live Logs, Filter Kategori & Pengaturan Minimalis**:
+  * Menghapus tombol `Refresh` di Logs Server & PM2, memindahkan tombol **`Clear`** sejajar pada baris judul `Logs Server`, menambahkan auto-polling cerdas (`2.5s`) hanya saat tab Logs aktif & terlihat (`visibilitychange`), serta filter kategori **Semua / Keamanan / Jaringan / Sistem / Error** (`GET /api/logs?category=...`).
+  * Memisahkan baris **`Username`** (`root`) dan **`Password`** di **Pengaturan ➜ SSH**, menyingkat tab Pengaturan agar muat 1 layar tanpa scroll horizontal, dan mengembalikan latar belakang gradien ambient ringan yang tetap halus di 60fps pada Android WebView.
+
+---
+
 ## v2.2.11 (2026-11-27)
 
 ### Smooth WebView Scroll, ZArchiver File Manager, Accurate CPU Telemetry & PM2 Process Logs
