@@ -11,8 +11,8 @@ android {
         applicationId = "com.lenznode.app"
         minSdk = 24
         targetSdk = 28
-        versionCode = 230
-        versionName = "2.2.10"
+        versionCode = 231
+        versionName = "2.2.11"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

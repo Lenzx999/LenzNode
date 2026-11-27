@@ -96,4 +96,42 @@ class NativeBridgeJsonTest {
         assertEquals(34.2, NativeBridgeJson.parseBatteryThermalTemp("batt_therm", 342)!!, 0.01)
         assertEquals(31.0, NativeBridgeJson.parseBatteryThermalTemp("bms", 31000)!!, 0.01)
     }
+
+    @Test
+    fun `parses proc pid stat and computes cpu delta and stats json`() {
+        val sampleStat = "24992 (node worker) S 24919 24919 0 0 -1 4194304 1234 0 0 0 250 150 0 0 20 0 4 0 12345 100000 500"
+        assertEquals(400L, NativeBridgeJson.parsePidStatTicks(sampleStat))
+
+        val procLine = "cpu  1000 50 500 8450 100 0 20 0 0 0"
+        val totals = NativeBridgeJson.parseProcStatTotals(procLine)!!
+        assertEquals(10120L, totals.first)
+        assertEquals(8550L, totals.second)
+
+        // 400 ticks over 1000ms across 8 cores at 100Hz = 400 / 800 * 100 = 50.0%
+        assertEquals(50.0, NativeBridgeJson.computeCpuPercentFromDeltas(400L, 1000L, 8, 100L), 0.01)
+        // Clamps to 100.0%
+        assertEquals(100.0, NativeBridgeJson.computeCpuPercentFromDeltas(5000L, 1000L, 4, 100L), 0.01)
+
+        val statsRaw = NativeBridgeJson.statsJson(
+            cpuPercent = 18.4,
+            cpuCores = 8,
+            cpuSource = "uid_proc_stat",
+            ramTotalBytes = 8_000_000_000L,
+            ramUsedBytes = 4_000_000_000L,
+            ramFreeBytes = 4_000_000_000L,
+            storageTotalBytes = 100_000_000_000L,
+            storageUsedBytes = 25_000_000_000L,
+            storageFreeBytes = 75_000_000_000L,
+            androidApi = 36,
+            androidVersion = "16"
+        )
+        val parsed = NativeBridgeJson.parseJsonParams(statsRaw)
+        assertEquals("18.4", parsed["cpuPercent"])
+        assertEquals("8", parsed["cpuCores"])
+        assertEquals("uid_proc_stat", parsed["cpuSource"])
+        assertEquals("36", parsed["androidApi"])
+        assertEquals("16", parsed["androidVersion"])
+        assertTrue(statsRaw.contains("\"usagePercent\":50"))
+        assertTrue(statsRaw.contains("\"usagePercent\":25"))
+    }
 }

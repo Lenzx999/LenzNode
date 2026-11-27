@@ -12,7 +12,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/lenz_bg_base"
-        android:overScrollMode="never"
+        android:overScrollMode="ifContentScrolls"
         android:visibility="invisible" />
 
     <!-- Subtle Non-Intrusive Recovery Pill (visible ONLY on WebView disconnect or server stop) -->

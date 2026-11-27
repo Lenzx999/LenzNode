@@ -116,6 +116,92 @@ object NativeBridgeJson {
         }
     }
 
+    fun parseProcStatTotals(procStatLine: String): Pair<Long, Long>? {
+        val parts = procStatLine.trim().split(Regex("\\s+"))
+        if (parts.size < 5) return null
+        val user = parts[1].toLongOrNull() ?: return null
+        val nice = parts[2].toLongOrNull() ?: return null
+        val sys = parts[3].toLongOrNull() ?: return null
+        val idle = parts[4].toLongOrNull() ?: return null
+        val iowait = parts.getOrNull(5)?.toLongOrNull() ?: 0L
+        val irq = parts.getOrNull(6)?.toLongOrNull() ?: 0L
+        val softirq = parts.getOrNull(7)?.toLongOrNull() ?: 0L
+        val steal = parts.getOrNull(8)?.toLongOrNull() ?: 0L
+        val idleTotal = idle + iowait
+        val total = user + nice + sys + idleTotal + irq + softirq + steal
+        return total to idleTotal
+    }
+
+    fun parsePidStatTicks(statText: String): Long? {
+        val closeParen = statText.lastIndexOf(')')
+        if (closeParen < 0 || closeParen + 2 >= statText.length) return null
+        val rest = statText.substring(closeParen + 2).trim().split(Regex("\\s+"))
+        // Field 3 is state (rest[0]), so utime is field 14 (rest[11]) and stime is field 15 (rest[12])
+        if (rest.size <= 12) return null
+        val utime = rest[11].toLongOrNull() ?: return null
+        val stime = rest[12].toLongOrNull() ?: return null
+        return utime + stime
+    }
+
+    fun computeCpuPercentFromDeltas(
+        cpuDeltaTicks: Long,
+        wallDeltaMs: Long,
+        cores: Int,
+        clkTckHz: Long = 100L
+    ): Double {
+        if (cpuDeltaTicks <= 0L || wallDeltaMs <= 0L || cores <= 0 || clkTckHz <= 0L) return 0.0
+        val wallDeltaSec = wallDeltaMs / 1000.0
+        val maxTicks = wallDeltaSec * cores.toDouble() * clkTckHz.toDouble()
+        if (maxTicks <= 0.0) return 0.0
+        val rawPct = (cpuDeltaTicks.toDouble() / maxTicks) * 100.0
+        val clamped = rawPct.coerceIn(0.0, 100.0)
+        return (clamped * 10.0).roundToInt() / 10.0
+    }
+
+    fun statsJson(
+        cpuPercent: Double,
+        cpuCores: Int,
+        cpuSource: String,
+        ramTotalBytes: Long,
+        ramUsedBytes: Long,
+        ramFreeBytes: Long,
+        storageTotalBytes: Long,
+        storageUsedBytes: Long,
+        storageFreeBytes: Long,
+        androidApi: Int,
+        androidVersion: String,
+        batteryJsonStr: String? = null
+    ): String {
+        val roundedCpu = ((cpuPercent.coerceIn(0.0, 100.0) * 10.0).roundToInt() / 10.0)
+        val ramPct = if (ramTotalBytes > 0L) ((ramUsedBytes * 100.0) / ramTotalBytes).roundToInt().coerceIn(0, 100) else 0
+        val storagePct = if (storageTotalBytes > 0L) ((storageUsedBytes * 100.0) / storageTotalBytes).roundToInt().coerceIn(0, 100) else 0
+        return buildString {
+            append('{')
+            append("\"ok\":true,")
+            append("\"cpuPercent\":").append(String.format(Locale.US, "%.1f", roundedCpu)).append(',')
+            append("\"cpuCores\":").append(cpuCores).append(',')
+            append("\"cpuSource\":").append(jsonString(cpuSource)).append(',')
+            append("\"androidApi\":").append(androidApi).append(',')
+            append("\"androidVersion\":").append(jsonString(androidVersion)).append(',')
+            append("\"ram\":{")
+            append("\"totalBytes\":").append(ramTotalBytes).append(',')
+            append("\"usedBytes\":").append(ramUsedBytes).append(',')
+            append("\"freeBytes\":").append(ramFreeBytes).append(',')
+            append("\"usagePercent\":").append(ramPct)
+            append("},")
+            append("\"storage\":{")
+            append("\"totalBytes\":").append(storageTotalBytes).append(',')
+            append("\"usedBytes\":").append(storageUsedBytes).append(',')
+            append("\"freeBytes\":").append(storageFreeBytes).append(',')
+            append("\"usagePercent\":").append(storagePct)
+            append('}')
+            if (!batteryJsonStr.isNullOrBlank()) {
+                append(",\"battery\":").append(batteryJsonStr)
+            }
+            append('}')
+        }
+    }
+
     fun torchJson(ok: Boolean, torchOn: Boolean, message: String): String =
         "{\"ok\":$ok,\"torch\":$torchOn,\"message\":${jsonString(message)}}"
 

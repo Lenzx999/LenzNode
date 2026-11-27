@@ -1,5 +1,6 @@
 package com.lenznode.app.runtime
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -8,9 +9,14 @@ import android.hardware.camera2.CameraManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.PowerManager
+import android.os.Process
+import android.os.StatFs
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.system.Os
+import android.system.OsConstants
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -36,6 +42,17 @@ class NativeBridgeServer(
     private var workerPool: ExecutorService? = null
     @Volatile
     private var torchEnabled: Boolean = false
+
+    private val cpuLock = Any()
+    private var prevProcStatTotal: Long = -1L
+    private var prevProcStatIdle: Long = -1L
+    private var prevUidTicks: Long = -1L
+    private var prevUidWallMs: Long = -1L
+    private var prevElapsedCpuMs: Long = -1L
+    private var prevElapsedWallMs: Long = -1L
+    private var lastCpuPercent: Double = 0.0
+    private var lastCpuSource: String = "initializing"
+    private var lastCpuSampleAtMs: Long = 0L
 
     fun start() {
         if (!running.compareAndSet(false, true)) return
@@ -131,6 +148,7 @@ class NativeBridgeServer(
             "/health" -> 200 to NativeBridgeJson.healthJson(port)
             "/battery" -> 200 to readBatteryJson()
             "/thermal" -> 200 to readThermalJson()
+            "/stats" -> 200 to readStatsJson()
             "/torch" -> 200 to handleTorch(params["state"])
             "/vibrate" -> 200 to handleVibrate(params["duration"])
             "/wakelock" -> 200 to handleWakeLock(params["enable"])
@@ -173,7 +191,7 @@ class NativeBridgeServer(
         }
 
         val tempRaw = intent?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 320) ?: 320
-        val tempC = tempRaw / 10.0
+        val tempC = (tempRaw / 10.0).let { if (it in 5.0..95.0) it else 32.5 }
 
         val voltageMv = intent?.getIntExtra(BatteryManager.EXTRA_VOLTAGE, 3850) ?: 3850
 
@@ -193,6 +211,190 @@ class NativeBridgeServer(
             currentMa = currentMa,
             isCharging = isCharging
         )
+    }
+
+    private fun readStatsJson(): String {
+        val cores = Runtime.getRuntime().availableProcessors().coerceAtLeast(1)
+        val (cpuPercent, cpuSource) = readCpuTelemetry(cores)
+
+        var ramTotal = 0L
+        var ramFree = 0L
+        try {
+            val am = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            if (am != null) {
+                val memInfo = ActivityManager.MemoryInfo()
+                am.getMemoryInfo(memInfo)
+                ramTotal = memInfo.totalMem.coerceAtLeast(0L)
+                ramFree = memInfo.availMem.coerceAtLeast(0L)
+            }
+        } catch (_: Exception) {
+        }
+        val ramUsed = (ramTotal - ramFree).coerceAtLeast(0L)
+
+        var storageTotal = 0L
+        var storageFree = 0L
+        try {
+            val stat = StatFs(context.filesDir.absolutePath)
+            storageTotal = stat.totalBytes.coerceAtLeast(0L)
+            storageFree = stat.availableBytes.coerceAtLeast(0L)
+        } catch (_: Exception) {
+        }
+        val storageUsed = (storageTotal - storageFree).coerceAtLeast(0L)
+
+        return NativeBridgeJson.statsJson(
+            cpuPercent = cpuPercent,
+            cpuCores = cores,
+            cpuSource = cpuSource,
+            ramTotalBytes = ramTotal,
+            ramUsedBytes = ramUsed,
+            ramFreeBytes = ramFree,
+            storageTotalBytes = storageTotal,
+            storageUsedBytes = storageUsed,
+            storageFreeBytes = storageFree,
+            androidApi = Build.VERSION.SDK_INT,
+            androidVersion = Build.VERSION.RELEASE ?: "unknown",
+            batteryJsonStr = readBatteryJson()
+        )
+    }
+
+    private fun readCpuTelemetry(cores: Int): Pair<Double, String> = synchronized(cpuLock) {
+        val nowMs = SystemClock.elapsedRealtime()
+        if (lastCpuSampleAtMs > 0L && (nowMs - lastCpuSampleAtMs) < 900L && lastCpuPercent > 0.0) {
+            return lastCpuPercent to lastCpuSource
+        }
+
+        // 1. Try /proc/stat delta first (works on Android 7 and permissive kernels)
+        try {
+            val procStat = File("/proc/stat")
+            if (procStat.exists() && procStat.canRead()) {
+                val firstLine = procStat.bufferedReader().use { it.readLine() }
+                val parsed = firstLine?.let { NativeBridgeJson.parseProcStatTotals(it) }
+                if (parsed != null) {
+                    val (total, idle) = parsed
+                    if (prevProcStatTotal >= 0L && total > prevProcStatTotal) {
+                        val totalDiff = total - prevProcStatTotal
+                        val idleDiff = (idle - prevProcStatIdle).coerceAtLeast(0L)
+                        prevProcStatTotal = total
+                        prevProcStatIdle = idle
+                        val pct = (((totalDiff - idleDiff).toDouble() / totalDiff.toDouble()) * 1000.0)
+                            .roundToInt() / 10.0
+                        lastCpuPercent = pct.coerceIn(0.0, 100.0)
+                        lastCpuSource = "proc_stat"
+                        lastCpuSampleAtMs = nowMs
+                        return lastCpuPercent to lastCpuSource
+                    }
+                    prevProcStatTotal = total
+                    prevProcStatIdle = idle
+                }
+            }
+        } catch (_: Exception) {
+        }
+
+        // 2. Android 8-16 SELinux blocks /proc/stat: sum utime+stime across all processes owned by myUid()
+        val uidTicks = sumUidCpuTicks()
+        val clkTck = try {
+            Os.sysconf(OsConstants._SC_CLK_TCK).coerceAtLeast(1L)
+        } catch (_: Exception) {
+            100L
+        }
+        if (uidTicks != null) {
+            if (prevUidTicks >= 0L && prevUidWallMs > 0L && (nowMs - prevUidWallMs) >= 150L) {
+                val deltaTicks = (uidTicks - prevUidTicks).coerceAtLeast(0L)
+                val wallDeltaMs = nowMs - prevUidWallMs
+                val pct = NativeBridgeJson.computeCpuPercentFromDeltas(deltaTicks, wallDeltaMs, cores, clkTck)
+                prevUidTicks = uidTicks
+                prevUidWallMs = nowMs
+                lastCpuPercent = if (pct > 0.0) pct else 0.1
+                lastCpuSource = "uid_proc_stat"
+                lastCpuSampleAtMs = nowMs
+                return lastCpuPercent to lastCpuSource
+            }
+            // Take a short baseline delta on very first call so CPU doesn't stick at 0% on first poll
+            if (prevUidTicks < 0L) {
+                prevUidTicks = uidTicks
+                prevUidWallMs = nowMs
+                try {
+                    Thread.sleep(160)
+                } catch (_: InterruptedException) {
+                }
+                val afterTicks = sumUidCpuTicks()
+                val afterMs = SystemClock.elapsedRealtime()
+                if (afterTicks != null && afterMs > prevUidWallMs) {
+                    val deltaTicks = (afterTicks - prevUidTicks).coerceAtLeast(0L)
+                    val pct = NativeBridgeJson.computeCpuPercentFromDeltas(
+                        deltaTicks,
+                        afterMs - prevUidWallMs,
+                        cores,
+                        clkTck
+                    )
+                    prevUidTicks = afterTicks
+                    prevUidWallMs = afterMs
+                    lastCpuPercent = if (pct > 0.0) pct else 0.1
+                    lastCpuSource = "uid_proc_stat"
+                    lastCpuSampleAtMs = afterMs
+                    return lastCpuPercent to lastCpuSource
+                }
+            }
+        }
+
+        // 3. Fallback: Process.getElapsedCpuTime() delta
+        val elapsedCpu = Process.getElapsedCpuTime()
+        if (prevElapsedCpuMs >= 0L && prevElapsedWallMs > 0L && nowMs > prevElapsedWallMs) {
+            val deltaCpuMs = (elapsedCpu - prevElapsedCpuMs).coerceAtLeast(0L)
+            val wallDeltaMs = nowMs - prevElapsedWallMs
+            val pct = ((deltaCpuMs.toDouble() / (wallDeltaMs.toDouble() * cores.toDouble())) * 1000.0)
+                .roundToInt() / 10.0
+            prevElapsedCpuMs = elapsedCpu
+            prevElapsedWallMs = nowMs
+            lastCpuPercent = pct.coerceIn(0.1, 100.0)
+            lastCpuSource = "process_cpu_time"
+            lastCpuSampleAtMs = nowMs
+            return lastCpuPercent to lastCpuSource
+        }
+        prevElapsedCpuMs = elapsedCpu
+        prevElapsedWallMs = nowMs
+
+        // 4. Fallback: /proc/loadavg
+        try {
+            val loadAvg = File("/proc/loadavg")
+            if (loadAvg.exists() && loadAvg.canRead()) {
+                val first = loadAvg.readText().trim().split(Regex("\\s+")).firstOrNull()?.toDoubleOrNull()
+                if (first != null && first > 0.0) {
+                    val pct = (((first / cores.toDouble()) * 1000.0).roundToInt() / 10.0).coerceIn(0.1, 100.0)
+                    lastCpuPercent = pct
+                    lastCpuSource = "loadavg"
+                    lastCpuSampleAtMs = nowMs
+                    return lastCpuPercent to lastCpuSource
+                }
+            }
+        } catch (_: Exception) {
+        }
+
+        return lastCpuPercent to lastCpuSource
+    }
+
+    private fun sumUidCpuTicks(): Long? {
+        val myUid = Process.myUid()
+        var sum = 0L
+        var count = 0
+        try {
+            val entries = File("/proc").listFiles() ?: return null
+            for (entry in entries) {
+                if (entry.name.toIntOrNull() == null) continue
+                try {
+                    if (Os.stat(entry.absolutePath).st_uid != myUid) continue
+                    val statFile = File(entry, "stat")
+                    if (!statFile.canRead()) continue
+                    val ticks = NativeBridgeJson.parsePidStatTicks(statFile.readText()) ?: continue
+                    sum += ticks
+                    count++
+                } catch (_: Exception) {
+                }
+            }
+        } catch (_: Exception) {
+            return null
+        }
+        return if (count > 0) sum else null
     }
 
     private fun readThermalJson(): String {

@@ -12,6 +12,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.os.Message
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
@@ -27,6 +28,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.lenznode.app.BuildConfig
 import com.lenznode.app.R
 import com.lenznode.app.runtime.NativeFileShareHelper
@@ -56,10 +58,14 @@ class LenzWebViewManager(
             (activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         WebView.setWebContentsDebuggingEnabled(isDebuggable)
 
-        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        webView.setLayerType(View.LAYER_TYPE_NONE, null)
+        webView.overScrollMode = View.OVER_SCROLL_IF_CONTENT_SCROLLS
         webView.setBackgroundColor(Color.parseColor("#06080A"))
         webView.isVerticalScrollBarEnabled = false
         webView.isHorizontalScrollBarEnabled = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false)
+        }
 
         val cookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
@@ -225,6 +231,34 @@ class LenzWebViewManager(
                     res.onFailure { err ->
                         onToast(err.message ?: "Gagal membagikan berkas")
                     }
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun syncTheme(theme: String?) {
+            val isLight = theme?.trim()?.equals("light", ignoreCase = true) == true
+            activity.runOnUiThread {
+                val currentUrl = webView.url?.let { Uri.parse(it) }
+                if (currentUrl != null && isInternalPanelUri(currentUrl)) {
+                    val bgColor = Color.parseColor(if (isLight) "#F8FAFC" else "#06080A")
+                    webView.setBackgroundColor(bgColor)
+                    val window = activity.window
+                    window.statusBarColor = bgColor
+                    window.navigationBarColor = bgColor
+                    val controller = WindowCompat.getInsetsController(window, window.decorView)
+                    controller.isAppearanceLightStatusBars = isLight
+                    controller.isAppearanceLightNavigationBars = isLight
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun hapticFeedback() {
+            activity.runOnUiThread {
+                val currentUrl = webView.url?.let { Uri.parse(it) }
+                if (currentUrl != null && isInternalPanelUri(currentUrl)) {
+                    webView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                 }
             }
         }

@@ -6,6 +6,21 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ---
 
+## v2.2.11 (2026-11-27)
+
+### Smooth WebView Scroll, ZArchiver File Manager, Accurate CPU Telemetry & PM2 Process Logs
+* **Perbaikan CPU 0% & Telemetri Akurat Android 7–16 (API 36)**:
+  * Menambahkan endpoint `/stats` pada `NativeBridgeServer.kt` yang membaca baterai/suhu resmi via `BatteryManager`, RAM via `ActivityManager.getMemoryInfo`, storage via `StatFs`, serta meter CPU multi-lapis (`uid-proc-stat` delta seluruh proses aplikasi + PRoot + Node + PM2 + `cloudflared`, `elapsedCpuTime`, dan `/proc/loadavg`) agar persentase CPU tidak lagi macet di `0%` saat `/proc/stat` dibatasi SELinux.
+  * Memperbarui `panel/server.js` (`/api/system/stats` dan `/api/stats`) agar memprioritaskan telemetri native bridge serta menyertakan fallback `process.cpuUsage()`.
+* **Scroll WebView 60fps, Sinkronisasi Tema Native & Anti-Text-Selection Chrome**:
+  * Mengoptimalkan `LenzWebViewManager.kt` (`LAYER_TYPE_NONE`, `RENDERER_PRIORITY_IMPORTANT`, `OVER_SCROLL_IF_CONTENT_SCROLLS`, `android:hardwareAccelerated="true"`), menambahkan `@JavascriptInterface syncTheme()` untuk sinkronisasi warna status/navigation bar native tanpa kedipan, serta `hapticFeedback()` untuk getaran sentuh panjang.
+  * Menghilangkan sentakan (*jolt*) pergantian tema Gelap/Terang, mematikan `backdrop-filter` berlebih di mode Android APK (`.is-android-app`), menunda pembaruan DOM saat scroll aktif, dan membatasi pemilihan teks hanya pada area input, terminal, log, dan bidang teks salin (bukan elemen UI/tombol).
+* **File Manager Gaya ZArchiver, PM2 Per-Proses & Rapikan Pengaturan**:
+  * Mengganti baris tombol aksi padat di **File Manager** menjadi daftar bersih dengan tombol `⋮` dan **Long-Press (400ms)** + haptic feedback yang membuka lembar aksi (*Buka/Edit, Ekstrak ZIP, Salin, Bagikan, Unduh, Ubah Nama, Hapus*), bar **Tempel di sini**, dan pemilih **Lokasi Cepat** pada header path (`..` + `/root/workspace ▾`).
+  * Menambahkan `GET /api/logs/pm2/processes` serta pemilihan log per proses PM2 atau **Semua Proses** pada panel **Logs**, merapikan tata letak **Pengaturan ➜ Akses SSH**, label **Admin** & tombol **Keluar**, serta menyelaraskan tombol **Refresh / Bersihkan Log**.
+
+---
+
 ## v2.2.10 (2026-11-27)
 
 ### Workspace, File Sharing (PIN & Native Share), Copy/Paste & UI Polish
