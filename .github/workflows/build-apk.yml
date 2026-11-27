@@ -1,0 +1,219 @@
+name: Build LenzNode Android APKs
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Test, Lint & Build Split APKs (arm64-v8a & armeabi-v7a)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install native binary fetch & ELF patching tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl tar xz-utils binutils patchelf file unzip
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK Platform 34 & Build Tools 34.0.0
+        run: |
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Set up Gradle 8.10.2
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Fetch native PRoot/BusyBox binaries & pack encrypted runtime bundle
+        run: |
+          chmod +x android-app/scripts/fetch-android-bins.sh android-app/gradlew
+          bash android-app/scripts/fetch-android-bins.sh
+
+      - name: Verify fetched native binaries & encrypted assets
+        run: |
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            for so in libproot.so libproot-loader.so libtalloc.so libandroid-shmem.so libbusybox.so; do
+              f="android-app/app/src/main/jniLibs/${abi}/${so}"
+              test -s "$f"
+            done
+            readelf -d "android-app/app/src/main/jniLibs/${abi}/libproot.so" | grep -F "libtalloc.so"
+            ! readelf -d "android-app/app/src/main/jniLibs/${abi}/libproot.so" | grep -F "libtalloc.so.2"
+          done
+          test -s android-app/app/src/main/jniLibs/arm64-v8a/libproot-loader32.so
+          file android-app/app/src/main/jniLibs/arm64-v8a/libproot.so | grep -qi "aarch64"
+          file android-app/app/src/main/jniLibs/armeabi-v7a/libproot.so | grep -qi "ARM"
+          file android-app/app/src/main/jniLibs/arm64-v8a/libbusybox.so | grep -qi "statically linked"
+          file android-app/app/src/main/jniLibs/armeabi-v7a/libbusybox.so | grep -qi "statically linked"
+          test -s android-app/app/src/main/assets/bootstrap/setup-lenznode.sh
+          test -s android-app/app/src/main/assets/bootstrap/start-lenznode-app.sh
+          test -s android-app/app/src/main/assets/lenznode-bundle.dat
+          ! test -e android-app/app/src/main/assets/lenznode-bundle
+
+      - name: Run JVM unit tests
+        working-directory: android-app
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Run Android Lint
+        working-directory: android-app
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: Prepare Release Keystore & Build Hardened ABI-Split APKs
+        env:
+          LENZ_KEYSTORE_BASE64: ${{ secrets.LENZ_KEYSTORE_BASE64 }}
+          LENZ_KEYSTORE_PASS: ${{ secrets.LENZ_KEYSTORE_PASS }}
+          LENZ_KEY_ALIAS: ${{ secrets.LENZ_KEY_ALIAS }}
+          LENZ_KEY_PASS: ${{ secrets.LENZ_KEY_PASS }}
+        run: |
+          set -euo pipefail
+          KEYSTORE_PATH="/tmp/lenznode-release.jks"
+          if [ -n "$LENZ_KEYSTORE_BASE64" ]; then
+            echo "$LENZ_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            KS_PASS="${LENZ_KEYSTORE_PASS}"
+            KEY_ALIAS="${LENZ_KEY_ALIAS}"
+            KEY_PASS="${LENZ_KEY_PASS:-$LENZ_KEYSTORE_PASS}"
+          else
+            KS_PASS="lenznode-ci-keystore"
+            KEY_ALIAS="lenznode"
+            KEY_PASS="lenznode-ci-keystore"
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_PATH" \
+              -storepass "$KS_PASS" \
+              -keypass "$KEY_PASS" \
+              -alias "$KEY_ALIAS" \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=LenzNode, OU=Mobile, O=Lenz, L=Jakarta, C=ID"
+          fi
+
+          export LENZ_KEYSTORE_PATH="$KEYSTORE_PATH"
+          export LENZ_KEYSTORE_PASS="$KS_PASS"
+          export LENZ_KEY_ALIAS="$KEY_ALIAS"
+          export LENZ_KEY_PASS="$KEY_PASS"
+
+          (cd android-app && ./gradlew assembleRelease --no-daemon)
+
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+          mkdir -p dist
+
+          package_apk() {
+            local abi="$1"
+            local out_name="$2"
+            local raw_apk
+            raw_apk="$(find android-app/app/build/outputs/apk/release -name "*${abi}*.apk" | head -n 1)"
+            test -s "$raw_apk"
+            local aligned="/tmp/${abi}-aligned.apk"
+            "$BUILD_TOOLS/zipalign" -p -f 4 "$raw_apk" "$aligned"
+            "$BUILD_TOOLS/apksigner" sign \
+              --ks "$KEYSTORE_PATH" \
+              --ks-pass "pass:$KS_PASS" \
+              --ks-key-alias "$KEY_ALIAS" \
+              --key-pass "pass:$KEY_PASS" \
+              --out "dist/${out_name}" \
+              "$aligned"
+          }
+
+          package_apk "arm64-v8a" "LenzNode-modern-arm64-v8a.apk"
+          package_apk "armeabi-v7a" "LenzNode-lama-armeabi-v7a.apk"
+          rm -f "$KEYSTORE_PATH" /tmp/*-aligned.apk
+
+      - name: Verify Output APKs (Manifest, ABI libs, Encrypted Bundle, R8 Classes, Signature)
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/34.0.0"
+
+          verify_apk() {
+            local apk_path="$1"
+            local expected_abi="$2"
+            local forbidden_abi="$3"
+            echo "=== Verifying $apk_path ==="
+            "$BUILD_TOOLS/apksigner" verify --verbose "$apk_path"
+
+            local badging
+            badging="$("$BUILD_TOOLS/aapt2" dump badging "$apk_path")"
+            echo "$badging" | grep -F "package: name='com.lenznode.app'"
+            echo "$badging" | grep -F "targetSdkVersion:'28'"
+
+            local contents
+            contents="$(unzip -l "$apk_path")"
+            echo "$contents" | grep -F "classes.dex"
+            echo "$contents" | grep -F "lib/${expected_abi}/libproot.so"
+            echo "$contents" | grep -F "lib/${expected_abi}/libproot-loader.so"
+            echo "$contents" | grep -F "lib/${expected_abi}/libtalloc.so"
+            echo "$contents" | grep -F "lib/${expected_abi}/libandroid-shmem.so"
+            echo "$contents" | grep -F "lib/${expected_abi}/libbusybox.so"
+            if echo "$contents" | grep -F "lib/${forbidden_abi}/"; then
+              echo "ERROR: Unexpected ABI $forbidden_abi inside $apk_path" >&2
+              exit 1
+            fi
+            echo "$contents" | grep -F "assets/bootstrap/setup-lenznode.sh"
+            echo "$contents" | grep -F "assets/bootstrap/start-lenznode-app.sh"
+            echo "$contents" | grep -F "assets/lenznode-bundle.dat"
+            if echo "$contents" | grep -F "assets/lenznode-bundle/"; then
+              echo "ERROR: Unencrypted plain assets/lenznode-bundle/ found inside $apk_path" >&2
+              exit 1
+            fi
+            # Confirm R8 repackaged/obfuscated classes inside classes.dex
+            if "$BUILD_TOOLS/dexdump" -f "$apk_path" | grep -q "Lcom/lenznode/app/runtime/RootfsManager;"; then
+              echo "ERROR: Expected R8 obfuscation/repackaging in release APK" >&2
+              exit 1
+            fi
+          }
+
+          verify_apk "dist/LenzNode-modern-arm64-v8a.apk" "arm64-v8a" "armeabi-v7a"
+          verify_apk "dist/LenzNode-lama-armeabi-v7a.apk" "armeabi-v7a" "arm64-v8a"
+          ls -lh dist/
+
+      - name: Upload APK Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: lenznode-android-apks
+          path: |
+            dist/LenzNode-modern-arm64-v8a.apk
+            dist/LenzNode-lama-armeabi-v7a.apk
+          if-no-files-found: error
+
+      - name: Upload Test & Lint Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lenznode-android-reports
+          path: |
+            android-app/app/build/reports/
+            android-app/app/build/test-results/
+          if-no-files-found: ignore
+
+      - name: Attach APKs to GitHub Release (on tag push v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/LenzNode-modern-arm64-v8a.apk
+            dist/LenzNode-lama-armeabi-v7a.apk

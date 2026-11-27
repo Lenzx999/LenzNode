@@ -21,9 +21,10 @@ if command -v pkg >/dev/null 2>&1; then
     fi
 elif command -v apt-get >/dev/null 2>&1; then
     echo "[INFO] Lingkungan Linux (apt) terdeteksi..."
+    export DEBIAN_FRONTEND=noninteractive
     if ! command -v php >/dev/null 2>&1; then
         apt-get update -qq >/dev/null 2>&1 || true
-        apt-get install -y php-cli php-sqlite3 sqlite3 curl unzip >/dev/null 2>&1 || true
+        apt-get install -y --no-install-recommends php-cli php-sqlite3 sqlite3 curl unzip >/dev/null 2>&1 || true
     fi
 fi
 

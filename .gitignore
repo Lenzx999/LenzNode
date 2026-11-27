@@ -20,6 +20,17 @@ ubuntu-fs/
 *.tar.xz
 *.tar.gz
 
+# Android APK build artifacts & CI-fetched native binaries
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/.idea/
+android-app/local.properties
+android-app/app/src/main/jniLibs/
+android-app/app/src/main/assets/lenznode-bundle/
+android-app/app/src/main/assets/lenznode-bundle.dat
+dist/
+
 # OS specific files
 .DS_Store
 Thumbs.db

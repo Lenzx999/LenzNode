@@ -8,6 +8,19 @@ Format changelog ini mengacu pada standar rilis berbasis versi semantik (*Semant
 
 ## v2.2.8 (2026-11-27)
 
+### Android APK Edition (Standalone PRoot, Dual-Mode & Multi-ABI CI)
+* **Edisi Aplikasi Android Mandiri (`com.lenznode.app`) Tanpa Membutuhkan Termux**:
+  * Menghadirkan aplikasi Android asli (`android-app/`) dengan *Foreground Service*, `PARTIAL_WAKE_LOCK`, dan `WifiLock` yang otomatis menyiapkan lingkungan Ubuntu 22.04 minimal di dalam PRoot, memasang dependensi inti (`openssh-server`, Node.js LTS, `git`, `curl`, `cloudflared`), serta menjalankan Web Dashboard LenzNode di `http://127.0.0.1:8080`.
+  * **Dual-Mode (Host Server & Remote Client)**: Pengguna dapat memilih **"Jadikan HP Ini Server"** atau **"Akses Server HP Lain"** langsung dari aplikasi (tersimpan & dapat diganti kapan saja), lengkap dengan autentikasi **Token Akses (`lnz_...`)** via `POST /api/auth/token`, `GET /api/settings/access`, dan `POST /api/settings/access/regenerate` di `panel/server.js` + menu **Pengaturan ➜ Jaringan & Tunnel** di Web Dashboard.
+  * **OTA Update 1-Klik & App Center di Mode APK**: Pembaruan sistem dari GitHub (`codeload.github.com`) berjalan langsung di mode `android-apk` tanpa membutuhkan folder `.git`, sambil menjaga kredensial `auth-config.json` (termasuk `accessToken`), log, dan aplikasi terpasang (`9router`, `immich`, `nextcloud`).
+  * Mempertahankan desain tema *Obsidian Dark glassmorphism* LenzNode secara penuh dengan ikon resmi baru pada launcher dan header aplikasi, serta transisi otomatis ke *WebView* berakselerasi perangkat keras (dukungan WebSocket, unggah/unduh berkas File Manager, keyboard terminal `adjustResize`, dan tombol kembali).
+  * **Keamanan & Anti-Decompilation**: R8 minification & resource shrinking aktif di rilis (`isMinifyEnabled = true`), `android:allowBackup="false"`, debugging WebView dinonaktifkan di build rilis, serta aset runtime diproteksi di dalam `assets/lenznode-bundle.dat` (JS/HTML terobfuskasi + ZIP ter-XOR).
+  * Menambahkan **Native Hardware Bridge** (`127.0.0.1:48080`) di aplikasi Android beserta dukungan `LENZ_BRIDGE_URL` pada `panel/server.js` untuk membaca status baterai, suhu, menyalakan senter (*torch*), getar, dan wakelock secara langsung ketika akses `/sys` dibatasi di dalam PRoot.
+  * Menyediakan dukungan dua arsitektur dalam split APK terpisah: **Modern 64-bit (`LenzNode-modern-arm64-v8a.apk`)** dan **Lama 32-bit (`LenzNode-lama-armeabi-v7a.apk`)** dengan `targetSdkVersion = 28` agar terminal Ubuntu bebas menjalankan binary hasil `apt install`.
+* **Otomatisasi Build & Packaging GitHub Actions (`.github/workflows/build-apk.yml`)**:
+  * Menambahkan skrip `android-app/scripts/fetch-android-bins.sh` untuk mengunduh, memverifikasi SHA256, mengekstrak `proot` (+ `libtalloc`, `libandroid-shmem`) dari Termux APT dan `busybox-static` dari Alpine Linux, melakukan patching ELF `DT_NEEDED`/`RUNPATH` agar kompatibel dengan `jniLibs`, mengobfuskasi `panel/`, serta membungkus runtime ke `assets/lenznode-bundle.dat`.
+  * Menjalankan unit test JVM, Android Lint, build & penandatanganan kedua split APK rilis, verifikasi isi APK via `aapt2`, `apksigner`, dan `dexdump`, lalu mengunggah hasil APK sebagai GitHub Actions Artifacts / GitHub Release.
+
 ### Stability & Anti-Signal 9 Optimization (Termux)
 * **Pencegahan `Process completed (signal 9)` / Phantom Process Killer (Android 12+)**:
   * Menambahkan caching 15 detik pada fungsi `getDiskInfo()` di `panel/server.js` agar pemantauan metrik WebSocket (`/ws/stats`) dan `/api/system/stats` tidak terus-menerus memicu pembuatan sub-proses `df` setiap 2 detik (mengurangi beban proses anak di Android secara drastis).

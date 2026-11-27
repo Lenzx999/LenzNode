@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pure Obsidian Apple Surfaces (matches index.html & login.html) -->
+    <color name="lenz_bg_base">#06080A</color>
+    <color name="lenz_bg_card">#D9101216</color>
+    <color name="lenz_bg_card_solid">#101216</color>
+    <color name="lenz_bg_card_elevated">#14171E</color>
+    <color name="lenz_bg_console">#0A0C10</color>
+    <color name="lenz_border_glass">#1AFFFFFF</color>
+    <color name="lenz_border_subtle">#14FFFFFF</color>
+    <color name="lenz_border_highlight">#29FFFFFF</color>
+
+    <!-- Pure System Accents -->
+    <color name="lenz_accent_blue">#0071E3</color>
+    <color name="lenz_accent_blue_hover">#0077ED</color>
+    <color name="lenz_accent_blue_pressed">#005BB5</color>
+    <color name="lenz_accent_cyan">#38BDF8</color>
+    <color name="lenz_accent_emerald">#30D158</color>
+    <color name="lenz_accent_amber">#FF9F0A</color>
+    <color name="lenz_accent_rose">#FF453A</color>
+
+    <!-- High Readability Neutral Typography -->
+    <color name="lenz_text_primary">#FFFFFF</color>
+    <color name="lenz_text_secondary">#E2E8F0</color>
+    <color name="lenz_text_muted">#94A3B8</color>
+    <color name="lenz_text_dim">#64748B</color>
+</resources>

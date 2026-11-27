@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LenzNode" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/lenz_accent_blue</item>
+        <item name="colorOnPrimary">@color/lenz_text_primary</item>
+        <item name="colorSecondary">@color/lenz_accent_cyan</item>
+        <item name="colorSurface">@color/lenz_bg_card_solid</item>
+        <item name="colorOnSurface">@color/lenz_text_primary</item>
+        <item name="android:colorBackground">@color/lenz_bg_base</item>
+        <item name="android:windowBackground">@color/lenz_bg_base</item>
+        <item name="android:statusBarColor">@color/lenz_bg_base</item>
+        <item name="android:navigationBarColor">@color/lenz_bg_base</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.LenzNode.Dialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="colorSurface">@color/lenz_bg_card_solid</item>
+        <item name="colorOnSurface">@color/lenz_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/lenz_text_secondary</item>
+        <item name="colorPrimary">@color/lenz_accent_blue</item>
+        <item name="android:background">@color/lenz_bg_card_solid</item>
+    </style>
+</resources>

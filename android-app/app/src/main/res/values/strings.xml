@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">LenzNode</string>
+
+    <string name="mode_title">LenzNode</string>
+    <string name="mode_subtitle">Pilih mode penggunaan perangkat ini</string>
+    <string name="mode_host_title">Jadikan HP Ini Server</string>
+    <string name="mode_host_desc">Jalankan Ubuntu PRoot, Node.js, dan SSH langsung di perangkat ini.</string>
+    <string name="mode_remote_title">Akses Server HP Lain</string>
+    <string name="mode_remote_desc">Hubungkan ke server LenzNode lain lewat IP Wi-Fi lokal atau tunnel.</string>
+    <string name="btn_switch_mode">Ganti Mode</string>
+
+    <string name="host_subtitle">Server Lokal</string>
+    <string name="remote_subtitle">Klien Remote</string>
+
+    <string name="phase_idle">Menyiapkan layanan</string>
+    <string name="phase_installing_rootfs">Mengunduh &amp; mengekstrak Linux rootfs</string>
+    <string name="phase_installing_deps">Menginstal dependensi LenzNode</string>
+    <string name="phase_starting">Menjalankan server dashboard</string>
+    <string name="phase_running">Server aktif</string>
+    <string name="phase_stopped">Server dihentikan</string>
+    <string name="phase_error">Terjadi gangguan</string>
+
+    <string name="console_toggle_show">Lihat Log Konsol</string>
+    <string name="console_toggle_hide">Sembunyikan Log</string>
+    <string name="console_empty">Menunggu output runtime...</string>
+    <string name="console_copied">Log disalin ke clipboard</string>
+    <string name="btn_copy_logs">Salin Log</string>
+
+    <string name="btn_start">Mulai Server</string>
+    <string name="btn_retry">Coba Lagi</string>
+    <string name="btn_stop">Hentikan</string>
+    <string name="btn_open_dashboard">Buka Dashboard</string>
+    <string name="btn_reinstall">Reset Runtime</string>
+
+    <string name="remote_url_label">Alamat Server</string>
+    <string name="remote_url_hint">192.168.1.10:8080 atau https://...</string>
+    <string name="remote_token_label">Token Akses</string>
+    <string name="remote_token_hint">lnz_...</string>
+    <string name="remote_btn_connect">Hubungkan</string>
+    <string name="remote_connecting">Menghubungkan...</string>
+    <string name="remote_saved_title">Server Tersimpan</string>
+    <string name="remote_toggle_token">Tampilkan atau sembunyikan token</string>
+    <string name="remote_delete_profile">Hapus server tersimpan</string>
+    <string name="remote_err_empty_url">Alamat server wajib diisi.</string>
+    <string name="remote_err_empty_token">Token akses wajib diisi.</string>
+
+    <string name="reinstall_confirm_title">Reset Runtime Linux?</string>
+    <string name="reinstall_confirm_message">Lingkungan Linux rootfs akan diinstal ulang dari awal. Paket tambahan yang diinstal lewat terminal akan dihapus. Lanjutkan?</string>
+    <string name="dialog_confirm">Lanjutkan</string>
+    <string name="dialog_cancel">Batal</string>
+
+    <string name="battery_opt_title">Jalankan Server Tanpa Henti</string>
+    <string name="battery_opt_message">Izinkan LenzNode berjalan di latar belakang tanpa pembatasan baterai agar server dashboard, SSH, dan terminal tidak dimatikan oleh sistem Android.</string>
+    <string name="battery_opt_allow">Izinkan</string>
+    <string name="battery_opt_later">Nanti</string>
+
+    <string name="recovery_disconnected">Koneksi dashboard terputus</string>
+    <string name="recovery_stopped">Server sedang berhenti</string>
+    <string name="recovery_reconnect">Muat Ulang</string>
+    <string name="recovery_console">Log</string>
+    <string name="recovery_servers">Ganti Server</string>
+
+    <string name="download_started">Mengunduh %1$s...</string>
+    <string name="download_failed">Gagal memulai unduhan file</string>
+    <string name="external_open_failed">Tidak ada aplikasi untuk membuka tautan ini</string>
+    <string name="press_back_again">Tekan kembali sekali lagi untuk keluar</string>
+</resources>
