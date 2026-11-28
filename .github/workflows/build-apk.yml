@@ -161,8 +161,8 @@ jobs:
               "$aligned"
           }
 
-          package_apk "arm64-v8a" "LenzNode-modern-arm64-v8a.apk"
-          package_apk "armeabi-v7a" "LenzNode-lama-armeabi-v7a.apk"
+          package_apk "arm64-v8a" "LenzNode-arm64-v8a.apk"
+          package_apk "armeabi-v7a" "LenzNode-armeabi-v7a.apk"
           rm -f "$KEYSTORE_PATH" /tmp/*-aligned.apk
 
       - name: Verify Output APKs (Manifest, ABI libs, Encrypted Bundle, R8 Classes, Signature)
@@ -208,8 +208,8 @@ jobs:
             fi
           }
 
-          verify_apk "dist/LenzNode-modern-arm64-v8a.apk" "arm64-v8a" "armeabi-v7a"
-          verify_apk "dist/LenzNode-lama-armeabi-v7a.apk" "armeabi-v7a" "arm64-v8a"
+          verify_apk "dist/LenzNode-arm64-v8a.apk" "arm64-v8a" "armeabi-v7a"
+          verify_apk "dist/LenzNode-armeabi-v7a.apk" "armeabi-v7a" "arm64-v8a"
           ls -lh dist/
 
       - name: Upload APK Artifacts
@@ -217,8 +217,8 @@ jobs:
         with:
           name: lenznode-android-apks
           path: |
-            dist/LenzNode-modern-arm64-v8a.apk
-            dist/LenzNode-lama-armeabi-v7a.apk
+            dist/LenzNode-arm64-v8a.apk
+            dist/LenzNode-armeabi-v7a.apk
           if-no-files-found: error
 
       - name: Upload Test & Lint Reports on Failure
@@ -231,10 +231,18 @@ jobs:
             android-app/app/build/test-results/
           if-no-files-found: ignore
 
+      - name: Remove legacy APK asset names if updating tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete-asset "${GITHUB_REF_NAME}" "LenzNode-modern-arm64-v8a.apk" --yes || true
+          gh release delete-asset "${GITHUB_REF_NAME}" "LenzNode-lama-armeabi-v7a.apk" --yes || true
+
       - name: Attach APKs to GitHub Release (on tag push v*)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/LenzNode-modern-arm64-v8a.apk
-            dist/LenzNode-lama-armeabi-v7a.apk
+            dist/LenzNode-arm64-v8a.apk
+            dist/LenzNode-armeabi-v7a.apk
