@@ -8,7 +8,7 @@
   <p><strong>Mini Server Linux, Penyimpanan Cloud Pribadi &amp; AI Gateway untuk Android (Aplikasi APK &amp; Termux)</strong></p>
 
   <p>
-    <a href="https://github.com/Lenzx999/LenzNode/releases"><img src="https://img.shields.io/badge/version-v2.2.14-blue?style=flat-square" alt="Version"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest"><img src="https://img.shields.io/badge/version-v2.2.14-blue?style=flat-square" alt="Version"></a>
     <img src="https://img.shields.io/badge/platform-Android%20APK%20(6.0%2B)%20%7C%20Termux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/ABI-arm64--v8a%20%7C%20armeabi--v7a-06B6D4?style=flat-square" alt="ABI">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
@@ -16,7 +16,26 @@
     <img src="https://img.shields.io/badge/license-MIT-EAB308?style=flat-square" alt="License">
   </p>
 
+  <p>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk"><img src="https://img.shields.io/badge/Download%20APK-HP%20Modern%20(64--bit)-10B981?style=for-the-badge&logo=android&logoColor=white" alt="Download APK Modern"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk"><img src="https://img.shields.io/badge/Download%20APK-HP%20Lama%20(32--bit)-0284C7?style=for-the-badge&logo=android&logoColor=white" alt="Download APK Lama"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest"><img src="https://img.shields.io/badge/Semua%20Rilis-GitHub%20Releases-18181B?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Releases"></a>
+  </p>
+
 </div>
+
+---
+
+## Download Aplikasi (APK) — 1 Klik
+
+Klik tautan di bawah sesuai tipe HP Android Anda (tidak perlu login GitHub atau membuka menu Actions):
+
+| Jenis Perangkat | File APK | Unduh Langsung |
+| :--- | :--- | :--- |
+| **HP Android Modern** (64-bit / keluaran 2017 ke atas) | `LenzNode-modern-arm64-v8a.apk` | [**Download APK (64-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
+| **HP Android Lama** (32-bit / Android 6.0+, misal Vivo Y66) | `LenzNode-lama-armeabi-v7a.apk` | [**Download APK (32-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
+
+> Halaman rilis lengkap & versi terdahulu: [**github.com/Lenzx999/LenzNode/releases**](https://github.com/Lenzx999/LenzNode/releases/latest)
 
 ---
 
@@ -26,7 +45,7 @@ LenzNode tersedia dalam **2 edisi** yang memakai mesin server dan dashboard yang
 
 | Edisi | Target Perangkat | Cara Pasang | Lingkungan Sistem |
 | :--- | :--- | :--- | :--- |
-| **Aplikasi Android (APK)** | Android **6.0+** (`minSdk 23`) | Pasang file `.apk` langsung | **Ubuntu 22.04 PRoot** mandiri (tanpa Termux) |
+| **Aplikasi Android (APK)** | Android **6.0+** (`minSdk 23`) | [**Unduh & pasang file `.apk`**](https://github.com/Lenzx999/LenzNode/releases/latest) | **Ubuntu 22.04 PRoot** mandiri (tanpa Termux) |
 | **Termux CLI** | Termux (Android 5.0–16+ / Linux) | Jalankan `install.sh` di Termux | **Native Termux** |
 
 ---
@@ -37,10 +56,10 @@ Cocok untuk pengguna yang ingin langsung memakai server tanpa memasang Termux.
 
 ### Pilihan File APK
 
-| File APK | Arsitektur | Untuk Perangkat |
-| :--- | :--- | :--- |
-| `LenzNode-modern-arm64-v8a.apk` | `arm64-v8a` (64-bit) | HP Android modern (keluaran 2017 ke atas) |
-| `LenzNode-lama-armeabi-v7a.apk` | `armeabi-v7a` (32-bit) | HP Android lama 32-bit (Android 6.0 ke atas, termasuk Vivo Y66) |
+| File APK | Arsitektur | Untuk Perangkat | Unduh |
+| :--- | :--- | :--- | :--- |
+| `LenzNode-modern-arm64-v8a.apk` | `arm64-v8a` (64-bit) | HP Android modern (keluaran 2017 ke atas) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
+| `LenzNode-lama-armeabi-v7a.apk` | `armeabi-v7a` (32-bit) | HP Android lama 32-bit (Android 6.0 ke atas, termasuk Vivo Y66) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
 
 ### Mode Operasi Aplikasi
 - **Jadikan HP Ini Server (Host Mode)**: Menyiapkan Ubuntu 22.04 minimal, Node.js, OpenSSH (`2222`), `cloudflared`, dan Dashboard (`8080`). Dilengkapi **Terminal PTY interaktif** (mirip Termux/Termius dengan tombol `ESC`, `TAB`, `CTRL`, `ALT`, panah) dan **File Manager** gaya ZArchiver (tekan lama untuk salin, bagikan ke aplikasi/URL ber-PIN, edit, ubah nama, hapus).
