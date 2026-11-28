@@ -9,7 +9,7 @@
 
   <p>
     <a href="https://github.com/Lenzx999/LenzNode/releases/latest"><img src="https://img.shields.io/badge/version-v2.2.14-blue?style=flat-square" alt="Version"></a>
-    <img src="https://img.shields.io/badge/platform-Android%20APK%20(6.0%2B)%20%7C%20Termux-10B981?style=flat-square" alt="Platform">
+    <img src="https://img.shields.io/badge/platform-Android%206.0%E2%80%9316%20%7C%20Termux-10B981?style=flat-square" alt="Platform">
     <img src="https://img.shields.io/badge/ABI-arm64--v8a%20%7C%20armeabi--v7a-06B6D4?style=flat-square" alt="ABI">
     <img src="https://img.shields.io/badge/node-%3E%3D18.0.0-8B5CF6?style=flat-square" alt="Node.js">
     <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-view-f97316?style=flat-square" alt="Changelog"></a>
@@ -17,8 +17,8 @@
   </p>
 
   <p>
-    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk"><img src="https://img.shields.io/badge/Download%20APK-HP%20Modern%20(64--bit)-10B981?style=for-the-badge&logo=android&logoColor=white" alt="Download APK Modern"></a>
-    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk"><img src="https://img.shields.io/badge/Download%20APK-HP%20Lama%20(32--bit)-0284C7?style=for-the-badge&logo=android&logoColor=white" alt="Download APK Lama"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk"><img src="https://img.shields.io/badge/Download%20APK-Android%206.0%E2%80%9316%20(64--bit)-10B981?style=for-the-badge&logo=android&logoColor=white" alt="Download APK 64-bit"></a>
+    <a href="https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk"><img src="https://img.shields.io/badge/Download%20APK-Android%206.0%E2%80%9316%20(32--bit)-0284C7?style=for-the-badge&logo=android&logoColor=white" alt="Download APK 32-bit"></a>
     <a href="https://github.com/Lenzx999/LenzNode/releases/latest"><img src="https://img.shields.io/badge/Semua%20Rilis-GitHub%20Releases-18181B?style=for-the-badge&logo=github&logoColor=white" alt="GitHub Releases"></a>
   </p>
 
@@ -28,14 +28,15 @@
 
 ## Download Aplikasi (APK) — 1 Klik
 
-Klik tautan di bawah sesuai tipe HP Android Anda (tidak perlu login GitHub atau membuka menu Actions):
+Klik tautan di bawah sesuai arsitektur perangkat Android Anda (mendukung **Android 6.0 hingga Android 16**, tanpa perlu login GitHub atau membuka menu *Actions*):
 
-| Jenis Perangkat | File APK | Unduh Langsung |
-| :--- | :--- | :--- |
-| **HP Android Modern** (64-bit / keluaran 2017 ke atas) | `LenzNode-modern-arm64-v8a.apk` | [**Download APK (64-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
-| **HP Android Lama** (32-bit / Android 6.0+, misal Vivo Y66) | `LenzNode-lama-armeabi-v7a.apk` | [**Download APK (32-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
+| Kompatibilitas Sistem | Arsitektur | File APK | Unduh Langsung |
+| :--- | :--- | :--- | :--- |
+| **Android 6.0 – 16** (rekomendasi untuk perangkat 64-bit) | `arm64-v8a` | `LenzNode-modern-arm64-v8a.apk` | [**Download APK (64-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
+| **Android 6.0 – 16** (khusus perangkat 32-bit) | `armeabi-v7a` | `LenzNode-lama-armeabi-v7a.apk` | [**Download APK (32-bit)**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
 
-> Halaman rilis lengkap & versi terdahulu: [**github.com/Lenzx999/LenzNode/releases**](https://github.com/Lenzx999/LenzNode/releases/latest)
+> **Tips memilih:** Pilih **`arm64-v8a` (64-bit)** terlebih dahulu. Jika pemasangan ditolak oleh sistem dengan keterangan tidak kompatibel, unduh **`armeabi-v7a` (32-bit)**.  
+> Halaman rilis lengkap: [**github.com/Lenzx999/LenzNode/releases**](https://github.com/Lenzx999/LenzNode/releases/latest)
 
 ---
 
@@ -43,23 +44,23 @@ Klik tautan di bawah sesuai tipe HP Android Anda (tidak perlu login GitHub atau 
 
 LenzNode tersedia dalam **2 edisi** yang memakai mesin server dan dashboard yang sama:
 
-| Edisi | Target Perangkat | Cara Pasang | Lingkungan Sistem |
+| Edisi | Kompatibilitas Android | Cara Pasang | Lingkungan Sistem |
 | :--- | :--- | :--- | :--- |
-| **Aplikasi Android (APK)** | Android **6.0+** (`minSdk 23`) | [**Unduh & pasang file `.apk`**](https://github.com/Lenzx999/LenzNode/releases/latest) | **Ubuntu 22.04 PRoot** mandiri (tanpa Termux) |
-| **Termux CLI** | Termux (Android 5.0–16+ / Linux) | Jalankan `install.sh` di Termux | **Native Termux** |
+| **Aplikasi Android (APK)** | **Android 6.0 – 16** (`minSdk 23`) | [**Unduh & pasang file `.apk`**](https://github.com/Lenzx999/LenzNode/releases/latest) | **Ubuntu 22.04 PRoot** mandiri (tanpa Termux) |
+| **Termux CLI** | **Android 5.0 – 16+** (via Termux) / Linux | Jalankan `install.sh` di Termux | **Native Termux** |
 
 ---
 
 ## Edisi 1: Aplikasi Android (APK)
 
-Cocok untuk pengguna yang ingin langsung memakai server tanpa memasang Termux.
+Cocok untuk pengguna **Android 6.0 sampai Android 16** yang ingin langsung menjalankan server tanpa memasang Termux.
 
 ### Pilihan File APK
 
-| File APK | Arsitektur | Untuk Perangkat | Unduh |
+| File APK | Arsitektur | Kompatibilitas | Unduh |
 | :--- | :--- | :--- | :--- |
-| `LenzNode-modern-arm64-v8a.apk` | `arm64-v8a` (64-bit) | HP Android modern (keluaran 2017 ke atas) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
-| `LenzNode-lama-armeabi-v7a.apk` | `armeabi-v7a` (32-bit) | HP Android lama 32-bit (Android 6.0 ke atas, termasuk Vivo Y66) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
+| `LenzNode-modern-arm64-v8a.apk` | `arm64-v8a` (64-bit) | Android 6.0 – 16 (perangkat 64-bit) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-modern-arm64-v8a.apk) |
+| `LenzNode-lama-armeabi-v7a.apk` | `armeabi-v7a` (32-bit) | Android 6.0 – 16 (perangkat 32-bit) | [**Download**](https://github.com/Lenzx999/LenzNode/releases/latest/download/LenzNode-lama-armeabi-v7a.apk) |
 
 ### Mode Operasi Aplikasi
 - **Jadikan HP Ini Server (Host Mode)**: Menyiapkan Ubuntu 22.04 minimal, Node.js, OpenSSH (`2222`), `cloudflared`, dan Dashboard (`8080`). Dilengkapi **Terminal PTY interaktif** (mirip Termux/Termius dengan tombol `ESC`, `TAB`, `CTRL`, `ALT`, panah) dan **File Manager** gaya ZArchiver (tekan lama untuk salin, bagikan ke aplikasi/URL ber-PIN, edit, ubah nama, hapus).
